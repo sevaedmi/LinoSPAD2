@@ -9,7 +9,7 @@ from tqdm import tqdm
 from functions.cross_talk.zeros_to_valid import zeros_to_valid
 
 path = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/Data/"\
-    "40 ns window, 20 MHz clock, 10 cycles/10 lines of data"
+    "40 ns window, 20 MHz clock, 10 cycles/10 lines of data/txt"
 os.chdir(path)
 
 # find all data files
