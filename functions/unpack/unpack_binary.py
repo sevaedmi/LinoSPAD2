@@ -1,6 +1,4 @@
-# =============================================================================
-# Unpack and decode the binary data output of the LinoSPAD2
-# =============================================================================
+""" Unpack and decode the binary data output of the LinoSPAD2."""
 
 import numpy as np
 from struct import unpack
@@ -16,7 +14,8 @@ def unpack(filename):
             if not rawpacket:
                 break  # stop when the are no further 4 bytes to readout
             packet = unpack('<I', rawpacket)
-            # if (packet[0] >> 31) == 1:  # check validity bit: if 1 - timestamp is valid
+            # if (packet[0] >> 31) == 1:  # check validity bit: if 1
+            # - timestamp is valid
             timestamp = packet[0] & 0xfffffff  # cut the higher bits, leave
             # only timestamp ones
             timestamp_list.append(timestamp)

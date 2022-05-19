@@ -1,22 +1,23 @@
-# =============================================================================
-# Unpack data from .txt files; return 2D matrix (256 x 512*#ofcycles) of
-# timestamps
-# =============================================================================
+""" Unpack data from .txt files; return 2D matrix (256 x 512*#ofcycles) of
+timestamps.
+"""
 import numpy as np
 
-# The .txt output of the LinoSPAD2 is a single column of data, where first 512lines are
-# the data from the 1st pixel collected during the first cycle of the data acquisition,
-# next 512 lines (2*512:2*512+512) - 2nd pixel and so on. Lines 256*512:256*512+512 are
-# the data from the 1st pixel collected during the 2nd cycle.
+# The .txt output of the LinoSPAD2 is a single column of data, where first 512
+# lines are the data from the 1st pixel collected during the first cycle of the
+# data acquisition, next 512 lines (2*512:2*512+512) - 2nd pixel and so on.
+# Lines 256*512:256*512+512 are the data from the 1st pixel collected during
+# the 2nd cycle.
 
 
 def unpack(filename):
 
     Data = np.genfromtxt(filename)
-    Data_matrix = np.zeros((256, int(len(Data)/256)))  # rows=#pixels, cols=#cycles
+    Data_matrix = np.zeros((256, int(len(Data)/256)))  # rows=#pixels, 
+    # cols=#cycles
 
-    noc = len(Data)/512/256  # number of cycles, 512 data lines per pixel per cycle,
-    # 256 pixels
+    noc = len(Data)/512/256  # number of cycles, 512 data lines per pixel per 
+    # cycle, 256 pixels
 
     # =========================================================================
     # Unpack data from the txt, which is a Nx1 array, into a 256x#cycles matrix

@@ -27,7 +27,8 @@ for i in range(len(Data_matrix_ps[0])):
         # the subtraction of self
         while k < 256:  # 256 due to k-1
             # sign does not matter, hence absolute value
-            DeltaT[i][j][k-1] = np.abs(Data_matrix_ps[j][i] - Data_matrix_ps[k][i])
+            DeltaT[i][j][k-1] = np.abs(Data_matrix_ps[j][i]
+                                       - Data_matrix_ps[k][i])
             k = k+1  # next pixel: 0-1, 0-2,...
         j = j+1  # next row: 0-1, 1-2, 2-3,...
 
@@ -47,3 +48,9 @@ for i in range(len(Data_test[0])):
             Delta_test[i][j][k-1] = np.abs(Data_test[j][i] - Data_test[k][i])
             k = k+1
         j = j+1
+
+# TODO: differences are calculated only in a single slice of the 512*N_of_cycles
+# lines of data without any check if the timestamps are close to each other.
+# Need to add a filter to find close timestamps between all pixels or calculate
+# differences between all timestamps in a single acq cycle, maybe in a window
+# with width ~ needed time difference for HBT peaks.
