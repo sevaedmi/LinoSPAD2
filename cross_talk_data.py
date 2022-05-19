@@ -5,14 +5,17 @@ Output is cross-talk rate in %.
 from functions.unpack import unpack_txt
 import numpy as np
 
+# absolute path to the data file "acq ... .txt"
 file = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/Data/"\
     "40 ns window, 20 MHz clock, 10 cycles/acq_220512_150911.txt"
 
+# unpack data from the txt file into a matrix 256 x 512*N_of_cycles
 Data_matrix = unpack_txt.unpack(file)
 
-Data_diff = np.zeros((len(Data_matrix)-1, len(Data_matrix[0])))  # matrix for
-# timestamp differences
+# matrix for timestamp differences
+Data_diff = np.zeros((len(Data_matrix)-1, len(Data_matrix[0])))
 
+# calculate the timestamp differences
 for i in range(len(Data_matrix[0])):  # take a single column from the data
     j = 0  # row number
     while j < 255:
