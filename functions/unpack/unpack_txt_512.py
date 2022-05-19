@@ -1,5 +1,5 @@
 """ Unpack data from .txt files; return 2D matrix (256 x 512*#ofcycles) of
-timestamps.
+timestamps. For .txt files with 512 lines of data read out per acq cycle.
 """
 import numpy as np
 
