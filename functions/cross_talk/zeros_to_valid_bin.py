@@ -1,16 +1,16 @@
 """Calculate how many zeroes (cross-talk) and valid timestamps were measured
 in a single acq window. The module is used for calculation of cross-talk rate
 based on the data from multiple data files/acquistion windows.
-Works with the .txt data files.
+Works with .dat binary-coded data files.
 """
 
 import numpy as np
-from functions.unpack import unpack_txt_10
+from functions.unpack import unpack_binary_10
 
 
-def zeros_to_valid(filename):
+def zeros_to_valid_bin(filename):
     # unpack data from the txt file into a matrix 256 x data_lines*N_of_cycles
-    Data_matrix = unpack_txt_10.unpack_txt(filename)
+    Data_matrix = unpack_binary_10.unpack_binary(filename)
 
     # matrix for timestamp differences
     Data_diff = np.zeros((len(Data_matrix)-1, len(Data_matrix[0]), 10))

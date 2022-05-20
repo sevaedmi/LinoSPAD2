@@ -1,6 +1,7 @@
 """Calculate how many zeroes (cross-talk) and valid timestamps were measured
 in a single acq window. The module is used for calculation of cross-talk rate
 based on the data from multiple data files/acquistion windows.
+This version is for running tests.
 """
 
 import numpy as np

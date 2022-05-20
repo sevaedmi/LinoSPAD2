@@ -10,13 +10,13 @@ import numpy as np
 # the 2nd cycle.
 
 
-def unpack(filename):
+def unpack_txt(filename):
 
     Data = np.genfromtxt(filename)
-    Data_matrix = np.zeros((256, int(len(Data)/256)))  # rows=#pixels, 
+    Data_matrix = np.zeros((256, int(len(Data)/256)))  # rows=#pixels,
     # cols=#cycles
 
-    noc = len(Data)/512/256  # number of cycles, 512 data lines per pixel per 
+    noc = len(Data)/512/256  # number of cycles, 512 data lines per pixel per
     # cycle, 256 pixels
 
     # =========================================================================

@@ -10,7 +10,7 @@ from functions.unpack import unpack_txt_10
 
 def zeros_to_valid(filename):
     # unpack data from the txt file into a matrix 256 x data_lines*N_of_cycles
-    Data_matrix = unpack_txt_10.unpack(filename)
+    Data_matrix = unpack_txt_10.unpack_txt(filename)
 
     # matrix for timestamp differences
     Data_diff = np.zeros((len(Data_matrix)-1, len(Data_matrix[0])))

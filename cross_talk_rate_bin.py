@@ -1,26 +1,26 @@
 """ Calculate cross-talk rate for multiple files of data, each with ~ 107 MB
-of data. Works with the .txt data files.
+of data. Works with the .dat binary-coded data files.
 """
 
 import numpy as np
 import os
 import glob
 from tqdm import tqdm
-from functions.cross_talk.zeros_to_valid import zeros_to_valid
+from functions.cross_talk.zeros_to_valid_bin import zeros_to_valid_bin
 
 path = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/Data/"\
-    "40 ns window, 20 MHz clock, 10 cycles/10 lines of data/txt"
+    "40 ns window, 20 MHz clock, 10 cycles/10 lines of data/binary"
 os.chdir(path)
 
 # find all data files
-DATA_FILES = glob.glob('*acq*'+'*.txt*')
+DATA_FILES = glob.glob('*acq*'+'*.dat*')
 
 # for 'zeros_to_valid' output
 zeros = []
 valid_timestamps = []
 
 for i in tqdm(range(len(DATA_FILES)), desc='Calculating'):
-    zero, valid = zeros_to_valid(DATA_FILES[i])
+    zero, valid = zeros_to_valid_bin(DATA_FILES[i])
     zeros.append(zero)
     valid_timestamps.append(valid)
 
