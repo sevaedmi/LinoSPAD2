@@ -18,6 +18,7 @@ def zeros_to_valid_bin(filename):
     for i in range(len(Data_matrix)-1):  # 256-1=255 differences
         for j in range(len(Data_matrix[0])):  # 10*11999
             for k in range(10):  # 10 lines of data / acq cycle
+            # calculate difference between 'i' and 'i+1' rows
                 if Data_matrix[i][j] == -1 or Data_matrix[i+1][k] == -1:
                     Data_diff[i][j][k] = -1
                 else:
