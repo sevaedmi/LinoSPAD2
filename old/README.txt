@@ -1,5 +1,5 @@
 All functional scripts that were used previously but now are not useful or suitable.
 
-'Cross_talk_rate.py' is used for calculation of the cross-talk rate for a single file
-of ~107 MB of data. Was rewritten into a function for calculation of cross-talk rates
-for multiple files.
+'cross_talk_rate' and 'cross_talk_rate_bin' were used as a standalone scripts, with 
+modules 'zeros_to_valid' and 'zeroes_to_valid_bin' for calculating cross-talk rates based on the data from '.txt' and '.dat' files, respectively. All four scripts were combined into
+a single module, which is called in the main.py script.

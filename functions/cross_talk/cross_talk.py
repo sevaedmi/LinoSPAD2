@@ -1,7 +1,8 @@
 """Calculate how many zeroes (cross-talk) and valid timestamps were measured
 in a single acq window. The module is used for calculation of cross-talk rate
 based on the data from multiple data files/acquistion windows.
-Works with .dat binary-coded data files.
+Works with both 'txt' and '.dat' data files.
+
 The flow of the script:
 1) Check what format the data files are in: 'txt' or binary-coded 'bin'
 2) Find all data files
@@ -18,12 +19,10 @@ import os
 import glob
 from tqdm import tqdm
 import pandas as pd
-import time
 import functions.unpack as f_up
 
 
 def cross_talk_rate(path):
-    time_start = time.time()
     os.chdir(path)
 
     if "binary" in path:
@@ -82,11 +81,11 @@ def cross_talk_rate(path):
             zeros_to_save.append(zeros)
             valid_to_save.append(valid_timestamps)
 
-    print("Calculating the cross-talk rate and saving the data into a"
+    print("\nCalculating the cross-talk rate and saving the data into a"
           "'.csv' file.")
     # cross-talk rate is calculated as zero values divided by total number of
     # valid timestamps (>0)
-    cross_talk_output = np.sum(zeros_to_save) / np.sum(valid_to_save)
+    cross_talk_output = np.sum(zeros_to_save) / np.sum(valid_to_save) * 100
 
     number_of_acq_cycles = 11999*len(DATA_FILES)  # number of files with data,
     # each contains data from 11999 acquisition cycles
@@ -96,19 +95,19 @@ def cross_talk_rate(path):
     # save the data file name, number of cross-talk zeros,
     # number of valid timestamps from the original data file
     # and the calculated cross-talk rate into a '.csv' file
-    output_to_save = np.zeros((len(DATA_FILES)+3, 3))
+    output_to_save = np.zeros((len(DATA_FILES), 5))
     for i in range(len(output_to_save)):
-        output_to_save[i][0] = DATA_FILES[i]
-        output_to_save[i][1] = zeros_to_save[i]
-        output_to_save[i][2] = valid_to_save[i]
-    output_to_save[-3][0] = "Number of acquistion cycles:"
-    output_to_save[-3][1] = number_of_acq_cycles
-    output_to_save[-2][0] = "Average valid timestamps per pixel:"
-    output_to_save[-2][1] = average_valid_timestamps
-    output_to_save[-1][0] = "Cross-talk rate:"
-    output_to_save[-1][1] = cross_talk_output
-    output_headers = ['Data file name', 'Number of cross-talk zeros',
-                      'Number of valid timestamps']
+        output_to_save[i][0] = zeros_to_save[i]
+        output_to_save[i][1] = valid_to_save[i]
+    output_to_save[0][2] = number_of_acq_cycles
+    output_to_save[0][3] = average_valid_timestamps
+    output_to_save[0][4] = cross_talk_output
+
+    output_headers = ['Number of cross-talk zeros',
+                      'Number of valid timestamps',
+                      'Number of acq cycles',
+                      'Average of valid timestamps per pixel',
+                      'Cross-talk rate in %%']
 
     output_to_csv = pd.DataFrame(data=output_to_save, columns=output_headers)
 
@@ -119,9 +118,5 @@ def cross_talk_rate(path):
         os.mkdir("results")
         os.chdir("results")
     output_to_csv.to_csv("Cross-talk_results.csv")
-    print("Data are saved in the 'Cross-talk_results.csv' that can be found"
+    print("\nData are saved in the 'Cross-talk_results.csv' that can be found"
           "in the folder 'results'.")
-
-    execution_seconds = time.time() - time_start
-    print("Elapsed time: ", time.strftime("%H:%M:%S",
-                                          time.gmtime(execution_seconds)))

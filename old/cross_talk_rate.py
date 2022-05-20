@@ -1,42 +1,46 @@
-"""Calculate cross-talk from a single file of ~107 MB of data.
-Output is cross-talk rate in %.
+""" Calculate cross-talk rate for multiple files of data, each with ~ 107 MB
+of data. Works with the .txt data files.
 """
+
 import numpy as np
+import os
+import glob
 from tqdm import tqdm
-from functions.unpack import unpack_txt_10
+import time
+from functions.cross_talk.zeros_to_valid import zeros_to_valid
 
-# absolute path to the data file "acq ... .txt"
-FILENAME = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/"\
-    "Data/40 ns window, 20 MHz clock, 10 cycles/10 lines of data/"\
-    "all_data.txt"
+time_start = time.time()
 
-# unpack data from the txt file into a matrix 256 x data_lines*N_of_cycles
-Data_matrix = unpack_txt_10.unpack(FILENAME)
+path = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/Data/"\
+    "40 ns window, 20 MHz clock, 10 cycles/10 lines of data/txt"
+os.chdir(path)
 
-# matrix for timestamp differences
-Data_diff = np.zeros((len(Data_matrix)-1, len(Data_matrix[0])))
+# find all data files
+DATA_FILES = glob.glob('*acq*'+'*.txt*')
 
-# calculate the timestamp differences
-for i in tqdm(range(len(Data_matrix[0])), desc='Calculating timestamps'
-              ' differences'):  # take a single column from the data
-    j = 0  # row number
-    while j < 255:
-        # if both numbers in the neighboring rows in the original data are non
-        # valid, cut it out from the cross talk calculation
-        if Data_matrix[j][i] == -1 and Data_matrix[j+1][i] == -1:
-            Data_diff[j][i] = -1
-        else:
-            Data_diff[j][i] = np.abs(Data_matrix[j][i] - Data_matrix[j+1][i])
-        j = j+1
+# for 'zeros_to_valid' output
+zeros = []
+valid_timestamps = []
 
-# Calculate cross talk in %
-Cross_talk_zeros = len(np.where(Data_diff == 0)[0])
-Valid_timestamps = len(np.where(Data_matrix >= 0)[0])
+for i in tqdm(range(len(DATA_FILES)), desc='Calculating'):
+    zero, valid = zeros_to_valid(DATA_FILES[i])
+    zeros.append(zero)
+    valid_timestamps.append(valid)
 
-Cross_talk_rate = Cross_talk_zeros / Valid_timestamps * 100
+# cross-talk rate is calculated as zero values divided by total number of
+# valid timestamps (>0)
+cross_talk_output = np.sum(zeros) / np.sum(valid_timestamps)
 
-LINES_OF_DATA = 10  # change to the appropriate number of lines in the txt
+number_of_acq_cycles = 11999*len(DATA_FILES)  # number of files with data,
+# each contains data from 11999 acquisition cycles
 
-number_of_cycles = int(len(Data_matrix[0])/LINES_OF_DATA)
-print("Based on data collected during {0} cycles, cross talk rate is "
-      "estimated at %.5f %%.".format(number_of_cycles) % Cross_talk_rate)
+average_valid_timestamps = np.sum(valid_timestamps) / 256
+
+print("Cross-talk rate is estimated at %.5f %% based on the data collected "
+      "from {0} acquisiton cycles with average number of valid timestamps "
+      "per pixel of {1}".format(number_of_acq_cycles,
+                                average_valid_timestamps) % cross_talk_output)
+
+execution_seconds = time.time() - time_start
+print("Elapsed time: ", time.strftime("%H:%M:%S",
+                                      time.gmtime(execution_seconds)))

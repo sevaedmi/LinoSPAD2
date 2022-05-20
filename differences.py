@@ -54,3 +54,4 @@ for i in range(len(Data_test[0])):
 # Need to add a filter to find close timestamps between all pixels or calculate
 # differences between all timestamps in a single acq cycle, maybe in a window
 # with width ~ needed time difference for HBT peaks.
+# TODO: make a module to import in the main.py
