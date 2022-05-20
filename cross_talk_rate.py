@@ -6,7 +6,10 @@ import numpy as np
 import os
 import glob
 from tqdm import tqdm
+import time
 from functions.cross_talk.zeros_to_valid import zeros_to_valid
+
+time_start = time.time()
 
 path = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/Data/"\
     "40 ns window, 20 MHz clock, 10 cycles/10 lines of data/txt"
@@ -37,3 +40,7 @@ print("Cross-talk rate is estimated at %.5f %% based on the data collected "
       "from {0} acquisiton cycles with average number of valid timestamps "
       "per pixel of {1}".format(number_of_acq_cycles,
                                 average_valid_timestamps) % cross_talk_output)
+
+execution_seconds = time.time() - time_start
+print("Elapsed time: ", time.strftime("%H:%M:%S",
+                                      time.gmtime(execution_seconds)))
