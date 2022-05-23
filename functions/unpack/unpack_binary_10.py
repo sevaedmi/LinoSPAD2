@@ -17,7 +17,7 @@ def unpack_binary(filename):
                 break  # stop when the are no further 4 bytes to readout
             packet = unpack('<I', rawpacket)
             if (packet[0] >> 31) == 1:  # check validity bit: if 1
-            # - timestamp is valid
+                # - timestamp is valid
                 timestamp = packet[0] & 0xfffffff  # cut the higher bits, leave
                 # only timestamp ones
                 # 2.5 ns from TDC 400 MHz clock read out 140 bins from 35

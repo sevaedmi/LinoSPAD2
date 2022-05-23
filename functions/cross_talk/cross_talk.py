@@ -92,9 +92,10 @@ def cross_talk_rate(path):
 
     average_valid_timestamps = np.sum(valid_to_save) / 256
 
-    # save the data file name, number of cross-talk zeros,
-    # number of valid timestamps from the original data file
-    # and the calculated cross-talk rate into a '.csv' file
+    # save the number of cross-talk zeros, number of valid timestamps
+    # from the original data file, the calculated cross-talk rate, the number
+    # of acquisition cycles, and the average number of valid timestamps per
+    # pixel in a '.csv' file
     output_to_save = np.zeros((len(DATA_FILES), 5))
     for i in range(len(output_to_save)):
         output_to_save[i][0] = zeros_to_save[i]
