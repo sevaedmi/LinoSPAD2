@@ -1,12 +1,12 @@
-"""Calculate how many zeroes (cross-talk) and valid timestamps were measured
-in a single acq window. The module is used for calculation of cross-talk rate
-based on the data from multiple data files/acquistion windows.
-Works with both 'txt' and '.dat' data files.
+"""Calculate how many zeroes (cross-talk) and valid timestamps were measured.
+The module is used for calculation of cross-talk rate based on the data from
+multiple data files/acquistion windows. Works with both 'txt' and '.dat'
+data files.
 
 The flow of the script:
 1) Check what format the data files are in: 'txt' or binary-coded 'bin'
 2) Find all data files
-3) In a loop, unpack the data file,
+3) In a loop, unpack the data file into a 2D matrix,
 4) Calculate timestamp differences between neighboring rows and all timestamps
 in a single acquisition window,
 5) Save zero values of cross-talk and valid timestamps from the original data
@@ -121,3 +121,6 @@ def cross_talk_rate(path):
     output_to_csv.to_csv("Cross-talk_results.csv")
     print("\nData are saved in the 'Cross-talk_results.csv' that can be found"
           "in the folder 'results'.")
+    
+    # TODO: add plot, pixel vs cross-talk rate to see the cross-talk 
+    # distribution in the sensor
