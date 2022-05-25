@@ -1,10 +1,16 @@
 """ The main hub for analyzis of data from LinoSPAD2.
-Modules for calculating cross-talk rate and timestamp differences are
-attached.
+
+Following modules can be used:
+
+    * cross_talk - calculation of the cross-talk rate
+    * differences - calculation of the differences between all timestamps
+                    which can be used to calculate the Hanbury-Brown and
+                    Twiss peaks
+
 """
 
-from functions.cross_talk import cross_talk
-from functions.differences import differences
+from functions import cross_talk
+# from functions.differences import differences
 
 # insert the path to where the data are located
 path = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/"\
@@ -14,4 +20,4 @@ path = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/"\
 cross_talk.cross_talk_rate(path)
 
 # Calculate timestamp differences between all pixels for the HBT peaks
-differences.timestamp_diff(path)
+# differences.timestamp_diff(path)

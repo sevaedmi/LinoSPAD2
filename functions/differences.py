@@ -1,6 +1,8 @@
 """ Module that calculates timestamp differences between all pixels in
 a single acquistion cycle.
 
+TODO: fix the docstring to follow the NumPy docstrins style
+
 The flow of the script:
 1) Check what format the data files are in: 'txt' or binary-coded 'bin'
 2) Find all data files
@@ -18,6 +20,21 @@ import functions.unpack as f_up
 
 
 def timestamp_diff(path):
+    """
+    TODO: fill in the docstring
+
+    Parameters
+    ----------
+    path : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    TYPE
+        DESCRIPTION.
+
+    """
+
     os.chdir(path)
 
     if "binary" in path:
