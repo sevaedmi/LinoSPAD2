@@ -122,5 +122,26 @@ def cross_talk_rate(path):
     print("\nData are saved in the 'Cross-talk_results.csv' that can be found"
           "in the folder 'results'.")
     
+    pixels = np.where(Data_diff == 0)[0]
+    pixels = np.unique(pixels)
+    pixel_zeros = np.zeros(len(Data_diff))
+    pixel_valid = np.zeros(len(Data_diff[0]))
+    cross_talk_pixel = np.zeros(len(pixels))
+    
+    for i in tqdm(range(len(pixel_zeros)), desc='Collecting data for plot'):
+        pixel_zeros[i] = pixels.count(i)
+        pixel_valid[i] = len(np.where(Data_diff[i] > 0)[0])
+        cross_talk_pixel[i] = pixel_zeros[i] / pixel_valid[i]
+    
+    data_for_plot = np.zeros(len(pixels), len(pixels))
+    for i in range(len(data_for_plot)):
+        data_for_plot[i][0] = pixels[i]
+        data_for_plot[i][1] = cross_talk_pixel[i]
+    
+    plot_headers = ['Pixel', 'Cross-talk rate']
+    
+    data_for_plot = pd.DataFrame(data=data_for_plot, columns=plot_headers)
+    data_for_plot.to_csv("Cross-talk by pixel to plot.csv")
+    
     # TODO: add plot, pixel vs cross-talk rate to see the cross-talk 
     # distribution in the sensor
