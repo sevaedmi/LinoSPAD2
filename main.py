@@ -9,7 +9,8 @@ Following modules can be used:
 
 """
 
-from functions import cross_talk
+# from functions import cross_talk
+from functions import cross_talk_plot
 # from functions.differences import differences
 
 # insert the path to where the data are located
@@ -17,7 +18,10 @@ path = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/"\
     "Data/40 ns window, 20 MHz clock, 10 cycles/10 lines of data/binary"
 
 # Calculate cross-talk rate in %, save the result in a .csv file
-cross_talk.cross_talk_rate(path)
+# cross_talk.cross_talk_rate(path)
+
+# Plot the cross-talk rate distribution in the sensor
+cross_talk_plot.ctr_dist(path)
 
 # Calculate timestamp differences between all pixels for the HBT peaks
 # differences.timestamp_diff(path)
