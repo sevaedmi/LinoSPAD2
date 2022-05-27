@@ -1,35 +1,37 @@
-""" Module that calculates timestamp differences between all pixels in
-a single acquistion cycle.
+"""Calculate differences in timestamps between all pixels in each acquistion
+cycle.
 
-TODO: fix the docstring to follow the NumPy docstrins style
+Works with both 'txt' and 'dat' files.
 
-The flow of the script:
-1) Check what format the data files are in: 'txt' or binary-coded 'bin'
-2) Find all data files
-3) In a loop, unpack the data file into a 2D matrix,
-4) Calculate timestamp differences between all rows and all timestamps
-in a single acquisition window,
-5) TODO: add further steps (plot counts vs delta_t?)
+This script utilizes an unpacking module used specifically for the LinoSPAD2
+data output.
+
+This file can also be imported as a module and contains the following
+functions:
+
+    * timestamp_diff - calculates the differences in timestamps between all
+    pixels
 """
 
-import numpy as np
 import os
 import glob
+import numpy as np
 from tqdm import tqdm
 import functions.unpack as f_up
 
 
 def timestamp_diff(path):
-    """
-    TODO: fill in the docstring
+    """Calculates the differences in timestamps between all pixels in each
+    acquistion cycle.
 
     Parameters
     ----------
-    path : TYPE
-        DESCRIPTION.
+    path : str
+        Location of data files from LinoSPAD2.
 
     Returns
     -------
+    TODO: fill in
     TYPE
         DESCRIPTION.
 

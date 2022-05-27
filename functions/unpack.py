@@ -1,9 +1,23 @@
-""" Functions for unpacking either 'txt' of 'dat' data files of LinoSPAD2.
+"""Unpack data from LinoSPAD2
+
+Functions for unpacking either 'txt' of 'dat' data files of LinoSPAD2.
 Functions for both 10 and 512 lines of data per acquisition cycle are
 available.
-TODO: range(len) change to enumerate
 
-TODO: fix the docstring to follow the NumPy docstrings style
+Works with both 'txt' and 'dat' files.
+
+This file can also be imported as a module and contains the following
+functions:
+
+    * unpack_txt_512 - unpacks the 'txt' data files with 512 lines of data
+    per acquisition cycle
+    * unpack_txt_10 - unpacks the 'txt' data files with 10 lines of data per
+    acquisition cycle
+    * unpack_binary_10 - unpacks the 'dat' data files with 10 lines of data
+    per acquistion cycle
+
+    TODO: range(len) change to enumerate
+
 """
 
 from struct import unpack
@@ -11,18 +25,19 @@ import numpy as np
 
 
 def unpack_txt_512(filename):
-    """
-    TODO: fill in the docstring    
+    """Unpacks the 'txt' data files with 512 lines of data per acquistion
+    cycle.
 
     Parameters
     ----------
-    filename : TYPE
-        DESCRIPTION.
+    filename : str
+        File with data from LinoSPAD2 in which precisely 512 lines of data
+        per acquistion cycle is written.
 
     Returns
     -------
-    data_matrix : TYPE
-        DESCRIPTION.
+    data_matrix : array_like
+        2D matrix (256 pixels by 512*number-of-cycles) of data points.
 
     """
 
@@ -61,8 +76,22 @@ def unpack_txt_512(filename):
 
 
 def unpack_txt_10(filename):
-    '''Unpacks LinoSPAD2 data from txt, returns 2D matrix (256 pixels
-    X 10*Number_of_cycles).'''
+    """Unpacks the 'txt' data files with 10 lines of data per acquistion
+    cycle.
+
+    Parameters
+    ----------
+    filename : str
+        File with data from LinoSPAD2 in which precisely 10 lines of data
+        per acquistion cycle is written.
+
+    Returns
+    -------
+    data_matrix : array_like
+        2D matrix (256 pixels by 10*number-of-cycles) of data points.
+
+    """
+
     data = np.genfromtxt(filename)
     data_matrix = np.zeros((256, int(len(data)/256)))  # rows=#pixels,
     # cols=#cycles
@@ -98,8 +127,22 @@ def unpack_txt_10(filename):
 
 
 def unpack_binary_10(filename):
-    '''Unpacks LinoSPAD2 data from dat, returns a 2D matrix (256 pixels
-    X 10*Number_of_cycles).'''
+    """Unpacks the 'dat' data files with 10 lines of data per acquistion
+    cycle.
+
+    Parameters
+    ----------
+    filename : str
+        File with data from LinoSPAD2 in which precisely 10 lines of data
+        per acquistion cycle is written.
+
+    Returns
+    -------
+    data_matrix : array_like
+        2D matrix (256 pixels by 10*number-of-cycles) of data points.
+
+    """
+
     timestamp_list = []
     address_list = []
 

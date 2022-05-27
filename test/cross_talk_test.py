@@ -58,6 +58,7 @@ if "binary" in path:
     # lists for output that will be saved to .csv
     zeros_to_save = []
     valid_to_save = []
+    pixel_cross_talk_to_save = None
 
     for r in tqdm(range(len(DATA_FILES)), desc='Calculating'):
         # unpack data from the txt file into a
@@ -66,19 +67,41 @@ if "binary" in path:
         # matrix for timestamp differences
         data_diff = np.zeros((len(data_matrix)-1, len(data_matrix[0]), 10))
         for i in range(len(data_matrix)-1):  # 256-1=255 differences
+            p = 0  # number of acq cycle
             for j in range(len(data_matrix[0])):  # 10*11999
+                if j % 10 == 0:
+                    p = p + 1  # next acq cycle
                 for k in range(10):  # 10 lines of data / acq cycle
                     # calculate difference between 'i' and 'i+1' rows
-                    if data_matrix[i][j] == -1 or data_matrix[i+1][k] == -1:
+                    # writting in the new matrix data_diff is always
+                    # happening in positions 0:9, while subrahend moves with
+                    # the acqusition cycle
+                    n = 10*(p - 1) + k
+                    if data_matrix[i][j] == -1 or data_matrix[i+1][n] == -1:
                         data_diff[i][j][k] = -1
                     else:
                         data_diff[i][j][k] = np.abs(data_matrix[i][j]
-                                                    - data_matrix[i+1][k])
+                                                    - data_matrix[i+1][n])
         # find zeros and valid timestamps for cross-talk rate
-        zeros = len(np.where(data_diff == 0)[0])
-        valid_timestamps = len(np.where(data_matrix >= 0)[0])
-        zeros_to_save.append(zeros)
-        valid_to_save.append(valid_timestamps)
+
+        pixel_zeros = np.zeros(len(data_diff))
+        pixel_valid = np.zeros(len(data_diff))
+        pixel_cross_talk = np.zeros(len(data_diff))
+
+        for i in range(len(data_diff)):
+            pixel_zeros[i] = len(np.where(data_diff[i] == 0)[0])
+            pixel_valid[i] = len(np.where(data_diff[i] > 0)[0])
+            pixel_cross_talk[i] = pixel_zeros[i] / pixel_valid[i] * 100  # in %
+
+        zeros_total = int(np.sum(pixel_zeros))
+        valid_total = int(np.sum(pixel_valid))
+        zeros_to_save.append(zeros_total)
+        valid_to_save.append(valid_total)
+        if pixel_cross_talk_to_save is None:
+            pixel_cross_talk_to_save = pixel_cross_talk
+        else:
+            pixel_cross_talk_to_save = np.column_stack(
+                (pixel_cross_talk_to_save, pixel_cross_talk))
 
 else:
     # find all data files
@@ -86,6 +109,7 @@ else:
     # lists for output that will be saved to .csv
     zeros_to_save = []
     valid_to_save = []
+    pixel_cross_talk_to_save = None
 
     for r in tqdm(range(len(DATA_FILES)), desc='Calculating'):
         # unpack data from the txt file into a
@@ -94,19 +118,41 @@ else:
         # matrix for timestamp differences
         data_diff = np.zeros((len(data_matrix)-1, len(data_matrix[0]), 10))
         for i in range(len(data_matrix)-1):  # 256-1=255 differences
+            p = 0  # number of acq cycle
             for j in range(len(data_matrix[0])):  # 10*11999
-                for k in range(j, j+9):  # 10 lines of data / acq cycle
+                if j % 10 == 0:
+                    p = p + 1  # next acq cycle
+                for k in range(10):  # 10 lines of data / acq cycle
                     # calculate difference between 'i' and 'i+1' rows
-                    if data_matrix[i][j] == -1 or data_matrix[i+1][k] == -1:
+                    # writting in the new matrix data_diff is always
+                    # happening in positions 0:9, while subrahend moves with
+                    # the acqusition cycle
+                    n = 10*(p - 1) + k
+                    if data_matrix[i][j] == -1 or data_matrix[i+1][n] == -1:
                         data_diff[i][j][k] = -1
                     else:
                         data_diff[i][j][k] = np.abs(data_matrix[i][j]
-                                                    - data_matrix[i+1][k])
+                                                    - data_matrix[i+1][n])
         # find zeros and valid timestamps for cross-talk rate
-        zeros = len(np.where(data_diff == 0)[0])
-        valid_timestamps = len(np.where(data_matrix >= 0)[0])
-        zeros_to_save.append(zeros)
-        valid_to_save.append(valid_timestamps)
+
+        pixel_zeros = np.zeros(len(data_diff))
+        pixel_valid = np.zeros(len(data_diff))
+        pixel_cross_talk = np.zeros(len(data_diff))
+
+        for i in range(len(data_diff)):
+            pixel_zeros[i] = len(np.where(data_diff[i] == 0)[0])
+            pixel_valid[i] = len(np.where(data_diff[i] > 0)[0])
+            pixel_cross_talk[i] = pixel_zeros[i] / pixel_valid[i] * 100  # in %
+
+        zeros_total = int(np.sum(pixel_zeros))
+        valid_total = int(np.sum(pixel_valid))
+        zeros_to_save.append(zeros_total)
+        valid_to_save.append(valid_total)
+        if pixel_cross_talk_to_save is None:
+            pixel_cross_talk_to_save = pixel_cross_talk
+        else:
+            pixel_cross_talk_to_save = np.column_stack(
+                (pixel_cross_talk_to_save, pixel_cross_talk))
 
 print("\nCalculating the cross-talk rate and saving the data into a"
       "'.csv' file.")
@@ -149,28 +195,9 @@ output_to_csv.to_csv("Cross-talk_results.csv")
 print("\nData are saved in the 'Cross-talk_results.csv' that can be found"
       "in the folder 'results'.")
 
-# data for plot
+# save the cross-talk rate by pixel for plot
 
-pixels_all = np.where(data_diff == 0)[0]
-pixels = np.unique(pixels_all)
-pixel_zeros = np.zeros(len(data_diff))
-pixel_valid = np.zeros(len(data_diff[0]))
-cross_talk_pixel = np.zeros(len(pixels))
+plot_headers = ['Cross-talk rate in %']
 
-for i in tqdm(range(len(pixel_zeros)), desc='Collecting data for plot'):
-    pixel_zeros[i] = len(np.where(pixels_all == i)[0])
-    pixel_valid[i] = len(np.where(data_diff[i] > 0)[0])
-    cross_talk_pixel[i] = pixel_zeros[i] / pixel_valid[i]
-
-data_for_plot = np.zeros(len(pixels), len(pixels))
-for i in range(len(data_for_plot)):
-    data_for_plot[i][0] = pixels[i]
-    data_for_plot[i][1] = cross_talk_pixel[i]
-
-plot_headers = ['Pixel', 'Cross-talk rate']
-
-data_for_plot = pd.DataFrame(data=data_for_plot, columns=plot_headers)
+data_for_plot = pd.DataFrame(data=pixel_cross_talk_to_save)
 data_for_plot.to_csv("Cross-talk by pixel to plot.csv")
-
-# TODO: add plot, pixel vs cross-talk rate to see the cross-talk
-# distribution in the sensor
