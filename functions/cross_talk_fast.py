@@ -1,4 +1,4 @@
-"""Cross-talk rate calculation
+"""Cross-talk rate calculation, fast version (40s vs 3min)
 
 Calculate how many zeroes (cross-talk) and valid timestamps were measured.
 The module is used for calculation of cross-talk rate based on the data from
@@ -12,9 +12,6 @@ for a plot.
 This script utilizes an unpacking module used specifically for the LinoSPAD2
 data output.
 
-This script requires that `pandas` be installed within the Python
-environment you are running this script in.
-
 This file can also be imported as a module and contains the following
 functions:
 
@@ -25,7 +22,6 @@ import os
 import glob
 import numpy as np
 from tqdm import tqdm
-import pandas as pd
 import functions.unpack as f_up
 
 
@@ -60,10 +56,10 @@ def cross_talk_rate(path):
             for i in range(len(data_matrix)-1):  # 256-1=255 differences
                 p = 0  # number of acq cycle
                 for j in range(len(data_matrix[0])):  # 10*11999
+                    if j % 10 == 0:
+                        p = p + 1  # next acq cycle
                     if data_matrix[i][j] == -1:
                         continue
-                    elif j % 10 == 0:
-                        p = p + 1  # next acq cycle
                     for k in range(10):  # 10 lines of data / acq cycle
                         # calculate difference between 'i' and 'i+1' rows
                         # writting in the new matrix data_diff is always
@@ -71,12 +67,12 @@ def cross_talk_rate(path):
                         # with the acqusition cycle
                         n = 10*(p - 1) + k
                         if data_matrix[i+1][n] == -1:
-                            break
+                            continue
                         else:
                             output.append(np.abs(data_matrix[i][j]
                                                  - data_matrix[i+1][n]))
             # find zeros and valid timestamps for cross-talk rate
-
+            output = np.array(output)
             pixel_zeros = output[np.where(output == 0)]
             pixel_valid = output[np.where(output > 0)]
 
@@ -94,10 +90,10 @@ def cross_talk_rate(path):
             for i in range(len(data_matrix)-1):  # 256-1=255 differences
                 p = 0  # number of acq cycle
                 for j in range(len(data_matrix[0])):  # 10*11999
+                    if j % 10 == 0:
+                        p = p + 1  # next acq cycle
                     if data_matrix[i][j] == -1:
                         continue
-                    elif j % 10 == 0:
-                        p = p + 1  # next acq cycle
                     for k in range(10):  # 10 lines of data / acq cycle
                         # calculate difference between 'i' and 'i+1' rows
                         # writting in the new matrix data_diff is always
@@ -105,14 +101,14 @@ def cross_talk_rate(path):
                         # with the acqusition cycle
                         n = 10*(p - 1) + k
                         if data_matrix[i+1][n] == -1:
-                            break
+                            continue
                         else:
                             output.append(np.abs(data_matrix[i][j]
                                                  - data_matrix[i+1][n]))
             # find zeros and valid timestamps for cross-talk rate
-
-            pixel_zeros = output[np.where(output == 0)[0]]
-            pixel_valid = output[np.where(output > 0)[0]]
+            output = np.array(output)
+            pixel_zeros = output[np.where(output == 0)]
+            pixel_valid = output[np.where(output > 0)]
 
             cross_talk = len(pixel_zeros) / len(pixel_valid) * 100
 

@@ -57,7 +57,7 @@ def timestamp_diff(path):
                 for j in range(lines_of_data):
                     if data_matrix[i][j] == -1:
                         continue
-                    elif j % 10 == 0:
+                    if j % 10 == 0:
                         r = r + 1  # next acq cycle
                     for k in range(subtrahend):
                         if k <= i:
@@ -65,7 +65,7 @@ def timestamp_diff(path):
                         for p in range(timestamps):
                             n = 10*(r-1) + p
                             if data_matrix[k][n] == -1:
-                                break
+                                continue
                             else:
                                 output.append(data_matrix[i][j]
                                               - data_matrix[k][n])

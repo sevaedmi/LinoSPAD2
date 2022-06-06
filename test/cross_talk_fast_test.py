@@ -46,10 +46,10 @@ if "binary" in path:
         for i in range(len(data_matrix)-1):  # 256-1=255 differences
             p = 0  # number of acq cycle
             for j in range(len(data_matrix[0])):  # 10*11999
+                if j % 10 == 0:
+                    p = p + 1  # next acq cycle
                 if data_matrix[i][j] == -1:
                     continue
-                elif j % 10 == 0:
-                    p = p + 1  # next acq cycle
                 for k in range(10):  # 10 lines of data / acq cycle
                     # calculate difference between 'i' and 'i+1' rows
                     # writting in the new matrix data_diff is always
@@ -80,10 +80,10 @@ else:
         for i in range(len(data_matrix)-1):  # 256-1=255 differences
             p = 0  # number of acq cycle
             for j in range(len(data_matrix[0])):  # 10*11999
+                if j % 10 == 0:
+                    p = p + 1  # next acq cycle
                 if data_matrix[i][j] == -1:
                     continue
-                elif j % 10 == 0:
-                    p = p + 1  # next acq cycle
                 for k in range(10):  # 10 lines of data / acq cycle
                     # calculate difference between 'i' and 'i+1' rows
                     # writting in the new matrix data_diff is always
@@ -91,7 +91,7 @@ else:
                     # with the acqusition cycle
                     n = 10*(p - 1) + k
                     if data_matrix[i+1][n] == -1:
-                        break
+                        continue
                     else:
                         output.append(np.abs(data_matrix[i][j]
                                              - data_matrix[i+1][n]))

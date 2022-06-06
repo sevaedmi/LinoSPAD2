@@ -12,7 +12,7 @@ Following modules can be used:
 # from functions import cross_talk
 # from functions import cross_talk_plot
 from functions import differences
-from functions import cross_talk_fast
+# from functions import cross_talk_fast
 
 # insert the path to where the data are located
 path = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/"\
@@ -25,7 +25,7 @@ path = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/"\
 # cross_talk_plot.ctr_dist(path)
 
 # Calculate timestamp differences between all pixels for the HBT peaks
-# diff = differences.timestamp_diff(path)
+diff = differences.timestamp_diff(path)
 
 # Fast calculation of cross-talk
-cross_talk_rate = cross_talk_fast.cross_talk_rate(path)
+# cross_talk_rate = cross_talk_fast.cross_talk_rate(path)
