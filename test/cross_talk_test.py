@@ -154,50 +154,54 @@ else:
             pixel_cross_talk_to_save = np.column_stack(
                 (pixel_cross_talk_to_save, pixel_cross_talk))
 
-print("\nCalculating the cross-talk rate and saving the data into a"
-      "'.csv' file.")
-# cross-talk rate is calculated as zero values divided by total number of
-# valid timestamps (>0)
-cross_talk_output = np.sum(zeros_to_save) / np.sum(valid_to_save) * 100
+# =============================================================================
+# This section is for testing the saving of the results to .csv files.
+# =============================================================================
 
-number_of_acq_cycles = 11999*len(DATA_FILES)  # number of files with data,
-# each contains data from 11999 acquisition cycles
+# print("\nCalculating the cross-talk rate and saving the data into a"
+#       "'.csv' file.")
+# # cross-talk rate is calculated as zero values divided by total number of
+# # valid timestamps (>0)
+# cross_talk_output = np.sum(zeros_to_save) / np.sum(valid_to_save) * 100
 
-average_valid_timestamps = np.sum(valid_to_save) / 256
+# number_of_acq_cycles = 11999*len(DATA_FILES)  # number of files with data,
+# # each contains data from 11999 acquisition cycles
 
-# save the number of cross-talk zeros, number of valid timestamps
-# from the original data file, the calculated cross-talk rate, the number
-# of acquisition cycles, and the average number of valid timestamps per
-# pixel in a '.csv' file
-output_to_save = np.zeros((len(DATA_FILES), 5))
-for i in range(len(output_to_save)):
-    output_to_save[i][0] = zeros_to_save[i]
-    output_to_save[i][1] = valid_to_save[i]
-output_to_save[0][2] = number_of_acq_cycles
-output_to_save[0][3] = average_valid_timestamps
-output_to_save[0][4] = cross_talk_output
+# average_valid_timestamps = np.sum(valid_to_save) / 256
 
-output_headers = ['Number of cross-talk zeros',
-                  'Number of valid timestamps',
-                  'Number of acq cycles',
-                  'Average of valid timestamps per pixel',
-                  'Cross-talk rate in %%']
+# # save the number of cross-talk zeros, number of valid timestamps
+# # from the original data file, the calculated cross-talk rate, the number
+# # of acquisition cycles, and the average number of valid timestamps per
+# # pixel in a '.csv' file
+# output_to_save = np.zeros((len(DATA_FILES), 5))
+# for i in range(len(output_to_save)):
+#     output_to_save[i][0] = zeros_to_save[i]
+#     output_to_save[i][1] = valid_to_save[i]
+# output_to_save[0][2] = number_of_acq_cycles
+# output_to_save[0][3] = average_valid_timestamps
+# output_to_save[0][4] = cross_talk_output
 
-output_to_csv = pd.DataFrame(data=output_to_save, columns=output_headers)
+# output_headers = ['Number of cross-talk zeros',
+#                   'Number of valid timestamps',
+#                   'Number of acq cycles',
+#                   'Average of valid timestamps per pixel',
+#                   'Cross-talk rate in %%']
 
-# save the data into the 'results' folder
-try:
-    os.chdir("results")
-except Exception:
-    os.mkdir("results")
-    os.chdir("results")
-output_to_csv.to_csv("Cross-talk_results.csv")
-print("\nData are saved in the 'Cross-talk_results.csv' that can be found"
-      "in the folder 'results'.")
+# output_to_csv = pd.DataFrame(data=output_to_save, columns=output_headers)
 
-# save the cross-talk rate by pixel for plot
+# # save the data into the 'results' folder
+# try:
+#     os.chdir("results")
+# except Exception:
+#     os.mkdir("results")
+#     os.chdir("results")
+# output_to_csv.to_csv("Cross-talk_results.csv")
+# print("\nData are saved in the 'Cross-talk_results.csv' that can be found"
+#       "in the folder 'results'.")
 
-plot_headers = ['Cross-talk rate in %']
+# # save the cross-talk rate by pixel for plot
 
-data_for_plot = pd.DataFrame(data=pixel_cross_talk_to_save)
-data_for_plot.to_csv("Cross-talk by pixel to plot.csv")
+# plot_headers = ['Cross-talk rate in %']
+
+# data_for_plot = pd.DataFrame(data=pixel_cross_talk_to_save)
+# data_for_plot.to_csv("Cross-talk by pixel to plot.csv")

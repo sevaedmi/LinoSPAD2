@@ -31,55 +31,28 @@ def timestamp_diff(path):
 
     Returns
     -------
-    output: numpy 1D array
-        Array of all timestamp differences.
+    TODO: fill in
+    TYPE
+        DESCRIPTION.
 
     """
 
     os.chdir(path)
 
-    output = []
-
     if "binary" in path:
         # find all data files
         DATA_FILES = glob.glob('*acq*'+'*.dat*')
         for i in tqdm(range(len(DATA_FILES)), desc='Calculating'):
-            data_matrix = f_up.unpack_binary_10(DATA_FILES[i])
+            Data_matrix = f_up.unpack_binary_10(DATA_FILES[i])
             # dimensions for matrix of timestamp differences
-            minuend = len(data_matrix) - 1  # i=255
-            lines_of_data = len(data_matrix[0])  # j=10*11999 (lines of data
-            # * number of acq cycles)
-            subtrahend = len(data_matrix) - 2  # k=254
+            minuend = len(Data_matrix) - 1  # i=255
+            lines_of_data = len(Data_matrix[0])  # j=10*11999 (lines of data
+            # X number of acq cycles)
+            subtrahend = len(Data_matrix) - 2  # k=254
             timestamps = 10  # lines of data in the acq cycle
 
-            for i in tqdm(range(minuend)):
-                r = 0  # number of acq cycle
-                for j in range(lines_of_data):
-                    if data_matrix[i][j] == -1:
-                        continue
-                    elif j % 10 == 0:
-                        r = r + 1  # next acq cycle
-                    for k in range(subtrahend):
-                        if k <= i:
-                            continue  # to avoid repetition: 2-1, 153-45 etc.
-                        for p in range(timestamps):
-                            n = 10*(r-1) + p
-                            if data_matrix[k][n] == -1:
-                                break
-                            else:
-                                output.append(data_matrix[i][j]
-                                              - data_matrix[k][n])
-    else:
-        # find all data files
-        DATA_FILES = glob.glob('*acq*'+'*.txt*')
-        for i in tqdm(range(len(DATA_FILES)), desc='Calculating'):
-            data_matrix = f_up.unpack_txt_10(DATA_FILES[i])
-            # dimensions for matrix of timestamp differences
-            minuend = len(data_matrix) - 1  # i=255
-            lines_of_data = len(data_matrix[0])  # j=10*11999 (lines of data
-            # * number of acq cycles)
-            subtrahend = len(data_matrix) - 2  # k=254
-            timestamps = 10
+            Data_diff = np.zeros((minuend, lines_of_data, subtrahend,
+                                 timestamps))
 
             for i in range(minuend):
                 r = 0  # number of acq cycle
@@ -87,16 +60,45 @@ def timestamp_diff(path):
                     if j % 10 == 0:
                         r = r + 1  # next acq cycle
                     for k in range(subtrahend):
-                        if k <= i:
-                            continue  # to avoid repetition: 2-1, 153-45 etc.
                         for p in range(timestamps):
                             n = 10*(r-1) + p
-                            if data_matrix[i][j] == -1 or \
-                               data_matrix[k][n] == -1:
-                                continue
+                            if Data_matrix[i][j] == -1 or \
+                               Data_matrix[k][n] == -1:
+                                Data_diff[i][j][k][p] = -1
                             else:
-                                output.append(data_matrix[i][j]
-                                              - data_matrix[k][n])
-    output = np.array(output)
+                                Data_diff[i][j][k][p] = Data_matrix[i][j]
+                                - Data_matrix[k][n]
+    else:
+        # find all data files
+        DATA_FILES = glob.glob('*acq*'+'*.txt*')
+        for i in tqdm(range(len(DATA_FILES)), desc='Calculating'):
+            Data_matrix = f_up.unpack_txt_10(DATA_FILES[i])
+            # dimensions for matrix of timestamp differences
+            minuend = len(Data_matrix) - 1  # i=255
+            lines_of_data = len(Data_matrix[0])  # j=10*11999 (lines of data
+            # X number of acq cycles)
+            subtrahend = len(Data_matrix) - 2  # k=254
+            timestamps = 10
+
+            Data_diff = np.zeros((minuend, lines_of_data, subtrahend,
+                                 timestamps))
+
+            for i in range(minuend):
+                r = 0  # number of acq cycle
+                for j in range(lines_of_data):
+                    if j % 10 == 0:
+                        r = r + 1  # next acq cycle
+                    for k in range(subtrahend):
+                        for p in range(timestamps):
+                            n = 10*(r-1) + p
+                            if Data_matrix[i][j] == -1 or \
+                               Data_matrix[k][n] == -1:
+                                Data_diff[i][j][k][p] = -1
+                            else:
+                                Data_diff[i][j][k][p] = Data_matrix[i][j]
+                                - Data_matrix[k][n]
+
+    output = Data_diff.flatten()
+
     return output
 # TODO: plot(x,y : timestamps difference, counts? coincidence? g^2(0)?)
