@@ -9,6 +9,9 @@ data output.
 This script requires that `pandas` be installed within the Python
 environment you are running this script in.
 
+The output is saved in the `results` directory, in the case there is no such
+folder, it is created where the data are stored.
+
 This file can also be imported as a module and contains the following
 functions:
 
@@ -52,17 +55,17 @@ def timestamp_diff(path):
             output = []
 
             for i in tqdm(range(minuend)):
-                r = 0  # number of acq cycle
+                acq = 0  # number of acq cycle
                 for j in range(lines_of_data):
                     if data_matrix[i][j] == -1:
                         continue
                     if j % 10 == 0:
-                        r = r + 1  # next acq cycle
+                        acq = acq + 1  # next acq cycle
                     for k in range(subtrahend):
                         if k <= i:
                             continue  # to avoid repetition: 2-1, 153-45 etc.
                         for p in range(timestamps):
-                            n = 10*(r-1) + p
+                            n = 10*(acq-1) + p
                             if data_matrix[k][n] == -1:
                                 continue
                             elif np.abs(data_matrix[i][j]
@@ -88,9 +91,9 @@ def timestamp_diff(path):
                            value=output_csv, allow_duplicates=True)
                 csv.to_csv(filename[0], index=False)
             except Exception:
-                # output_csv.to_csv(filename[0], header=[
-                #     '{}'.format(DATA_FILES[r])], index=False)
-                output_csv.to_csv(filename[0], index=False)
+                output_csv.to_csv(filename[0], header=[
+                    '{}'.format(DATA_FILES[r])], index=False)
+                # output_csv.to_csv(filename[0], index=False)
             os.chdir('..')
 
     else:
@@ -108,15 +111,15 @@ def timestamp_diff(path):
             output = []
 
             for i in range(minuend):
-                r = 0  # number of acq cycle
+                acq = 0  # number of acq cycle
                 for j in range(lines_of_data):
                     if j % 10 == 0:
-                        r = r + 1  # next acq cycle
+                        acq = acq + 1  # next acq cycle
                     for k in range(subtrahend):
                         if k <= i:
                             continue  # to avoid repetition: 2-1, 153-45 etc.
                         for p in range(timestamps):
-                            n = 10*(r-1) + p
+                            n = 10*(acq-1) + p
                             if data_matrix[i][j] == -1 or \
                                data_matrix[k][n] == -1:
                                 continue

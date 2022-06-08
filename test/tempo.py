@@ -38,7 +38,7 @@ os.chdir("C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/Data/"\
          "40 ns window, 20 MHz clock, 10 cycles/10 lines of data/binary/"\
          "results")
 filename = glob.glob('*timestamp_diff*')
-Data = np.genfromtxt(filename[0])
+Data = np.genfromtxt(filename[0], delimiter=',')
 
 data = []
 for i in range (len(Data)):
@@ -50,6 +50,13 @@ for i in range (len(Data)):
 # =============================================================================
 #
 # =============================================================================
+import glob
+import os
+import numpy as np
+import pandas as pd
+
+output = np.arange(0,100,1)
+
 os.chdir('results')
 # open csv file with results and add a column
 print("\nSaving the data to the 'results' folder.")
@@ -73,4 +80,5 @@ try:
     csv.to_csv(filename[0], index=False)
 except Exception:
     output_csv.to_csv(filename[0], header=['{}'.format(DATA_FILES[r])],index=False)
-os.chdir('..')       
+
+os.chdir('..')
