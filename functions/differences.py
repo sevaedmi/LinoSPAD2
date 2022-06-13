@@ -35,7 +35,9 @@ def timestamp_diff(path):
     ----------
     path : str
         Location of data files from LinoSPAD2.
-
+    Returns
+    -------
+    None.
     """
 
     os.chdir(path)

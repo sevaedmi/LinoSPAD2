@@ -71,12 +71,6 @@ def cross_talk_rate(path):
                         else:
                             output.append(np.abs(data_matrix[i][j]
                                                  - data_matrix[i+1][n]))
-            # find zeros and valid timestamps for cross-talk rate
-            output = np.array(output)
-            pixel_zeros = output[np.where(output == 0)]
-            pixel_valid = output[np.where(output > 0)]
-
-            cross_talk = len(pixel_zeros) / len(pixel_valid) * 100
 
     else:
         # find all data files
@@ -105,11 +99,12 @@ def cross_talk_rate(path):
                         else:
                             output.append(np.abs(data_matrix[i][j]
                                                  - data_matrix[i+1][n]))
-            # find zeros and valid timestamps for cross-talk rate
-            output = np.array(output)
-            pixel_zeros = output[np.where(output == 0)]
-            pixel_valid = output[np.where(output > 0)]
 
-            cross_talk = len(pixel_zeros) / len(pixel_valid) * 100
+    # find zeros and valid timestamps for cross-talk rate
+    output = np.array(output)
+    pixel_zeros = output[np.where(output == 0)]
+    pixel_valid = output[np.where(output > 0)]
+
+    cross_talk = len(pixel_zeros) / len(pixel_valid) * 100
 
     return cross_talk

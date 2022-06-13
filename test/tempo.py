@@ -34,27 +34,30 @@ for i in range(5):
 # =============================================================================
 # 
 # =============================================================================
-os.chdir("C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/Data/"\
-         "40 ns window, 20 MHz clock, 10 cycles/10 lines of data/binary/"\
-         "results")
-filename = glob.glob('*timestamp_diff*')
-Data = np.genfromtxt(filename[0], delimiter=',')
 
-data = []
-for i in range (len(Data)):
-    if np.abs(Data[i]) > 100:
-        continue
-    else:
-        data.append(Data[i])
-        
-# =============================================================================
-#
-# =============================================================================
 import glob
 import os
 import numpy as np
 import pandas as pd
+from matplotlib import pyplot as plt
 
+os.chdir("C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/Data/"\
+         "40 ns window, 20 MHz clock, 10 cycles/10 lines of data/binary/"\
+         "for codes/results")
+filename = glob.glob('*timestamp_diff*')
+Data = np.genfromtxt(filename[0], delimiter=',', skip_header=1)
+
+Data = np.transpose(Data)
+
+data = np.delete(Data[0], np.where(np.isnan(Data[0]) == True)[0])
+
+mi = np.min(data)
+ma = np.max(data)
+bins = np.arange(mi-17, ma+17, 17)
+plt.hist(data, bins=bins)
+plt.plot(data, 'o')
+
+# =============================================================================
 output = np.arange(0,100,1)
 
 os.chdir('results')
@@ -79,6 +82,7 @@ try:
                value=output_csv, allow_duplicates=True)
     csv.to_csv(filename[0], index=False)
 except Exception:
-    output_csv.to_csv(filename[0], header=['{}'.format(DATA_FILES[r])],index=False)
+    output_csv.to_csv(filename[0], header=['{}'.format(DATA_FILES[r])],
+                      index=False)
 
 os.chdir('..')
