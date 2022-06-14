@@ -6,8 +6,8 @@ multiple data files/acquistion windows.
 
 Works with both 'txt' and 'dat' files. Output is a '.csv' file with number
 of cross-talk zeros and valid timestamps and a separate '.csv' file with data
-for a plot. The output is saved on-the-go in the main 'for' loop that goes
-through all data files.
+for a plot. The output is saved after the main 'for' loop that goes through
+all data files.
 
 This script utilizes an unpacking module used specifically for the LinoSPAD2
 data output.
@@ -197,6 +197,3 @@ def cross_talk_rate(path):
     data_for_plot.to_csv("Cross-talk by pixel to plot.csv")
     print("\nData for plot are saved in the 'Cross-talk by pixel to plot.csv'"
           "that can be found in the folder 'results'.")
-
-# TODO: save the data on-the-go, don't wait for the code to finish, just
-# for safety to mitigate Windows update, power outage etc.

@@ -16,8 +16,6 @@ functions:
     * unpack_binary_10 - unpacks the 'dat' data files with 10 lines of data
     per acquistion cycle
 
-    TODO: range(len) change to enumerate
-
 """
 
 from struct import unpack
@@ -69,8 +67,8 @@ def unpack_txt_512(filename):
     # is 17.857 ps
 
     # Cut the nonscence and insert -1 where there is no timestamp
-    for i in range(len(data_matrix)):
-        data_matrix[i][np.where(data_matrix[i] < 0)[0]] = -1
+    for i, num in enumerate(data_matrix):
+        data_matrix[i][np.where(num < 0)[0]] = -1
 
     return data_matrix
 
@@ -120,8 +118,8 @@ def unpack_txt_10(filename):
     # is 17.857 ps
 
     # Cut the nonscence and insert -1 where there is no timestamp
-    for i in range(len(data_matrix)):
-        data_matrix[i][np.where(data_matrix[i] < 0)[0]] = -1
+    for i, num in enumerate(data_matrix):
+        data_matrix[i][np.where(num < 0)[0]] = -1
 
     return data_matrix
 
@@ -172,6 +170,7 @@ def unpack_binary_10(filename):
     noc = len(timestamp_list)/10/256  # number of cycles, 10 data lines per
     # pixel per cycle, 256 pixels
 
+    # pack the data from a 1D array into a 2D matrix
     k = 0
     while k != noc:
         i = 0
@@ -182,7 +181,7 @@ def unpack_binary_10(filename):
         k = k+1
 
     # Cut the nonscence and insert -1 where there is no timestamp
-    for i in range(len(data_matrix)):
-        data_matrix[i][np.where(data_matrix[i] < 0)[0]] = -1
+    for i, num in enumerate(data_matrix):
+        data_matrix[i][np.where(num < 0)[0]] = -1
 
     return data_matrix
