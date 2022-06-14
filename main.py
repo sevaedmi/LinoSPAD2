@@ -51,7 +51,7 @@ path_res_test = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/"\
 # cross_talk_rate = cross_talk_fast.cross_talk_rate(path_test)
 
 # Calculate timestamp differences between all pixels for the HBT peaks
-differences.timestamp_diff(path_test)
+# differences.timestamp_diff(path_test)
 
 # Plot a histogram of timestamp differences
-# td_plot.plot_diff(path_res_test, show_fig=True)
+td_plot.plot_diff(path_res_test, show_fig=True)
