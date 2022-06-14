@@ -16,8 +16,8 @@ Following modules can be used:
 # from functions import cross_talk
 # from functions import cross_talk_plot
 # from functions import cross_talk_fast
-from functions import differences
-# from functions import td_plot
+# from functions import differences
+from functions import td_plot
 
 # =============================================================================
 # Paths to where either data or the 'csv' files with the resuts are located.
