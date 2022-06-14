@@ -12,3 +12,4 @@ Following modules can be used:
     which can be used to calculate the Hanbury-Brown and Twiss peaks
     * td_plot - plot a histogram of timestamp differences from LinoSPAD2
 
+The modules themselves can be found in the 'functions' directory. 'tools' is the collection of some may-be-useful scripts that can be utilized for data files manipulation. In the 'test' directory, modules without the function definition are placed for functionality tests. '_old' contains older scripts that are were either redone completely or merely upgrated in some aspects but still are left for future reference.
