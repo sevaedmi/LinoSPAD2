@@ -16,7 +16,7 @@ Following modules can be used:
 # from functions import cross_talk
 # from functions import cross_talk_plot
 # from functions import cross_talk_fast
-# from functions import differences
+from functions import differences
 from functions import td_plot
 
 # =============================================================================
@@ -37,6 +37,24 @@ path_res_test = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/"\
     "Software/Data/40 ns window, 20 MHz clock, 10 cycles/10 lines of data"\
     "/binary/for codes/results"
 
+# path to ref data with sensor cover, w/o the fiber on the sensor and 100
+# lines of data
+
+path_ref = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software"\
+    "/Data/40 ns window, 20 MHz clock, 10 cycles/10 lines of data/binary"\
+    "/w cover wo fiber"
+
+path_ref_res = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software"\
+    "/Data/40 ns window, 20 MHz clock, 10 cycles/10 lines of data/binary"\
+    "/w cover wo fiber/results"
+
+# path to the data files from Ne lamp w 540 nm filter, 100 data lines per acq
+# window
+
+path_Ne_w_100 = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/"\
+    "Software/Data/40 ns window, 20 MHz clock, 10 cycles/10 lines of data/"\
+    "binary/lamp w filter/100 data lines"
+
 # =============================================================================
 # Function execution.
 # =============================================================================
@@ -51,7 +69,7 @@ path_res_test = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/"\
 # cross_talk_rate = cross_talk_fast.cross_talk_rate(path_test)
 
 # Calculate timestamp differences between all pixels for the HBT peaks
-# differences.timestamp_diff(path_test)
+differences.timestamp_diff(path_ref)
 
 # Plot a histogram of timestamp differences
-td_plot.plot_diff(path_res_test, show_fig=True)
+td_plot.plot_diff(path_ref_res, show_fig=True)

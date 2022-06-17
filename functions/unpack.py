@@ -185,3 +185,66 @@ def unpack_binary_10(filename):
         data_matrix[i][np.where(num < 0)[0]] = -1
 
     return data_matrix
+
+
+def unpack_binary_512(filename):
+    """Unpacks the 'dat' data files with 512 lines of data per acquistion
+    cycle.
+
+    Parameters
+    ----------
+    filename : str
+        File with data from LinoSPAD2 in which precisely 512 lines of data
+        per acquistion cycle is written.
+
+    Returns
+    -------
+    data_matrix : array_like
+        2D matrix (256 pixels by 512*number-of-cycles) of data points.
+
+    """
+
+    timestamp_list = []
+    address_list = []
+
+    with open(filename, 'rb') as f:
+        while True:
+            rawpacket = f.read(4)  # read 32 bits
+            if not rawpacket:
+                break  # stop when the are no further 4 bytes to readout
+            packet = unpack('<I', rawpacket)
+            if (packet[0] >> 31) == 1:  # check validity bit: if 1
+                # - timestamp is valid
+                timestamp = packet[0] & 0xfffffff  # cut the higher bits,
+                # leave only timestamp ones
+                # 2.5 ns from TDC 400 MHz clock read out 140 bins from 35
+                # elements of the delay line - average bin sizу is 17.857 ps
+                timestamp = timestamp * 17.857  # in ps
+            else:
+                timestamp = -1
+            timestamp_list.append(timestamp)
+            address = (packet[0] >> 28) & 0x3  # gives away only zeroes -
+            # not in this firmware??
+            address_list.append(address)
+
+    # rows=#pixels, cols=#cycles
+    data_matrix = np.zeros((256, int(len(timestamp_list)/256)))
+
+    noc = len(timestamp_list)/512/256  # number of cycles, 512 data lines per
+    # pixel per cycle, 256 pixels
+
+    # pack the data from a 1D array into a 2D matrix
+    k = 0
+    while k != noc:
+        i = 0
+        while i < 256:
+            data_matrix[i][k*512:k*512+512] = timestamp_list[(i+256*k)*512:
+                                                             (i+256*k)*512+512]
+            i = i+1
+        k = k+1
+
+    # Cut the nonscence and insert -1 where there is no timestamp
+    for i, num in enumerate(data_matrix):
+        data_matrix[i][np.where(num < 0)[0]] = -1
+
+    return data_matrix
