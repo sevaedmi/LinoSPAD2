@@ -15,6 +15,8 @@ functions:
     acquisition cycle
     * unpack_binary_10 - unpacks the 'dat' data files with 10 lines of data
     per acquistion cycle
+    
+    # TODO: flexible function for unpacking N lines of binary-encoded data
 
 """
 

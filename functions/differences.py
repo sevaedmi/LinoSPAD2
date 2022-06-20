@@ -17,6 +17,8 @@ functions:
 
     * timestamp_diff - calculates the differences in timestamps between all
     pixels
+    
+    # TODO: add flexibility for analyzis of N binary-encoded data lines
 """
 
 import os

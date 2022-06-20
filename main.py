@@ -15,7 +15,7 @@ Following modules can be used:
 
 # from functions import cross_talk
 # from functions import cross_talk_plot
-# from functions import cross_talk_fast
+from functions import cross_talk_fast
 from functions import differences
 from functions import td_plot
 
@@ -55,6 +55,12 @@ path_Ne_w_100 = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/"\
     "Software/Data/40 ns window, 20 MHz clock, 10 cycles/10 lines of data/"\
     "binary/lamp w filter/100 data lines"
 
+# path to data from setup with an external trigger of 250 Hz
+
+path_ext_trig = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/"\
+    "Software/Data/40 ns window, 20 MHz clock, 10 cycles/10 lines of data/"\
+    "binary/Ext trig test"
+
 # =============================================================================
 # Function execution.
 # =============================================================================
@@ -66,10 +72,10 @@ path_Ne_w_100 = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/"\
 # cross_talk_plot.ctr_dist(path_test, show_fig=True)
 
 # Fast calculation of cross-talk
-# cross_talk_rate = cross_talk_fast.cross_talk_rate(path_test)
+cross_talk_rate = cross_talk_fast.cross_talk_rate(path_ext_trig)
 
 # Calculate timestamp differences between all pixels for the HBT peaks
-differences.timestamp_diff(path_ref)
+# differences.timestamp_diff(path_ext_trig)
 
 # Plot a histogram of timestamp differences
-td_plot.plot_diff(path_ref_res, show_fig=True)
+td_plot.plot_diff(path_ext_trig, show_fig=True)
