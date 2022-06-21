@@ -3,7 +3,6 @@ three different setups: with sensor cover only (without optical fiber
 attached), with cover and the fiber using a phone flashlight, and with cover,
 fiber and Ne lamp.
 
-# TODO: turn into a function
 """
 
 import os
@@ -27,14 +26,18 @@ path_lamp = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/"\
 path_lamp_beeg = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/"\
     "Software/Data/40 ns window, 20 MHz clock, 10 cycles/10 lines of data/"\
     "binary/lamp w filter/beeg booi"
-    
+
 path_Ne_trig = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/"\
     "Software/Data/40 ns window, 20 MHz clock, 10 cycles/10 lines of data/"\
     "binary/Ne lamp ext trig"
-    
+
 path_Ne_trig2 = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/"\
     "Software/Data/40 ns window, 20 MHz clock, 10 cycles/10 lines of data/"\
     "binary/Ne lamp ext trig/setup 2"
+
+path_30 = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/"\
+    "Data/40 ns window, 20 MHz clock, 10 cycles/10 lines of data/binary/"\
+    "Ne lamp ext trig/30 lines of data"
 
 # # =============================================================================
 # # Data collected with the sensor cover but without the optical fiber attached
@@ -169,14 +172,14 @@ path_Ne_trig2 = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/"\
 # External trigger
 # =============================================================================
 
-os.chdir(path_Ne_trig2)
+os.chdir(path_30)
 
 DATA_FILES = glob.glob('*acq*'+'*dat*')
 
 valid_per_pixel = np.zeros(256)
 
 for i, num in enumerate(DATA_FILES):
-    data_matrix = f_up.unpack_binary_512(num)
+    data_matrix = f_up.unpack_binary_flex(num, 30)
     for j in range(len(data_matrix)):
         valid_per_pixel[j] = len(np.where(data_matrix[j] > 0)[0])
 
