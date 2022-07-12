@@ -31,17 +31,29 @@ path_Ne_trig = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/"\
     "Software/Data/40 ns window, 20 MHz clock, 10 cycles/10 lines of data/"\
     "binary/Ne lamp ext trig"
 
-path_Ne_trig2 = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/"\
-    "Software/Data/40 ns window, 20 MHz clock, 10 cycles/10 lines of data/"\
-    "binary/Ne lamp ext trig/setup 2"
+# 30 lines of data - easier on memory
 
-path_30 = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/"\
+plot_test_30 = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/"\
     "Data/40 ns window, 20 MHz clock, 10 cycles/10 lines of data/binary/"\
     "Ne lamp ext trig/30 lines of data"
 
-# # =============================================================================
-# # Data collected with the sensor cover but without the optical fiber attached
-# # =============================================================================
+plot_test_512 = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/"\
+    "Software/Data/40 ns window, 20 MHz clock, 10 cycles/10 lines of data/"\
+    "binary/Ne lamp ext trig"
+
+# data from the setup with the lamp touching the collimator
+
+plot_test_30_2 = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/"\
+    "Software/Data/40 ns window, 20 MHz clock, 10 cycles/10 lines of data/"\
+    "binary/Ne lamp ext trig/setup 2/30 lines of data"
+
+plot_test_512_2 = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/"\
+    "Software/Data/40 ns window, 20 MHz clock, 10 cycles/10 lines of data/"\
+    "binary/Ne lamp ext trig/setup 2"
+
+# =============================================================================
+# Data collected with the sensor cover but without the optical fiber attached
+# =============================================================================
 
 # os.chdir(path_cover)
 
@@ -71,10 +83,10 @@ path_30 = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/"\
 #     plt.savefig("{}.png".format(num))
 #     os.chdir("..")
 
-# # =============================================================================
-# # Data collected with a phone flashlight using the optical fiber and the sensor
-# # cover
-# # =============================================================================
+# =============================================================================
+# Data collected with a phone flashlight using the optical fiber and the sensor
+# cover
+# =============================================================================
 
 # os.chdir(path_phone)
 
@@ -104,9 +116,9 @@ path_30 = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/"\
 #     plt.savefig("{}.png".format(num))
 #     os.chdir("..")
 
-# # =============================================================================
-# # Data collected with the Ne lamp, sensor cover and optical fiber
-# # =============================================================================
+# =============================================================================
+# Data collected with the Ne lamp, sensor cover and optical fiber
+# =============================================================================
 
 # os.chdir(path_lamp)
 
@@ -136,9 +148,9 @@ path_30 = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/"\
 #     plt.savefig("{}.png".format(num))
 #     os.chdir("..")
 
-# # =============================================================================
-# # Big data files with Ne lamp, cover and optical fiber.
-# # =============================================================================
+# =============================================================================
+# Big data files with Ne lamp, cover and optical fiber.
+# =============================================================================
 
 # os.chdir(path_lamp_beeg)
 
@@ -172,16 +184,20 @@ path_30 = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/"\
 # External trigger
 # =============================================================================
 
-os.chdir(path_30)
+os.chdir(plot_test_512)
 
 DATA_FILES = glob.glob('*acq*'+'*dat*')
 
 valid_per_pixel = np.zeros(256)
 
 for i, num in enumerate(DATA_FILES):
-    data_matrix = f_up.unpack_binary_flex(num, 30)
+    data_matrix = f_up.unpack_binary_flex(num, 512)
     for j in range(len(data_matrix)):
         valid_per_pixel[j] = len(np.where(data_matrix[j] > 0)[0])
+
+    # for 'acq_220620_143427.dat'
+    # valid_per_pixel = np.delete(valid_per_pixel, (15, 47, 51, 57, 60, 93, 107,
+    #                                               112, 236))
 
     plt.ioff()
     plt.figure(figsize=(16, 10))

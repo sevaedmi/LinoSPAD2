@@ -25,7 +25,7 @@ from functions import unpack as f_up
 # =============================================================================
 
 
-def plot_valid_per_pixel(path, lod):
+def plot_valid_per_pixel(path, lod, scale):
     '''Plots number of valid timestamps in each pixel for each 'dat' file in
     given folder. The plots are saved as 'png' in the 'results' folder. In
     the case there is no such folder, it is created where the data files are.
@@ -36,6 +36,8 @@ def plot_valid_per_pixel(path, lod):
         Location of the 'dat' files with the data from LinoSPAD2.
     lod : int
         Lines of data per acquistion cycle.
+    scale : str
+        'log' for logarithmic scale.
 
     Returns
     -------
@@ -59,6 +61,8 @@ def plot_valid_per_pixel(path, lod):
         plt.title("{}".format(num))
         plt.xlabel("Pixel [-]")
         plt.ylabel("Valid timestamps [-]")
+        if scale == 'log':
+            plt.yscale('log')
         plt.plot(valid_per_pixel, 'o')
 
         try:
