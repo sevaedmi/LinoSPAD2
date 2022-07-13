@@ -55,7 +55,7 @@ def plot_valid_per_pixel(path, lod, scale: str = 'linear'):
         for j in range(len(data_matrix)):
             valid_per_pixel[j] = len(np.where(data_matrix[j] > 0)[0])
 
-        plt.ioff()
+        # plt.ioff()
         plt.figure(figsize=(16, 10))
         plt.rcParams.update({"font.size": 20})
         plt.title("{}".format(num))
