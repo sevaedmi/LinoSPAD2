@@ -58,7 +58,7 @@ def plot_diff(path, show_fig: bool = False):
     mi = np.min(data)
     ma = np.max(data)
 
-    bins = np.arange(mi, ma, 17)  # bin size is 17 ps
+    bins = np.arange(mi, ma, 100)  # bin size is 100 ps
 
     if show_fig is True:
         plt.ion()

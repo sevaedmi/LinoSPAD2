@@ -25,7 +25,7 @@ from functions import unpack as f_up
 # =============================================================================
 
 
-def plot_valid_per_pixel(path, lod, scale):
+def plot_valid_per_pixel(path, lod, scale: str = 'linear'):
     '''Plots number of valid timestamps in each pixel for each 'dat' file in
     given folder. The plots are saved as 'png' in the 'results' folder. In
     the case there is no such folder, it is created where the data files are.
@@ -37,7 +37,7 @@ def plot_valid_per_pixel(path, lod, scale):
     lod : int
         Lines of data per acquistion cycle.
     scale : str
-        'log' for logarithmic scale.
+        Use 'log' for logarithmic scale, leave empty for linear.
 
     Returns
     -------

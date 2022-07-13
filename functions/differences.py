@@ -74,8 +74,10 @@ def timestamp_diff(path):
                             n = 10*(acq-1) + p
                             if data_matrix[k][n] == -1:
                                 continue
+                            # collecting timestamp differences within 10ns
+                            # range
                             elif np.abs(data_matrix[i][j]
-                                        - data_matrix[k][n]) > 100:
+                                        - data_matrix[k][n]) > 10000:
                                 continue
                             else:
                                 output.append(data_matrix[i][j]
@@ -200,7 +202,7 @@ def timestamp_diff_flex(path, lod):
                             if data_matrix[k][n] == -1:
                                 continue
                             elif np.abs(data_matrix[i][j]
-                                        - data_matrix[k][n]) > 100:
+                                        - data_matrix[k][n]) > 10000:
                                 continue
                             else:
                                 output.append(data_matrix[i][j]

@@ -25,124 +25,27 @@ from functions import plot_valid_timestamps
 # Paths to where either data or the 'csv' files with the resuts are located.
 # =============================================================================
 
-# main path where the binary data collected with LinoSPAD2 are
-path = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/"\
-    "Data/40 ns window, 20 MHz clock, 10 cycles/10 lines of data/binary"
-
-# path to small data files for codes testing
-path_test = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/"\
-    "Data/40 ns window, 20 MHz clock, 10 cycles/10 lines of data/binary/"\
-    "for codes"
-
-# path to the interstep results from small data files for code testing
-path_res_test = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/"\
-    "Software/Data/40 ns window, 20 MHz clock, 10 cycles/10 lines of data"\
-    "/binary/for codes/results"
-
-# path to ref data with sensor cover, w/o the fiber on the sensor and 100
-# lines of data
-
-path_ref = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software"\
-    "/Data/40 ns window, 20 MHz clock, 10 cycles/10 lines of data/binary"\
-    "/w cover wo fiber"
-
-path_ref_res = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software"\
-    "/Data/40 ns window, 20 MHz clock, 10 cycles/10 lines of data/binary"\
-    "/w cover wo fiber/results"
-
-# path to data from setup with an external trigger of 250 Hz
-
-path_ext_trig = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/"\
-    "Software/Data/40 ns window, 20 MHz clock, 10 cycles/10 lines of data/"\
-    "binary/Ext trig test"
-
-# 30 lines of data - easier on memory
-
-plot_test_30 = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/"\
-    "Data/40 ns window, 20 MHz clock, 10 cycles/10 lines of data/binary/"\
-    "Ne lamp ext trig/30 lines of data"
-
-plot_test_512 = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/"\
-    "Software/Data/40 ns window, 20 MHz clock, 10 cycles/10 lines of data/"\
-    "binary/Ne lamp ext trig"
-
-# data from the setup with the lamp touching the collimator
-
-plot_test_30_2 = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/"\
-    "Software/Data/40 ns window, 20 MHz clock, 10 cycles/10 lines of data/"\
-    "binary/Ne lamp ext trig/setup 2/30 lines of data"
-
-plot_test_512_2 = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/"\
-    "Software/Data/40 ns window, 20 MHz clock, 10 cycles/10 lines of data/"\
-    "binary/Ne lamp ext trig/setup 2"
-
-# setup '1', dry run, background; 512 lines per acq cycle
-path_dry_1 = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/"\
-    "Data/40 ns window, 20 MHz clock, 10 cycles/10 lines of data/binary/"\
-    "Ne lamp ext trig/dry run - background"
-
-# setup '2', dry run, background; 512 lines per acq cycle
-path_dry_2 = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/"\
-    "Data/40 ns window, 20 MHz clock, 10 cycles/10 lines of data/binary/"\
-    "Ne lamp ext trig/setup 2/dry run - background"
-
-# last-timestamps mode; 512 lines per acq cycle
-path_last_timestamp = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/"\
-    "Software/Data/40 ns window, 20 MHz clock, 10 cycles/10 lines of data/"\
-    "binary/Ne lamp ext trig/last timestamps"
-
-# cover on, fiber off, lights on; 512 lines per acq cycle
-path_fiber_only = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/"\
-    "Software/Data/40 ns window, 20 MHz clock, 10 cycles/10 lines of data/"\
-    "binary/w cover wo fiber/trigger setup"
-
-# cover on, fiber off, lights off; 512 lines per acq cycle
-path_fiber_only_1 = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/"\
-    "Software/Data/40 ns window, 20 MHz clock, 10 cycles/10 lines of data/"\
-    "binary/w cover wo fiber/trigger setup/lights off"
-
-# cover on, fiber on, phone light wo filter; 512 lines per acq cycle
-path_phone_trig = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/"\
-    "Software/Data/40 ns window, 20 MHz clock, 10 cycles/10 lines of data/"\
-    "binary/phone wo filter, w trigger"
-
-
-path_1 = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/Data/"\
+path_ext_trig = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/Data/"\
     "40 ns window, 20 MHz clock, 10 cycles/10 lines of data/binary/"\
     "Ne lamp ext trig/setup 2/3 ms acq window"
+
+path_ext_trig_res = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/Data/"\
+    "40 ns window, 20 MHz clock, 10 cycles/10 lines of data/binary/"\
+    "Ne lamp ext trig/setup 2/3 ms acq window/results"
+    
+path_int_clock = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/"\
+    "Software/Data/40 ns window, 20 MHz clock, 10 cycles/10 lines of data/"\
+    "binary/Ne lamp int clock"
+path_int_clock_res = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/"\
+    "Software/Data/40 ns window, 20 MHz clock, 10 cycles/10 lines of data/"\
+    "binary/Ne lamp int clock/results"
 
 # =============================================================================
 # Function execution.
 # =============================================================================
 
-# Calculate cross-talk rate in %, save the result in a .csv file
-# cross_talk.cross_talk_rate(path_test)
+plot_valid_timestamps.plot_valid_per_pixel(path_ext_trig, lod=512, scale='log')
 
-# Plot the cross-talk rate distribution in the sensor
-# cross_talk_plot.ctr_dist(path_test, show_fig=True)
+# differences.timestamp_diff_flex(path_int_clock, lod=512)
 
-# Fast calculation of cross-talk
-# cross_talk_rate = cross_talk_fast.cross_talk_rate(path_ext_trig)
-
-# Calculate timestamp differences between all pixels for the HBT peaks
-# differences.timestamp_diff_flex(plot_test_512, 512)
-
-# Plot a histogram of timestamp differences
-# td_plot.plot_diff(path_ext_trig, show_fig=True)
-
-# Plot number of valid timestamps in each pixel
-# plot_valid_timestamps.plot_valid_per_pixel(plot_test_30, lod=30)
-# plot_valid_timestamps.plot_valid_per_pixel(plot_test_512, lod=512)
-# plot_valid_timestamps.plot_valid_per_pixel(plot_test_30_2, lod=30)
-# plot_valid_timestamps.plot_valid_per_pixel(plot_test_512_2, lod=512)
-
-# plot_valid_timestamps.plot_valid_per_pixel(path_dry_1, 512)
-# plot_valid_timestamps.plot_valid_per_pixel(path_dry_2, 512)
-
-# plot_valid_timestamps.plot_valid_per_pixel(path_last_timestamp, 512)
-
-# plot_valid_timestamps.plot_valid_per_pixel(path_fiber_only, 512)
-# plot_valid_timestamps.plot_valid_per_pixel(path_fiber_only_1, 512)
-# plot_valid_timestamps.plot_valid_per_pixel(path_phone_trig, 512)
-
-plot_valid_timestamps.plot_valid_per_pixel(path_1, lod=512)
+# td_plot.plot_diff(path_int_clock_res, show_fig=True)
