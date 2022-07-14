@@ -30,20 +30,9 @@ from functions import single_pixel_hist
 # Paths to where either data or the 'csv' files with the resuts are located.
 # =============================================================================
 
-path_ext_trig = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/Data/"\
-    "40 ns window, 20 MHz clock, 10 cycles/10 lines of data/binary/"\
-    "Ne lamp ext trig/setup 2/3 ms acq window"
-
-path_ext_trig_res = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/Data/"\
-    "40 ns window, 20 MHz clock, 10 cycles/10 lines of data/binary/"\
-    "Ne lamp ext trig/setup 2/3 ms acq window/results"
-
-path_int_clock = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/"\
-    "Software/Data/40 ns window, 20 MHz clock, 10 cycles/10 lines of data/"\
-    "binary/Ne lamp int clock"
-path_int_clock_res = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/"\
-    "Software/Data/40 ns window, 20 MHz clock, 10 cycles/10 lines of data/"\
-    "binary/Ne lamp int clock/results"
+path_ext_trig = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/"\
+    "Software/Data/useful data/10 lines of data/binary/Ne lamp ext trig/"\
+    "setup 2/3 ms acq window"
 
 # =============================================================================
 # Function execution.
