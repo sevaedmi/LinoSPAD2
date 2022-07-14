@@ -1,5 +1,6 @@
 """Script for online printing of histograms of valid timestamps vs pixel
-number.
+number. Waits for a new data file, processes it when the file appears, shows
+and saves the output figure. Then the cycle repeats.
 
 """
 

@@ -1,30 +1,28 @@
-"""Script for plotting delta t histogram for specific pairs of pixels.
+"""Script for plotting delta_t vs timestamps of each of the pixels in the pair.
 
 """
 
 import os
+import glob
+from tqdm import tqdm
 import numpy as np
 from matplotlib import pyplot as plt
-import glob
 from functions import unpack as f_up
-from tqdm import tqdm
 
 path = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/Data/"\
-    "useful data/10 lines of data/binary/"\
-    "Ne lamp ext trig/setup 2/3 ms acq window"
+    "useful data/10 lines of data/binary/Ne lamp ext trig/setup 2/"\
+    "3 ms acq window"
+
 os.chdir(path)
 
-filename = glob.glob('*.dat*')[0]
+filename = glob.glob("*.dat*")[0]
 
 data = f_up.unpack_binary_512(filename)
 
-# data_cut = data[-10:]
+data_cut_1_pix = data[252]
+data_cut_2_pix = data[253]
 
-data_cut_1_pix = data[-5]  # 251st pixel
-data_cut_2_pix = data[-3]  # 253st pixel
-data_cut_3_pix = data[-2]  # 254st pixel
-
-data_cut = np.vstack((data_cut_1_pix, data_cut_3_pix))
+data_cut = np.vstack((data_cut_1_pix, data_cut_2_pix))
 
 minuend = len(data_cut)-1  # i=255
 lines_of_data = len(data_cut[0])  # j=10*11999 (lines of data
@@ -33,6 +31,8 @@ subtrahend = len(data_cut)  # k=254
 timestamps = 512  # lines of data in the acq cycle
 
 output = []
+data_1 = []
+data_2 = []
 
 for i in tqdm(range(minuend)):
     acq = 0  # number of acq cycle
@@ -48,20 +48,36 @@ for i in tqdm(range(minuend)):
                 n = 512*(acq-1) + p
                 if data_cut[k][n] == -1:
                     continue
-                elif data_cut[i][j] - data_cut[k][n] > 1e4:  #
+                elif data_cut[i][j] - data_cut[k][n] > 4e3:  #
                     continue
-                elif data_cut[i][j] - data_cut[k][n] < -1e4:
+                elif data_cut[i][j] - data_cut[k][n] < 2e3:
                     continue
                 else:
                     output.append(data_cut[i][j]
                                   - data_cut[k][n])
+                    data_1.append(data_cut[i][j])  # save the used timestamps
+                    data_2.append(data_cut[k][n])  # for 2d histogram
 
-plt.ion()
-
-bins = np.arange(np.min(output), np.max(output), 17.857*10)
 plt.figure(figsize=(16, 10))
 plt.rcParams.update({'font.size': 22})
-plt.xlabel('delta_t [ps]')
-plt.ylabel('Timestamps [-]')
-plt.title('Pixels 251-254')
-plt.hist(output, bins=bins)
+plt.xlabel("Timestamps [ps]")
+plt.ylabel("Delta t [ps]")
+plt.hist2d(data_1, output, bins=(200, 200))
+plt.colorbar()
+try:
+    os.chdir("results/test")
+except Exception:
+    pass
+plt.savefig("delta_t_vs_timestamp_pixel 252.png")
+
+plt.figure(figsize=(16, 10))
+plt.rcParams.update({'font.size': 22})
+plt.xlabel("Timestamps [ps]")
+plt.ylabel("Delta t [ps]")
+plt.hist2d(data_2, output, bins=(200, 200))
+plt.colorbar()
+try:
+    os.chdir("results/test")
+except Exception:
+    pass
+plt.savefig("delta_t_vs_timestamp_pixel 253.png")

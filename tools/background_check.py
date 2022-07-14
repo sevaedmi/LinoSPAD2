@@ -1,3 +1,8 @@
+"""Script for plotting background light and background+light from the Ne
+lamp in a single plot for comparison.
+
+"""
+
 from functions import unpack as f_up
 import os
 import glob
