@@ -30,7 +30,7 @@ pixel_numbers = np.arange(251, 256, 1)
 all_data = np.vstack((data_251, data_252, data_253, data_254, data_255))
 
 plt.rcParams.update({'font.size': 20})
-fig, axs = plt.subplots(5, 5, figsize=(30, 30))
+fig, axs = plt.subplots(4, 4, figsize=(24, 24))
 
 for q in range(5):
     for w in range(5):
@@ -72,8 +72,8 @@ for q in range(5):
         bins = np.arange(np.min(output), np.max(output), 17.857*10)
         axs[q][w].set_xlabel('delta_t [ps]')
         axs[q][w].set_ylabel('Timestamps [-]')
-        axs[q][w].set_title('Pixels {a1}-{a2}'.format(a1=pixel_numbers[q],
-                                                      a2=pixel_numbers[w]))
+        axs[q][w].set_title('Pixels {p1}-{p2}'.format(p1=pixel_numbers[q],
+                                                      p2=pixel_numbers[w]))
         axs[q][w].hist(output, bins=bins)
 
 os.chdir("results")

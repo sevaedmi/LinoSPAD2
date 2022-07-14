@@ -1,4 +1,5 @@
-"""Script for plotting histograms of timestamps for single pixels.
+"""Script for plotting histograms of timestamps for single pixels in the
+range 250-255 (illuminated part), and 90-100 (noisy part).
 
 """
 
