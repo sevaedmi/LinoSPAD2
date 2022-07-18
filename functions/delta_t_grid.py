@@ -9,10 +9,8 @@ no such folder, it is created where the data are stored.
 This file can also be imported as a module and contains the following
 functions:
 
-    * plot_grid - plots a 5x5 grid of delta t for different pairs of pixels in
-    the range of 250-254
-
-    TODO: grid should be 4x4, first column w last row is useless.
+    * plot_grid - plots a 4x4 grid of delta t for different pairs of pixels in
+    the range of 251-255
 
 """
 
@@ -25,8 +23,8 @@ from functions import unpack as f_up
 
 
 def plot_grid(path, show_fig: bool = False):
-    '''Plots a 5x5 grid of delta t for different pairs of pixels in the range
-    250-254.
+    '''Plots a 4x4 grid of delta t for different pairs of pixels in the range
+    251-255.
 
 
     Parameters
@@ -65,7 +63,7 @@ def plot_grid(path, show_fig: bool = False):
         plt.ioff()
 
     plt.rcParams.update({'font.size': 20})
-    fig, axs = plt.subplots(4, 4, figsize=(24, 24))
+    fig, axs = plt.subplots(5, 5, figsize=(24, 24))
 
     for q in range(5):
         for w in range(5):
@@ -105,11 +103,12 @@ def plot_grid(path, show_fig: bool = False):
                                               - data_pair[k][n])
 
             bins = np.arange(np.min(output), np.max(output), 17.857*10)
-            axs[q][w].set_xlabel('\u0394t [ps]')
-            axs[q][w].set_ylabel('Timestamps [-]')
-            axs[q][w].set_title('Pixels {p1}-{p2}'.format(p1=pixel_numbers[q],
-                                                          p2=pixel_numbers[w]))
-            axs[q][w].hist(output, bins=bins)
+            axs[q][w-1].set_xlabel('\u0394t [ps]')
+            axs[q][w-1].set_ylabel('Timestamps [-]')
+            axs[q][w-1].set_title('Pixels {p1}-{p2}'
+                                  .format(p1=pixel_numbers[q],
+                                          p2=pixel_numbers[w]))
+            axs[q][w-1].hist(output, bins=bins)
     try:
         os.chdir("results/delta_t")
     except Exception:

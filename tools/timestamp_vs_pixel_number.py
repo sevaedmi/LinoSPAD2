@@ -10,27 +10,32 @@ from matplotlib import pyplot as plt
 
 plt.ioff()
 
-path_1 = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/Data/"\
-    "useful data/10 lines of data/binary/Ne lamp ext trig/setup 2/"\
-    "1 ms acq window"
+# path_1 = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/Data/"\
+#     "useful data/10 lines of data/binary/Ne lamp ext trig/setup 2/"\
+#     "1 ms acq window"
 
-path_2 = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/Data/"\
-    "useful data/10 lines of data/binary/Ne lamp ext trig/setup 2/"\
-    "2 ms acq window"
+# path_2 = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/Data/"\
+#     "useful data/10 lines of data/binary/Ne lamp ext trig/setup 2/"\
+#     "2 ms acq window"
 
-path_3 = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/Data/"\
-    "useful data/10 lines of data/binary/Ne lamp ext trig/setup 2/"\
-    "3 ms acq window"
+# path_3 = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/Data/"\
+#     "useful data/10 lines of data/binary/Ne lamp ext trig/setup 2/"\
+#     "3 ms acq window"
 
-path_3_9 = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/Data/"\
-    "useful data/10 lines of data/binary/Ne lamp ext trig/setup 2/"\
-    "3.9 ms acq window"
+# path_3_9 = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/Data/"\
+#     "useful data/10 lines of data/binary/Ne lamp ext trig/setup 2/"\
+#     "3.9 ms acq window"
 
-path_0_500 = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/Data/"\
-    "useful data/10 lines of data/binary/Ne lamp ext trig/setup 2/"\
-    "500 us acq window"
+# path_0_500 = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/Data/"\
+#     "useful data/10 lines of data/binary/Ne lamp ext trig/setup 2/"\
+#     "500 us acq window"
 
-paths = [path_1, path_2, path_3, path_3_9, path_0_500]
+path_3_99 = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/Data/"\
+    "useful data/10 lines of data/binary/Ne lamp ext trig/setup 2/"\
+    "3.99 ms acq window"
+
+# paths = [path_1, path_2, path_3, path_3_9, path_0_500]
+paths = [path_3_99]
 
 for j, path in enumerate(paths):
     os.chdir(path)

@@ -33,13 +33,19 @@ from functions import single_pixel_hist
 path_ext_trig = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/"\
     "Software/Data/useful data/10 lines of data/binary/Ne lamp ext trig/"\
     "setup 2/3 ms acq window"
+    
+path_399 = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software"\
+    "/Data/useful data/10 lines of data/binary/Ne lamp ext trig/setup 2/"\
+    "3.99 ms acq window"
 
 # =============================================================================
 # Function execution.
 # =============================================================================
 
-plot_valid_timestamps.plot_valid_per_pixel(path_ext_trig, lod=512, scale='log')
+# plot_valid_timestamps.plot_valid_per_pixel(path_399, lod=512, scale='log')
 
 # differences.timestamp_diff_flex(path_int_clock, lod=512)
 
 # td_plot.plot_diff(path_int_clock_res, show_fig=True)
+
+delta_t_grid.plot_grid(path=path_399, show_fig=False)
