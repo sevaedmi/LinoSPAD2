@@ -1,12 +1,13 @@
 """Script for plotting a 2D plot of timestamps vs pixel number.
 
-TODO: add control if the result already exists.
+TODO: '-1' data points should be eliminated from the output histogram
 
 """
 from functions import unpack as f_up
 import glob
 import os
 from matplotlib import pyplot as plt
+import numpy as np
 
 plt.ioff()
 
@@ -37,6 +38,8 @@ path_3_99 = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/Data/
 paths = [path_1, path_2, path_3, path_3_9, path_3_99, path_0_500]
 # paths = [path_3_99]
 
+pixel_numbers = np.arange(0, 256, 1)
+
 for j, path in enumerate(paths):
     os.chdir(path)
     print("Working in {}.".format(path))
@@ -50,13 +53,14 @@ for j, path in enumerate(paths):
         plt.rcParams.update({'font.size': 22})
         plt.xlabel('Pixel number [-]')
         plt.ylabel('Timestamps [ps]')
-        plt.plot(data, '.')
+        bins = 
+        plt.hist(data, bins='auto')
         try:
             os.chdir("results/timestamps vs pixel number")
         except Exception:
             os.mkdir("results/timestamps vs pixel number")
             os.chdir("results/timestamps vs pixel number")
-        plt.savefig("{}.png".format(file))
+        plt.savefig("{}_hist.png".format(file))
         plt.pause(0.1)
         plt.close()
         os.chdir("../..")

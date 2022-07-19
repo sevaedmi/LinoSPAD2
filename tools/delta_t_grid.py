@@ -11,7 +11,7 @@ from functions import unpack as f_up
 
 path = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/Data/"\
     "useful data/10 lines of data/binary/Ne lamp ext trig/setup 2/"\
-    "3 ms acq window"
+    "3.99 ms acq window"
 
 os.chdir(path)
 
@@ -60,15 +60,15 @@ for q in range(5):
                         n = 512*(acq-1) + p
                         if data_pair[k][n] == -1:
                             continue
-                        elif data_pair[i][j] - data_pair[k][n] > 1e5:  #
+                        elif data_pair[i][j] - data_pair[k][n] > 1e4:  #
                             continue
-                        elif data_pair[i][j] - data_pair[k][n] < -1e5:
+                        elif data_pair[i][j] - data_pair[k][n] < -1e4:
                             continue
                         else:
                             output.append(data_pair[i][j]
                                           - data_pair[k][n])
 
-        bins = np.arange(np.min(output), np.max(output), 17.857*100)
+        bins = np.arange(np.min(output), np.max(output), 17.857*10)
         axs[q][w-1].set_xlabel('delta_t [ps]')
         axs[q][w-1].set_ylabel('Timestamps [-]')
         axs[q][w-1].set_title('Pixels {p1}-{p2}'.format(p1=pixel_numbers[q],

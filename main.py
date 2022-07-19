@@ -37,12 +37,16 @@ path_ext_trig = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/"\
 path_399 = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software"\
     "/Data/useful data/10 lines of data/binary/Ne lamp ext trig/setup 2/"\
     "3.99 ms acq window"
+    
+path_3 = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software"\
+    "/Data/useful data/10 lines of data/binary/Ne lamp ext trig/setup 2/"\
+    "3 ms acq window"
 
 # =============================================================================
 # Function execution.
 # =============================================================================
 
-# plot_valid_timestamps.plot_valid_per_pixel(path_399, lod=512, scale='log')
+# plot_valid_timestamps.plot_valid_per_pixel(path_3, lod=512, scale='log')
 
 # differences.timestamp_diff_flex(path_int_clock, lod=512)
 

@@ -16,12 +16,12 @@ from functions import unpack as f_up
 # =============================================================================
 
 path = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/"\
-        "Software/Data/40 ns window, 20 MHz clock, 10 cycles/10 lines of data/"\
-        "binary/Ne lamp ext trig/setup 2/3 ms acq window"
+        "Software/Data/useful data/10 lines of data/"\
+        "binary/Ne lamp ext trig/setup 2/3.99 ms acq window/656 nm"
 
 path_save = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/"\
-        "Software/Data/40 ns window, 20 MHz clock, 10 cycles/10 lines of data/"\
-        "binary/Ne lamp ext trig/setup 2/3 ms acq window/online"
+        "Software/Data/useful data/10 lines of data/"\
+        "binary/Ne lamp ext trig/setup 2/3.99 ms acq window/656 nm/results"
 
 os.chdir(path)
 
@@ -31,14 +31,19 @@ plt.ion()
 while True:
 
     DATA_FILES = glob.glob('*.dat*')
-    last_file = max(DATA_FILES, key=os.path.getctime)
+    try:
+        last_file = max(DATA_FILES, key=os.path.getctime)
+    except Exception:
+        print("Waiting for a file")
+        time.sleep(5)
+        continue
 
     new_file_ctime = os.path.getctime(last_file)
 
     if new_file_ctime <= last_file_ctime:
         print("Waiting for new file.")
         last_file_ctime = new_file_ctime
-        time.sleep(10)
+        time.sleep(5)
         continue
 
 # =============================================================================
