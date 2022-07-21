@@ -10,21 +10,21 @@ from functions import unpack as f_up
 from tqdm import tqdm
 
 path = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/Data/"\
-    "useful data/10 lines of data/binary/"\
-    "Ne lamp ext trig/setup 2/3 ms acq window"
+    "Ne lamp ext trig/setup 2/3.99 ms acq window/656 nm"
+
 os.chdir(path)
 
 filename = glob.glob('*.dat*')[0]
 
 data = f_up.unpack_binary_512(filename)
 
-# data_cut = data[-10:]
+data_251 = data[251]  # 251st pixel
+data_252 = data[252]  # 253st pixel
+data_253 = data[253]  # 254st pixel
+data_254 = data[254]  # 254st pixel
+data_255 = data[255]  # 254st pixel
 
-data_cut_1_pix = data[-5]  # 251st pixel
-data_cut_2_pix = data[-3]  # 253st pixel
-data_cut_3_pix = data[-2]  # 254st pixel
-
-data_cut = np.vstack((data_cut_1_pix, data_cut_3_pix))
+data_cut = np.vstack((data_251, data_252))
 
 minuend = len(data_cut)-1  # i=255
 lines_of_data = len(data_cut[0])  # j=10*11999 (lines of data

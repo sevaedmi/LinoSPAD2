@@ -10,8 +10,7 @@ from matplotlib import pyplot as plt
 from functions import unpack as f_up
 
 path = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/Data/"\
-    "useful data/10 lines of data/binary/Ne lamp ext trig/setup 2/"\
-    "3.99 ms acq window"
+    "Ne lamp ext trig/setup 2/3.99 ms acq window"
 
 os.chdir(path)
 
@@ -60,20 +59,27 @@ for q in range(5):
                         n = 512*(acq-1) + p
                         if data_pair[k][n] == -1:
                             continue
-                        elif data_pair[i][j] - data_pair[k][n] > 1e4:  #
+                        elif data_pair[i][j] - data_pair[k][n] > 1e5:  #
                             continue
-                        elif data_pair[i][j] - data_pair[k][n] < -1e4:
+                        elif data_pair[i][j] - data_pair[k][n] < -1e5:
                             continue
                         else:
                             output.append(data_pair[i][j]
                                           - data_pair[k][n])
 
-        bins = np.arange(np.min(output), np.max(output), 17.857*10)
+        bins = np.arange(np.min(output), np.max(output), 17.857*100)
         axs[q][w-1].set_xlabel('delta_t [ps]')
         axs[q][w-1].set_ylabel('Timestamps [-]')
-        axs[q][w-1].set_title('Pixels {p1}-{p2}'.format(p1=pixel_numbers[q],
-                                                        p2=pixel_numbers[w]))
-        axs[q][w-1].hist(output, bins=bins)
+
+        n, b, p = axs[q][w-1].hist(output, bins=bins)
+        # find position of the histogram peak
+        n_max = np.argmax(n)
+        arg_max = format((bins[n_max] + bins[n_max + 1]) / 2, ".2f")
+
+        axs[q][w-1].set_title('Pixels {p1}-{p2}\nPeak position {pp}'
+                              .format(p1=pixel_numbers[q],
+                                      p2=pixel_numbers[w],
+                                      pp=arg_max))
 
 os.chdir("results")
 fig.tight_layout()  # for perfect spacing between the plots

@@ -26,21 +26,17 @@ from functions import plot_valid_timestamps
 
 from functions import single_pixel_hist
 
+from functions import delta_t_single_plots
+
 # =============================================================================
 # Paths to where either data or the 'csv' files with the resuts are located.
 # =============================================================================
 
-path_ext_trig = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/"\
-    "Software/Data/useful data/10 lines of data/binary/Ne lamp ext trig/"\
-    "setup 2/3 ms acq window"
-    
-path_399 = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software"\
-    "/Data/useful data/10 lines of data/binary/Ne lamp ext trig/setup 2/"\
-    "3.99 ms acq window"
-    
-path_3 = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software"\
-    "/Data/useful data/10 lines of data/binary/Ne lamp ext trig/setup 2/"\
-    "3 ms acq window"
+path_3_99 = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/"\
+    "Data/Ne lamp ext trig/setup 2/3.99 ms acq window"
+
+path_3_99_ = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/"\
+    "Data/Ne lamp ext trig/setup 2/3.99 ms acq window/656 nm"
 
 # =============================================================================
 # Function execution.
@@ -52,4 +48,8 @@ path_3 = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software"\
 
 # td_plot.plot_diff(path_int_clock_res, show_fig=True)
 
-delta_t_grid.plot_grid(path=path_399, show_fig=False)
+# delta_t_grid.plot_grid(path=path_399, show_fig=False)
+
+# delta_t_single_plots.plot_delta_separate(path_3_99)
+
+delta_t_grid.plot_grid(path_3_99, show_fig=True)
