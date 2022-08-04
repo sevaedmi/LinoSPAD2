@@ -14,7 +14,7 @@ Following modules can be used:
 
 """
 
-from functions import cross_talk
+from functions import cross_talk_flex
 from functions import cross_talk_plot
 from functions import cross_talk_fast
 
@@ -35,8 +35,11 @@ from functions import delta_t_single_plots
 path_3_99 = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/"\
     "Data/Ne lamp ext trig/setup 2/3.99 ms acq window"
 
-path_3_99_ = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/"\
-    "Data/Ne lamp ext trig/setup 2/3.99 ms acq window/656 nm"
+# path_3_99_ = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/"\
+#     "Data/Ne lamp ext trig/setup 2/3.99 ms acq window/656 nm"
+
+path_ct = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software"\
+    "/Data/useful data/10 lines of data/binary"
 
 # =============================================================================
 # Function execution.
@@ -52,4 +55,6 @@ path_3_99_ = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/"\
 
 # delta_t_single_plots.plot_delta_separate(path_3_99)
 
-delta_t_grid.plot_grid(path_3_99, show_fig=True)
+# delta_t_grid.plot_grid(path_3_99, show_fig=True)
+
+cross_talk_flex.cross_talk_rate(path_ct, 10)

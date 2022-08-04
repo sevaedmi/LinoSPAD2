@@ -96,7 +96,7 @@ def plot_delta_separate(path, show_fig: bool = False):
 
             bins = np.arange(np.min(output), np.max(output), 17.857*10)
             plt.figure(figsize=(16, 10))
-            plt.xlabel('delta_t [ps]')
+            plt.xlabel('\u0394t [ps]')
             plt.ylabel('Timestamps [-]')
             plt.title('Pixels {p1}-{p2}'.format(p1=pixel_numbers[q],
                                                 p2=pixel_numbers[w]))

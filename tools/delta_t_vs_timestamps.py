@@ -10,8 +10,7 @@ from matplotlib import pyplot as plt
 from functions import unpack as f_up
 
 path = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/Data/"\
-    "useful data/10 lines of data/binary/Ne lamp ext trig/setup 2/"\
-    "3 ms acq window"
+    "Ne lamp ext trig/setup 2/3.99 ms acq window"
 
 os.chdir(path)
 
@@ -61,7 +60,7 @@ for i in tqdm(range(minuend)):
 plt.figure(figsize=(16, 10))
 plt.rcParams.update({'font.size': 22})
 plt.xlabel("Timestamps [ps]")
-plt.ylabel("Delta t [ps]")
+plt.ylabel("\u0394t [ps]")
 plt.hist2d(data_1, output, bins=(200, 200))
 plt.colorbar()
 try:
