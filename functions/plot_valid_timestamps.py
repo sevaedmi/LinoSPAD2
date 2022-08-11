@@ -47,10 +47,10 @@ def plot_valid_per_pixel(path, lod, scale: str = 'linear',
     '''
     os.chdir(path)
 
-    DATA_FILES = glob.glob('*acq*'+'*dat*')
+    DATA_FILES = glob.glob('*.dat*')
 
     valid_per_pixel = np.zeros(256)
-    
+
     if show_fig is True:
         plt.ion()
     else:

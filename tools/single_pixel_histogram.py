@@ -10,14 +10,13 @@ from functions import unpack as f_up
 from matplotlib import pyplot as plt
 
 path = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/Data/"\
-    "useful data/10 lines of data/binary/Ne lamp ext trig/setup 2/"\
-    "3 ms acq window"
+    "Ne lamp ext trig/setup 2/FW 2208/3.99 ms"
 
 os.chdir(path)
 
-filename = glob.glob('*.dat*')[0]
+filename = glob.glob('*.dat*')[1]
 
-pixels_peak = np.arange(250, 256, 1)
+pixels_peak = np.arange(145, 165, 1)
 pixels_noise = np.arange(90, 100, 1)
 
 pixels = np.concatenate((pixels_noise, pixels_peak))

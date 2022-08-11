@@ -21,7 +21,8 @@ from functions import unpack as f_up
 from matplotlib import pyplot as plt
 
 
-def plot_pixel_hist(path, show_fig: bool = False):
+def plot_pixel_hist(path, pix1, pix2, lines_of_data: int = 512,
+                    show_fig: bool = False):
     '''Plots a histogram for each pixel in a preset range.
 
 
@@ -29,6 +30,13 @@ def plot_pixel_hist(path, show_fig: bool = False):
     ----------
     path : str
         Path to data file.
+    pix1 : array-like
+        Array of pixels indices. Preferably pixels where the peak is.
+    pix2 : array-like
+        Array of pixels indices. Preferably noisy pixels.
+    lines_of_data : int, optional
+        Number of data points per pixel per acquisition cycle. The default is
+        512.
     show_fig : bool, optional
         Switch for showing the output figure. The default is False.
 
@@ -42,12 +50,13 @@ def plot_pixel_hist(path, show_fig: bool = False):
 
     filename = glob.glob('*.dat*')[0]
 
-    pixels_peak = np.arange(250, 256, 1)
+    pixels_peak = np.arange(145, 165, 1)
     pixels_noise = np.arange(90, 100, 1)
 
     pixels = np.concatenate((pixels_noise, pixels_peak))
 
-    data = f_up.unpack_binary_512(filename)
+    lod = lines_of_data
+    data = f_up.unpack_binary_flex(filename, lod)
 
     if show_fig is True:
         plt.ion()

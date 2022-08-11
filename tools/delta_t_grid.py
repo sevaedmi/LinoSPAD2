@@ -9,24 +9,27 @@ import numpy as np
 from matplotlib import pyplot as plt
 from functions import unpack as f_up
 
-path = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/Data/"\
-    "Ne lamp ext trig/setup 2/3.99 ms acq window"
+path = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software"\
+    "/Data/Ne lamp ext trig/setup 2/FW 2208/3.99 ms"
 
 os.chdir(path)
+
+# ==== Give the range of pixels to analyze! =====
+pix = np.array((155, 156, 157, 158, 159))
 
 filename = glob.glob('*.dat*')[0]
 
 data = f_up.unpack_binary_512(filename)
 
-data_251 = data[251]  # 251st pixel
-data_252 = data[252]  # 253st pixel
-data_253 = data[253]  # 254st pixel
-data_254 = data[254]  # 254st pixel
-data_255 = data[255]  # 254st pixel
+data_1 = data[pix[0]]  # 1st pixel
+data_2 = data[pix[1]]  # 2nd pixel
+data_3 = data[pix[2]]  # 3d pixel
+data_4 = data[pix[3]]  # 4th pixel
+data_5 = data[pix[4]]  # 5th pixel
 
-pixel_numbers = np.arange(251, 256, 1)
+pixel_numbers = np.arange(pix[0], pix[-1]+1, 1)
 
-all_data = np.vstack((data_251, data_252, data_253, data_254, data_255))
+all_data = np.vstack((data_1, data_2, data_3, data_4, data_5))
 
 plt.rcParams.update({'font.size': 20})
 fig, axs = plt.subplots(4, 4, figsize=(24, 24))

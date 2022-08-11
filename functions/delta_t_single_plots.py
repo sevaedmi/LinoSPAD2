@@ -24,13 +24,19 @@ from matplotlib import pyplot as plt
 from functions import unpack as f_up
 
 
-def plot_delta_separate(path, show_fig: bool = False):
-    '''Plots delta t for each pair of pixels in the range of 251-255.
+def plot_delta_separate(path, pix, lines_of_data: int = 512,
+                        show_fig: bool = False):
+    '''Plots delta t for each pair of pixels in the given range.
 
     Parameters
     ----------
     path : str
         Path to data file.
+    pix : array-like
+        Array of indices of 5 pixels for analysis.
+    lines_of_data : int
+        Number of data points per acq cycle per pixel in the file. The default
+        is 512.
     show_fig : bool, optional
         Switch for showing the output plot. The default is False.
 
@@ -44,17 +50,19 @@ def plot_delta_separate(path, show_fig: bool = False):
 
     filename = glob.glob('*.dat*')[0]
 
-    data = f_up.unpack_binary_512(filename)
+    lod = lines_of_data
 
-    data_251 = data[251]  # 251st pixel
-    data_252 = data[252]  # 253st pixel
-    data_253 = data[253]  # 254st pixel
-    data_254 = data[254]  # 254st pixel
-    data_255 = data[255]  # 254st pixel
+    data = f_up.unpack_binary_flex(filename, lod)
 
-    pixel_numbers = np.arange(251, 256, 1)
+    data_1 = data[pix[0]]  # 1st pixel
+    data_2 = data[pix[1]]  # 2nd pixel
+    data_3 = data[pix[2]]  # 3d pixel
+    data_4 = data[pix[3]]  # 4th pixel
+    data_5 = data[pix[4]]  # 5th pixel
 
-    all_data = np.vstack((data_251, data_252, data_253, data_254, data_255))
+    pixel_numbers = np.arange(pix[0], pix[-1]+1, 1)
+
+    all_data = np.vstack((data_1, data_2, data_3, data_4, data_5))
 
     plt.rcParams.update({'font.size': 20})
 

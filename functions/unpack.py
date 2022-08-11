@@ -15,7 +15,7 @@ functions:
     acquisition cycle
     * unpack_binary_10 - unpacks the 'dat' data files with 10 lines of data
     per acquisition cycle
-    * unpack_binary_flex - unpacks the 'dat' data files with certain number of
+    * unpack_binary_flex - unpacks the 'dat' data files with given number of
     data lines per acquisition cycle
 
 """

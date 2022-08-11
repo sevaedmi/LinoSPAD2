@@ -15,13 +15,17 @@ from functions import unpack as f_up
 # Looking for last created file
 # =============================================================================
 
-path = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/"\
-        "Software/Data/useful data/10 lines of data/"\
-        "binary/Ne lamp ext trig/setup 2/3.99 ms acq window/656 nm"
+path = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/Data/"\
+    "Ne lamp ext trig/setup 2/FW 2208/3.99 ms"
 
-path_save = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/"\
-        "Software/Data/useful data/10 lines of data/"\
-        "binary/Ne lamp ext trig/setup 2/3.99 ms acq window/656 nm/results"
+path_save = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/"\
+    "Data/Ne lamp ext trig/setup 2/FW 2208/3.99 ms/results/online"
+
+# path = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/Data/"\
+#     "Ne lamp ext trig/setup 2/3.99 ms acq window"
+
+# path_save = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/"\
+#     "Data/Ne lamp ext trig/setup 2/3.99 ms acq window/results"
 
 os.chdir(path)
 
@@ -59,7 +63,7 @@ while True:
     for j in range(len(data)):
         valid_per_pixel[j] = len(np.where(data[j] > 0)[0])
 
-    peak = np.max(valid_per_pixel[200:])
+    peak = np.max(valid_per_pixel[145:165])
 
     plt.close('all')
     plt.pause(1)
@@ -74,6 +78,10 @@ while True:
 
     plt.pause(1)
 
-    os.chdir(path_save)
+    try:
+        os.chdir(path_save)
+    except Exception:
+        os.mkdir(path_save)
+        os.chdir(path_save)
     plt.savefig("{}.png".format(last_file))
-    os.chdir('..')
+    os.chdir('../..')

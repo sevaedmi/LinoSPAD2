@@ -2,31 +2,29 @@
 
 Following modules can be used:
 
-    * cross_talk - calculation of the cross-talk rate
-    * cross_talk_plot - plots the cross-talk rate distribution in the
-    LinoSPAD2 pixels
-    * cross_talk_fast - 4-times faster script for calcultion of the cross-talk
-    rate that does not work with the pixel coordinates
-    * differences - calculation of the differences between all timestamps
-    which can be used to calculate the Hanbury-Brown and Twiss peaks
-    * td_plot - plot a histogram of timestamp differences from LinoSPAD2
+    * cross_talk_flex - calculation of the average cross-talk rate for
+    neighboring pixels
+    * cross_talk_flex_over_1 - calculation of the average cross-talk rate for
+    pixels with one in between (i, i+2)
+    * delta_t_grid - plots a grid of 4x4 of timestamps differences between 5
+    pixels in the given range
     * plot_valid_timestamps - plots number of valid timestamps in each pixel
+    * single_pixel_hist - plots a separate histograms of timestamps for pixels
+    in the giver ranges
 
 """
+import numpy as np
 
 from functions import cross_talk_flex
-from functions import cross_talk_plot
-from functions import cross_talk_fast
+from functions import cross_talk_flex_over_1
 
-from functions import differences
-from functions import td_plot
 from functions import delta_t_grid
 
 from functions import plot_valid_timestamps
 
 from functions import single_pixel_hist
 
-from functions import delta_t_single_plots
+from functions import online_plot_valid
 
 # =============================================================================
 # Paths to where either data or the 'csv' files with the resuts are located.
@@ -41,20 +39,26 @@ path_3_99 = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/"\
 path_ct = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software"\
     "/Data/useful data/10 lines of data/binary"
 
+path__3_99 = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/"\
+    "Data/Ne lamp ext trig/setup 2/FW 2208/3.99 ms"
+
+path_test = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software"\
+    "/Data/useful data/10 lines of data/binary"
+
+path_FW_3_99 = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software"\
+    "/Data/Ne lamp ext trig/setup 2/FW 2208/3.99 ms"
+
 # =============================================================================
 # Function execution.
 # =============================================================================
 
-# plot_valid_timestamps.plot_valid_per_pixel(path_3, lod=512, scale='log')
+# delta_t_grid.plot_grid(path_FW_3_99, (155, 156, 157, 158, 159), True)
 
-# differences.timestamp_diff_flex(path_int_clock, lod=512)
+# plot_valid_timestamps.plot_valid_per_pixel(path_FW_3_99, 512, 'log', True)
 
-# td_plot.plot_diff(path_int_clock_res, show_fig=True)
+# cross_talk_flex.cross_talk_rate(path_3_99, 512)
 
-# delta_t_grid.plot_grid(path=path_399, show_fig=False)
+# ct_rate_over_1 = cross_talk_flex_over_1.cross_talk_rate(path_3_99, 512)
 
-# delta_t_single_plots.plot_delta_separate(path_3_99)
-
-# delta_t_grid.plot_grid(path_3_99, show_fig=True)
-
-cross_talk_flex.cross_talk_rate(path_ct, 10)
+pix_range = np.arange(145, 166, 1)
+online_plot_valid.online_plot_valid(path_FW_3_99, pix_range)
