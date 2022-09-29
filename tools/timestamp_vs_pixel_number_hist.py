@@ -11,32 +11,10 @@ import numpy as np
 
 plt.ioff()
 
-path_1 = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/Data/"\
-    "useful data/10 lines of data/binary/Ne lamp ext trig/setup 2/"\
-    "1 ms acq window"
+path_3_99 = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software"\
+    "/Data/Ne lamp ext trig/setup 2/FW 2208/3.99 ms"
 
-path_2 = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/Data/"\
-    "useful data/10 lines of data/binary/Ne lamp ext trig/setup 2/"\
-    "2 ms acq window"
-
-path_3 = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/Data/"\
-    "useful data/10 lines of data/binary/Ne lamp ext trig/setup 2/"\
-    "3 ms acq window"
-
-path_3_9 = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/Data/"\
-    "useful data/10 lines of data/binary/Ne lamp ext trig/setup 2/"\
-    "3.9 ms acq window"
-
-path_0_500 = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/Data/"\
-    "useful data/10 lines of data/binary/Ne lamp ext trig/setup 2/"\
-    "500 us acq window"
-
-path_3_99 = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/Data/"\
-    "useful data/10 lines of data/binary/Ne lamp ext trig/setup 2/"\
-    "3.99 ms acq window"
-
-paths = [path_1, path_2, path_3, path_3_9, path_3_99, path_0_500]
-# paths = [path_3_99]
+paths = [path_3_99]
 
 pixel_numbers = np.arange(0, 256, 1)
 
@@ -53,7 +31,6 @@ for j, path in enumerate(paths):
         plt.rcParams.update({'font.size': 22})
         plt.xlabel('Pixel number [-]')
         plt.ylabel('Timestamps [ps]')
-        bins = 
         plt.hist(data, bins='auto')
         try:
             os.chdir("results/timestamps vs pixel number")

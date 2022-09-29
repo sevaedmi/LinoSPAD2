@@ -9,13 +9,13 @@ import numpy as np
 from matplotlib import pyplot as plt
 from functions import unpack as f_up
 
-path = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software"\
-    "/Data/Ne lamp ext trig/setup 2/FW 2208/3.99 ms"
+path = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/Data/"\
+    "Ar lamp/FW 2208"
 
 os.chdir(path)
 
 # ==== Give the range of pixels to analyze! =====
-pix = np.array((155, 156, 157, 158, 159))
+pix = np.array((156, 157, 158, 159, 160))
 
 filename = glob.glob('*.dat*')[0]
 
@@ -33,6 +33,8 @@ all_data = np.vstack((data_1, data_2, data_3, data_4, data_5))
 
 plt.rcParams.update({'font.size': 20})
 fig, axs = plt.subplots(4, 4, figsize=(24, 24))
+
+y_max_all = 0
 
 for q in range(5):
     for w in range(5):
@@ -62,28 +64,47 @@ for q in range(5):
                         n = 512*(acq-1) + p
                         if data_pair[k][n] == -1:
                             continue
-                        elif data_pair[i][j] - data_pair[k][n] > 1e5:  #
+                        elif data_pair[i][j] - data_pair[k][n] > 2.5e3:  #
                             continue
-                        elif data_pair[i][j] - data_pair[k][n] < -1e5:
+                        elif data_pair[i][j] - data_pair[k][n] < -2.5e3:
                             continue
                         else:
                             output.append(data_pair[i][j]
                                           - data_pair[k][n])
-
-        bins = np.arange(np.min(output), np.max(output), 17.857*100)
+        try:
+            bins = np.arange(np.min(output), np.max(output), 17.857*2)
+        except Exception:
+            continue
         axs[q][w-1].set_xlabel('\u0394t [ps]')
         axs[q][w-1].set_ylabel('Timestamps [-]')
 
         n, b, p = axs[q][w-1].hist(output, bins=bins)
         # find position of the histogram peak
-        n_max = np.argmax(n)
+        try:
+            n_max = np.argmax(n)
+        except Exception:
+            continue
         arg_max = format((bins[n_max] + bins[n_max + 1]) / 2, ".2f")
+
+        y_max = np.max(n)
+        if y_max_all < y_max:
+            y_max_all = y_max
+        
+        axs[q][w-1].set_ylim(0, y_max+10)
+        axs[q][w-1].set_xlim(-2.5e3, 2.5e3)
 
         axs[q][w-1].set_title('Pixels {p1}-{p2}\nPeak position {pp}'
                               .format(p1=pixel_numbers[q],
                                       p2=pixel_numbers[w],
                                       pp=arg_max))
 
-os.chdir("results")
-fig.tight_layout()  # for perfect spacing between the plots
-plt.savefig("{name}_delta_t_grid.png".format(name=filename))
+for q in range(5):
+    for w in range(5):
+        if w <= q:
+            continue
+        axs[q][w-1].set_ylim(0, y_max_all+10)
+plt.show()
+
+# os.chdir("results/delta_t")
+# fig.tight_layout()  # for perfect spacing between the plots
+# plt.savefig("{name}_delta_t_grid.png".format(name=filename))

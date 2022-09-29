@@ -10,7 +10,7 @@ from matplotlib import pyplot as plt
 from functions import unpack as f_up
 
 path = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/Data/"\
-    "Ne lamp ext trig/setup 2/3.99 ms acq window"
+    "Ar lamp/FW 2208"
 
 os.chdir(path)
 
@@ -18,12 +18,15 @@ filename = glob.glob("*.dat*")[0]
 
 data = f_up.unpack_binary_512(filename)
 
-data_cut_1_pix = data[252]
-data_cut_2_pix = data[253]
+pix1 = 156
+pix2 = 157
+
+data_cut_1_pix = data[pix1]
+data_cut_2_pix = data[pix2]
 
 data_cut = np.vstack((data_cut_1_pix, data_cut_2_pix))
 
-minuend = len(data_cut)-1  # i=255
+minuend = len(data_cut)  # i=255
 lines_of_data = len(data_cut[0])  # j=10*11999 (lines of data
 # * number of acq cycles)
 subtrahend = len(data_cut)  # k=254
@@ -47,9 +50,9 @@ for i in tqdm(range(minuend)):
                 n = 512*(acq-1) + p
                 if data_cut[k][n] == -1:
                     continue
-                elif data_cut[i][j] - data_cut[k][n] > 4e3:  #
+                elif data_cut[i][j] - data_cut[k][n] > 3.5e3:  #
                     continue
-                elif data_cut[i][j] - data_cut[k][n] < 2e3:
+                elif data_cut[i][j] - data_cut[k][n] < -3.5e3:
                     continue
                 else:
                     output.append(data_cut[i][j]
@@ -61,22 +64,11 @@ plt.figure(figsize=(16, 10))
 plt.rcParams.update({'font.size': 22})
 plt.xlabel("Timestamps [ps]")
 plt.ylabel("\u0394t [ps]")
-plt.hist2d(data_1, output, bins=(200, 200))
+plt.hist2d(data_1, output, bins=(196, 196))
+plt.ylim(-3.5e3, 3.5e3)
 plt.colorbar()
 try:
-    os.chdir("results/test")
+    os.chdir("results/delta_t vs timestamps")
 except Exception:
     pass
-plt.savefig("delta_t_vs_timestamp_pixel 252.png")
-
-plt.figure(figsize=(16, 10))
-plt.rcParams.update({'font.size': 22})
-plt.xlabel("Timestamps [ps]")
-plt.ylabel("Delta t [ps]")
-plt.hist2d(data_2, output, bins=(200, 200))
-plt.colorbar()
-try:
-    os.chdir("results/test")
-except Exception:
-    pass
-plt.savefig("delta_t_vs_timestamp_pixel 253.png")
+plt.savefig("delta_t_vs_timestamp_pixel {p1}-{p2}.png".format(p1=pix1, p2=pix2))

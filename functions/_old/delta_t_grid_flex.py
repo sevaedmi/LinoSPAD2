@@ -50,18 +50,15 @@ def plot_grid(path, pix, lines_of_data: int = 512, show_fig: bool = False):
     DATA_FILES = glob.glob('*.dat*')
 
     for num, filename in enumerate(DATA_FILES):
-        lod = lines_of_data
-        data = f_up.unpack_binary_flex(filename, lod)
+        print("================================\n"
+              "Working on {}\n"
+              "================================".format(filename))
+        data = f_up.unpack_binary_flex(filename, lines_of_data)
 
-        data_1 = data[pix[0]]  # 1st pixel
-        data_2 = data[pix[1]]  # 2nd pixel
-        data_3 = data[pix[2]]  # 3d pixel
-        data_4 = data[pix[3]]  # 4th pixel
-        data_5 = data[pix[4]]  # 5th pixel
+        data_pix = np.zeros((len(pix), len(data[0])))
 
-        pixel_numbers = np.arange(pix[0], pix[-1]+1, 1)
-
-        all_data = np.vstack((data_1, data_2, data_3, data_4, data_5))
+        for i, num in enumerate(pix):
+            data_pix[i] = data[num]
 
         # check if the figure should appear in a separate window or not at all
         if show_fig is True:
@@ -70,57 +67,93 @@ def plot_grid(path, pix, lines_of_data: int = 512, show_fig: bool = False):
             plt.ioff()
 
         plt.rcParams.update({'font.size': 20})
-        fig, axs = plt.subplots(4, 4, figsize=(24, 24))
+        fig, axs = plt.subplots(len(pix)-1, len(pix)-1, figsize=(24, 24))
 
-        for q in range(5):
-            for w in range(5):
+        y_max_all = 0
+
+        for q in range(len(pix)):
+            for w in range(len(pix)):
                 if w <= q:
                     continue
 
-                data_pair = np.vstack((all_data[q], all_data[w]))
+                data_pair = np.vstack((data_pix[q], data_pix[w]))
 
-                minuend = len(data_pair)-1  # i=255
-                lines_of_data = len(data_pair[0])  # j=10*11999 (lines of data
-                # * number of acq cycles)
-                subtrahend = len(data_pair)  # k=254
-                timestamps = 512  # lines of data in the acq cycle
+                minuend = len(data_pair)
+                timestamps_total = len(data_pair[0])
+                subtrahend = len(data_pair)
+                timestamps = lines_of_data
 
                 output = []
 
                 for i in tqdm(range(minuend)):
                     acq = 0  # number of acq cycle
-                    for j in range(lines_of_data):
+                    for j in range(timestamps_total):
+                        if j % lines_of_data == 0:
+                            acq = acq + 1  # next acq cycle
                         if data_pair[i][j] == -1:
                             continue
-                        if j % 512 == 0:
-                            acq = acq + 1  # next acq cycle
                         for k in range(subtrahend):
                             if k <= i:
                                 continue  # to avoid repetition: 2-1, 53-45
                             for p in range(timestamps):
-                                n = 512*(acq-1) + p
+                                n = lines_of_data*(acq-1) + p
                                 if data_pair[k][n] == -1:
                                     continue
-                                elif data_pair[i][j] - data_pair[k][n] > 3e2:
+                                elif np.abs(data_pair[i][j]
+                                            - data_pair[k][n]) > 2.5e3:
                                     continue
-                                elif data_pair[i][j] - data_pair[k][n] < -3e2:
+                                elif np.abs(data_pair[i][j]
+                                            - data_pair[k][n]) < -2.5e3:
                                     continue
                                 else:
                                     output.append(data_pair[i][j]
                                                   - data_pair[k][n])
 
-                bins = np.arange(np.min(output), np.max(output), 17.857)
+                if "Ne" and "540" in path:
+                    chosen_color = "seagreen"
+                elif "Ne" and "656" in path:
+                    chosen_color = "orangered"
+                elif "Ar" in path:
+                    chosen_color = "mediumslateblue"
+                else:
+                    chosen_color = "salmon"
+
+                try:
+                    bins = np.arange(np.min(output), np.max(output),
+                                     17.857*2)
+                except Exception:
+                    continue
                 axs[q][w-1].set_xlabel('\u0394t [ps]')
                 axs[q][w-1].set_ylabel('Timestamps [-]')
-                n, b, p = axs[q][w-1].hist(output, bins=bins)
+                n, b, p = axs[q][w-1].hist(output, bins=bins,
+                                           color=chosen_color)
                 # find position of the histogram peak
-                n_max = np.argmax(n)
-                arg_max = format((bins[n_max] + bins[n_max + 1]) / 2, ".2f")
+                try:
+                    n_max = np.argmax(n)
+                    arg_max = format((bins[n_max] + bins[n_max + 1]) / 2,
+                                     ".2f")
+                except Exception:
+                    arg_max = None
+                    pass
+
+                y_max = np.max(n)
+                if y_max_all < y_max:
+                    y_max_all = y_max
+
+                axs[q][w-1].set_ylim(0, y_max+10)
+                axs[q][w-1].set_xlim(-2.5e3, 2.5e3)
 
                 axs[q][w-1].set_title('Pixels {p1}-{p2}\nPeak position {pp}'
-                                      .format(p1=pixel_numbers[q],
-                                              p2=pixel_numbers[w],
+                                      .format(p1=pix[q],
+                                              p2=pix[w],
                                               pp=arg_max))
+
+        for q in range(len(pix)):
+            for w in range(len(pix)):
+                if w <= q:
+                    continue
+                axs[q][w-1].set_ylim(0, y_max_all+10)
+
         try:
             os.chdir("results/delta_t")
         except Exception:
@@ -128,4 +161,4 @@ def plot_grid(path, pix, lines_of_data: int = 512, show_fig: bool = False):
             os.chdir("results/delta_t")
         fig.tight_layout()  # for perfect spacing between the plots
         plt.savefig("{name}_delta_t_grid.png".format(name=filename))
-        os.chdir("..")
+        os.chdir("../..")

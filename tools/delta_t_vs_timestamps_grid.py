@@ -11,27 +11,29 @@ from matplotlib import pyplot as plt
 from functions import unpack as f_up
 
 path = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/Data/"\
-    "Ne lamp ext trig/setup 2/3.99 ms acq window"
+    "Ar lamp/FW 2208"
 
 os.chdir(path)
 
-filename = glob.glob('*.dat*')[3]
+filename = glob.glob('*.dat*')[0]
 
 data = f_up.unpack_binary_512(filename)
 
-data_251 = data[251]  # 251st pixel
-data_252 = data[252]  # 253st pixel
-data_253 = data[253]  # 254st pixel
-data_254 = data[254]  # 254st pixel
-data_255 = data[255]  # 254st pixel
+data_1 = data[156]
+data_2 = data[157]
+data_3 = data[158]
+data_4 = data[159]
+data_5 = data[160]
 
-pixel_numbers = np.arange(251, 256, 1)
+pixel_numbers = np.arange(156, 161, 1)
 
-all_data = np.vstack((data_251, data_252, data_253, data_254, data_255))
+all_data = np.vstack((data_1, data_2, data_3, data_4, data_5))
 
 plt.rcParams.update({'font.size': 20})
 fig, axs = plt.subplots(4, 4, figsize=(24, 24))
 plt.ioff()
+
+y_max_all = 0
 
 for q in range(5):
     for w in range(5):
@@ -55,6 +57,8 @@ for q in range(5):
                     continue
                 if j % 512 == 0:
                     acq = acq + 1  # next acq cycle
+                    if acq > 1:
+                        continue
                 for k in range(subtrahend):
                     if k <= i:
                         continue  # to avoid repetition: 2-1, 153-45 etc.
@@ -62,9 +66,9 @@ for q in range(5):
                         n = 512*(acq-1) + p
                         if data_pair[k][n] == -1:
                             continue
-                        elif data_pair[i][j] - data_pair[k][n] > 1e5:
+                        elif data_pair[i][j] - data_pair[k][n] > 3.5e3:
                             continue
-                        elif data_pair[i][j] - data_pair[k][n] < -1e5:
+                        elif data_pair[i][j] - data_pair[k][n] < -3.5e3:
                             continue
                         else:
                             output.append(data_pair[i][j]
@@ -74,12 +78,13 @@ for q in range(5):
 
         axs[q][w-1].set_xlabel('Timestamp [ps]')
         axs[q][w-1].set_ylabel('\u0394t [ps]')
-        axs[q][w-1].hist2d(data_for_hist, output, bins=(200, 200))
+        axs[q][w-1].hist2d(data_for_hist, output, bins=(196, 196))
+        
 
         axs[q][w-1].set_title('Pixels {p1}-{p2}'.format(p1=pixel_numbers[q],
                                                         p2=pixel_numbers[w]))
-        axs[q][w-1].set_ylim([-15e3, 15e3])
-
+        axs[q][w-1].set_ylim(-3.5e3, 3.5e3)
+        
         try:
             os.chdir("results/delta_t vs timestamps")
         except Exception:

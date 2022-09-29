@@ -24,8 +24,7 @@ from matplotlib import pyplot as plt
 from functions import unpack as f_up
 
 
-def plot_delta_separate(path, pix, lines_of_data: int = 512,
-                        show_fig: bool = False):
+def plot_delta_separate(path, pix, lines_of_data: int = 512):
     '''Plots delta t for each pair of pixels in the given range.
 
     Parameters
@@ -37,8 +36,6 @@ def plot_delta_separate(path, pix, lines_of_data: int = 512,
     lines_of_data : int
         Number of data points per acq cycle per pixel in the file. The default
         is 512.
-    show_fig : bool, optional
-        Switch for showing the output plot. The default is False.
 
     Returns
     -------
@@ -94,30 +91,52 @@ def plot_delta_separate(path, pix, lines_of_data: int = 512,
                             n = 512*(acq-1) + p
                             if data_pair[k][n] == -1:
                                 continue
-                            elif data_pair[i][j] - data_pair[k][n] > 1e4:
+                            elif data_pair[i][j] - data_pair[k][n] > 1.5e3:
                                 continue
-                            elif data_pair[i][j] - data_pair[k][n] < -1e4:
+                            elif data_pair[i][j] - data_pair[k][n] < -1.5e3:
                                 continue
                             else:
                                 output.append(data_pair[i][j]
                                               - data_pair[k][n])
 
-            bins = np.arange(np.min(output), np.max(output), 17.857*10)
+            if "Ne" and "540" in path:
+                chosen_color = "seagreen"
+            elif "Ne" and "656" in path:
+                chosen_color = "orangered"
+            elif "Ar" in path:
+                chosen_color = "mediumslateblue"
+            else:
+                chosen_color = "salmon"
+            try:
+                bins = np.arange(np.min(output), np.max(output), 17.857)
+            except Exception:
+                continue
             plt.figure(figsize=(16, 10))
             plt.xlabel('\u0394t [ps]')
             plt.ylabel('Timestamps [-]')
-            plt.title('Pixels {p1}-{p2}'.format(p1=pixel_numbers[q],
-                                                p2=pixel_numbers[w]))
-            plt.hist(output, bins=bins)
+            n, b, p = plt.hist(output, bins=bins, color=chosen_color)
+
+            # find position of the histogram peak
+            try:
+                n_max = np.argmax(n)
+                arg_max = format((bins[n_max] + bins[n_max + 1]) / 2,
+                                 ".2f")
+            except Exception:
+                arg_max = None
+                pass
+
+            plt.title('{filename}\nPeak position: {peak}\nPixels {p1}-{p2}'
+                      .format(filename = filename, peak = arg_max,
+                              p1=pixel_numbers[q], p2=pixel_numbers[w]))
 
             try:
-                os.chdir("results/delta_t")
+                os.chdir("results/delta_t/zoom")
             except Exception:
-                os.mkdir("results/delta_t")
-                os.chdir("results/delta_t")
+                os.mkdir("results/delta_t/zoom")
+                os.chdir("results/delta_t/zoom")
             plt.savefig("{name}_pixels {p1}-{p2}.png".format(name=filename,
                                                         p1=pixel_numbers[q],
                                                         p2=pixel_numbers[w]))
             plt.pause(0.1)
             plt.close()
-            os.chdir("../..")
+            os.chdir("../../..")

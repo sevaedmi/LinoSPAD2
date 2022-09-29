@@ -15,17 +15,22 @@ from functions import unpack as f_up
 # Looking for last created file
 # =============================================================================
 
-path = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/Data/"\
-    "Ne lamp ext trig/setup 2/FW 2208/3.99 ms"
+# path = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/Data/"\
+#     "Ne lamp ext trig/setup 2/FW 2208/3.99 ms"
 
-path_save = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/"\
-    "Data/Ne lamp ext trig/setup 2/FW 2208/3.99 ms/results/online"
+# path_save = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/"\
+#     "Data/Ne lamp ext trig/setup 2/FW 2208/3.99 ms/results/online"
 
 # path = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/Data/"\
 #     "Ne lamp ext trig/setup 2/3.99 ms acq window"
 
 # path_save = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/"\
-#     "Data/Ne lamp ext trig/setup 2/3.99 ms acq window/results"
+#     "Data/Ne lamp ext trig/setup 2/3.99 ms acq window/results/online"
+
+path = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/Data"\
+    "/Ar lamp"
+path_save = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/Data"\
+    "/Ar lamp/results/online"
 
 os.chdir(path)
 

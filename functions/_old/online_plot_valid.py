@@ -75,15 +75,24 @@ def online_plot_valid(path, pix_range, lines_of_data: int = 512):
 
         peak = np.max(valid_per_pixel[pix_range])
 
+        if "Ne" and "540" in path:
+            chosen_color = "seagreen"
+        elif "Ne" and "656" in path:
+            chosen_color = "orangered"
+        elif "Ar" in path:
+            chosen_color = "mediumslateblue"
+        else:
+            chosen_color = "salmon"
+
         plt.close('all')
         plt.pause(1)
-        plt.figure(figsize=(16, 10))
+        plt.figure(figsize=(11, 7))
         plt.rcParams.update({"font.size": 20})
         plt.title("Peak is {}".format(peak))
         plt.xlabel("Pixel [-]")
         plt.ylabel("Valid timestamps [-]")
         plt.yscale('log')
-        plt.plot(valid_per_pixel, 'o')
+        plt.plot(valid_per_pixel, 'o', color=chosen_color)
         plt.show()
 
         plt.pause(1)

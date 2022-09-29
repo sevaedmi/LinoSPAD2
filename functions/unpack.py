@@ -1,22 +1,22 @@
 """Unpack data from LinoSPAD2
 
 Functions for unpacking either 'txt' of 'dat' data files of LinoSPAD2.
-Functions for either 10, 512 or given number of data lines per acquisition
-cycle in the data file are available.
-
-Works with both 'txt' and 'dat' files.
+Functions for either 10, 512 or a given number of timestamps per acquisition
+cycle per pixel are available.
 
 This file can also be imported as a module and contains the following
 functions:
 
-    * unpack_txt_512 - unpacks the 'txt' data files with 512 lines of data
+    * unpack_txt_512 - unpacks the 'txt' data files with 512 timestamps
     per acquisition cycle
-    * unpack_txt_10 - unpacks the 'txt' data files with 10 lines of data per
+    * unpack_txt_10 - unpacks the 'txt' data files with 10 timestamps per
     acquisition cycle
-    * unpack_binary_10 - unpacks the 'dat' data files with 10 lines of data
+    * unpack_binary_10 - unpacks the 'dat' data files with 10 timestamps
     per acquisition cycle
-    * unpack_binary_flex - unpacks the 'dat' data files with given number of
-    data lines per acquisition cycle
+    * unpack_binary_512 - unpack the 'dat' data files with 512 timestamps
+    per acquisition point
+    * unpack_binary_flex - unpacks the 'dat' data files with a given number of
+    timestamps per acquisition cycle
 
 """
 
@@ -25,13 +25,13 @@ import numpy as np
 
 
 def unpack_txt_512(filename):
-    """Unpacks the 'txt' data files with 512 lines of data per acquistion
+    """Unpacks the 'txt' data files with 512 timestamps per acquistion
     cycle.
 
     Parameters
     ----------
     filename : str
-        File with data from LinoSPAD2 in which precisely 512 lines of data
+        File with data from LinoSPAD2 in which precisely 512 timestamps
         per acquistion cycle is written.
 
     Returns
@@ -72,13 +72,13 @@ def unpack_txt_512(filename):
 
 
 def unpack_txt_10(filename):
-    """Unpacks the 'txt' data files with 10 lines of data per acquistion
+    """Unpacks the 'txt' data files with 10 timestamps per acquistion
     cycle.
 
     Parameters
     ----------
     filename : str
-        File with data from LinoSPAD2 in which precisely 10 lines of data
+        File with data from LinoSPAD2 in which precisely 10 timestamps
         per acquistion cycle is written.
 
     Returns
@@ -119,13 +119,13 @@ def unpack_txt_10(filename):
 
 
 def unpack_binary_10(filename):
-    """Unpacks the 'dat' data files with 10 lines of data per acquistion
+    """Unpacks the 'dat' data files with 10 timestamps per acquistion
     cycle.
 
     Parameters
     ----------
     filename : str
-        File with data from LinoSPAD2 in which precisely 10 lines of data
+        File with data from LinoSPAD2 in which precisely 10 timestamps
         per acquistion cycle is written.
 
     Returns
@@ -178,13 +178,13 @@ def unpack_binary_10(filename):
 
 
 def unpack_binary_512(filename):
-    """Unpacks the 'dat' data files with 512 lines of data per acquistion
+    """Unpacks the 'dat' data files with 512 timestamps per acquistion
     cycle.
 
     Parameters
     ----------
     filename : str
-        File with data from LinoSPAD2 in which precisely 512 lines of data
+        File with data from LinoSPAD2 in which precisely 512 timestamps
         per acquistion cycle is written.
 
     Returns
@@ -236,8 +236,8 @@ def unpack_binary_512(filename):
     return data_matrix
 
 
-def unpack_binary_flex(filename, lines_of_data):
-    """Unpacks the 'dat' data files with certain lines of data per acquistion
+def unpack_binary_flex(filename, lines_of_data: int = 512):
+    """Unpacks the 'dat' data files with certain timestamps per acquistion
     cycle.
 
     Parameters
@@ -245,14 +245,15 @@ def unpack_binary_flex(filename, lines_of_data):
     filename : str
         File with data from LinoSPAD2 in which precisely lines_of_data lines
         of data per acquistion cycle is written.
-    lines_of_data: int
-        Number of binary-encoded lines of data in the 'dat' file.
+    lines_of_data: int, optional
+        Number of binary-encoded timestamps in the 'dat' file. The default
+        value is 512.
 
     Returns
     -------
     data_matrix : array_like
-        2D matrix (256 pixels by lines_of_data*number-of-cycles) of
-        data points.
+        A 2D matrix (256 pixels by lines_of_data X number-of-cycles) of
+        timestamps.
 
     """
 
@@ -270,7 +271,7 @@ def unpack_binary_flex(filename, lines_of_data):
                 timestamp = packet[0] & 0xfffffff  # cut the higher bits,
                 # leave only timestamp ones
                 # 2.5 ns from TDC 400 MHz clock read out 140 bins from 35
-                # elements of the delay line - average bin sizу is 17.857 ps
+                # elements of the delay line - average bin size is 17.857 ps
                 timestamp = timestamp * 17.857  # in ps
             else:
                 timestamp = -1

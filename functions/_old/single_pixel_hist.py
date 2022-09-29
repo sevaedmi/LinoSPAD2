@@ -50,9 +50,12 @@ def plot_pixel_hist(path, pix1, pix2, lines_of_data: int = 512,
 
     filename = glob.glob('*.dat*')[0]
 
-    pixels_peak = np.arange(145, 165, 1)
-    pixels_noise = np.arange(90, 100, 1)
-
+    if pix1 is None:
+        pixels_peak = np.arange(145, 165, 1)
+        pixels_noise = np.arange(90, 100, 1)
+    else:
+        pixels_peak = pix1
+        pixels_noise = pix2
     pixels = np.concatenate((pixels_noise, pixels_peak))
 
     lod = lines_of_data

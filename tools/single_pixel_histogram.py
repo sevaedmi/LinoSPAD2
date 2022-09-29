@@ -9,8 +9,10 @@ import numpy as np
 from functions import unpack as f_up
 from matplotlib import pyplot as plt
 
+# path = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/Data/"\
+#     "Ne lamp ext trig/setup 2/FW 2208/3.99 ms"
 path = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/Data/"\
-    "Ne lamp ext trig/setup 2/FW 2208/3.99 ms"
+    "Ne lamp ext trig/setup 2/3.99 ms acq window"
 
 os.chdir(path)
 
@@ -22,6 +24,8 @@ pixels_noise = np.arange(90, 100, 1)
 pixels = np.concatenate((pixels_noise, pixels_peak))
 
 data = f_up.unpack_binary_512(filename)
+
+plt.ioff()
 
 for i, pixel in enumerate(pixels):
     plt.figure(figsize=(16, 10))
