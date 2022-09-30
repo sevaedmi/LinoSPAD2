@@ -7,12 +7,11 @@ data output.
 This file can also be imported as a module and contains the following
 functions:
 
-    * plot_delta_separate - plots delta t for each pair of pixels in
-    the range of 251-255
-    * plot_grid - plots a 4x4 grid of delta t for different pairs of pixels for
-    5 pixels total
-    * plot_delta_separate - plots delta t for each pair of pixels in
-    the range of 251-255
+    * plot_grid - function for plotting a grid of NxN plots (N for number of
+      pixels) of timestamp differences
+
+    * plot_delta_separate - function for plotting separate figures of
+    timestamp differences for each pair of pixels in the given range
 
 """
 
@@ -24,7 +23,8 @@ from matplotlib import pyplot as plt
 from functions import unpack as f_up
 
 
-def plot_grid(path, pix, timestamps: int = 512, show_fig: bool = False):
+def plot_grid(path, pix, timestamps: int = 512, show_fig: bool = False,
+              same_y: bool = True):
     '''
     Plots a grid of delta t for different pairs of pixels for the
     pixels in the given range. The output is saved in the "results/delta_t"
@@ -42,6 +42,9 @@ def plot_grid(path, pix, timestamps: int = 512, show_fig: bool = False):
         512.
     show_fig : bool, optional
         Switch for showing the output figure. The default is False.
+    same_y : bool, optional
+        Switch for setting the same ylim for all plots in the grid. The
+        default is True.
 
     Returns
     -------
@@ -76,11 +79,12 @@ def plot_grid(path, pix, timestamps: int = 512, show_fig: bool = False):
         plt.rcParams.update({'font.size': 22})
         fig, axs = plt.subplots(len(pix)-1, len(pix)-1, figsize=(24, 24))
 
-        y_max_all = 0
+        if same_y is True:
+            y_max_all = 0
 
         print("\n> > > Calculating the timestamp differences < < <\n")
-        for q in tqdm(range(len(pix))):
-            for w in tqdm(range(len(pix))):
+        for q in tqdm(range(len(pix)), desc='Minuend pixel   '):
+            for w in tqdm(range(len(pix)), desc='Subtrahend pixel'):
                 if w <= q:
                     continue
 
@@ -144,17 +148,17 @@ def plot_grid(path, pix, timestamps: int = 512, show_fig: bool = False):
                     arg_max = None
                     pass
 
-                try:
-                    y_max = np.max(n)
-                except ValueError:
-                    print("\nNot enough timestamps for a proper analysis. "
-                          "Check the range of pixels in the peak or try"
-                          "another data file.\n")
-                    break
-                if y_max_all < y_max:
-                    y_max_all = y_max
+                if same_y is True:
+                    try:
+                        y_max = np.max(n)
+                    except ValueError:
+                        print("\nCould not find maximum y value\n")
+                        pass
 
-                axs[q][w-1].set_ylim(0, y_max+4)
+                    if y_max_all < y_max:
+                        y_max_all = y_max
+
+                    axs[q][w-1].set_ylim(0, y_max+4)
                 axs[q][w-1].set_xlim(-2.5e3, 2.5e3)
 
                 axs[q][w-1].set_title('Pixels {p1}-{p2}\nPeak position {pp}'
@@ -162,11 +166,12 @@ def plot_grid(path, pix, timestamps: int = 512, show_fig: bool = False):
                                               p2=pix[w],
                                               pp=arg_max))
 
-        for q in range(len(pix)):
-            for w in range(len(pix)):
-                if w <= q:
-                    continue
-                axs[q][w-1].set_ylim(0, y_max_all+10)
+        if same_y is True:
+            for q in range(len(pix)):
+                for w in range(len(pix)):
+                    if w <= q:
+                        continue
+                    axs[q][w-1].set_ylim(0, y_max_all+10)
 
         try:
             os.chdir("results/delta_t")
@@ -220,8 +225,9 @@ def plot_delta_separate(path, pix, timestamps: int = 512):
 
         plt.rcParams.update({'font.size': 22})
 
-        for q in tqdm(range(len(pix))):
-            for w in tqdm(range(len(pix))):
+        print("\n> > > Calculating the timestamp differences < < <\n")
+        for q in tqdm(range(len(pix)), desc='Minuend pixel   '):
+            for w in tqdm(range(len(pix)), desc='Subtrahend pixel'):
                 if w <= q:
                     continue
 

@@ -37,7 +37,5 @@ path_2208_TF = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/"\
 # plot_valid.plot_valid(path_2208_653, pix=pix, timestamps=512,
 #                       scale='log', show_fig=False)
 
-# delta_t.plot_grid(path_2208_653, (135, 136, 137, 138, 140))
-
-pix = np.arange(136, 139, 1)
-delta_t.plot_delta_separate(path_2208_653, pix=pix)
+delta_t.plot_grid(path_2208_653, (135, 136, 137, 138, 140), show_fig=False,
+                  same_y=True)

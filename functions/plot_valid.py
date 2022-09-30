@@ -9,9 +9,11 @@ functions:
 
     * plot_valid - plots the number of valid timestamps as a function of
     pixel number
+
     * online_plot_valid - in the chosen folder, looks for the last data file
     created and plots the number of valid timestamps as a functions of
     pixel number, waits for the next file and repeats the cycle
+
     * plot_pixel_hist - plots a histogram of timestamps for a single pixel.
     The function can be used mainly for controlling the homogenity of the
     LinoSPAD2 output.
