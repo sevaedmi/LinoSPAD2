@@ -27,13 +27,17 @@ path_2208_TF = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/"\
     "Software/Data/Ne lamp/FW 2208/two fiber"
 
 # =============================================================================
-# Function execution..
+# Function execution.
 # =============================================================================
 
 # pix = np.arange(140, 161, 1)
-# plot_valid.online_plot_valid(path_2208_540, pix_range=pix)
+# plot_valid.online_plot_valid(path_2208_653, pix_range=pix)
 
-plot_valid.plot_valid(path_2208_540, (156, 157, 158, 159, 160), timestamps=512,
-                      scale='log', show_fig=False)
+# pix = np.arange(130, 161, 1)
+# plot_valid.plot_valid(path_2208_653, pix=pix, timestamps=512,
+#                       scale='log', show_fig=False)
 
-delta_t.plot_grid(path_2208_540, (156, 157, 158, 159, 160))
+# delta_t.plot_grid(path_2208_653, (135, 136, 137, 138, 140))
+
+pix = np.arange(136, 139, 1)
+delta_t.plot_delta_separate(path_2208_653, pix=pix)

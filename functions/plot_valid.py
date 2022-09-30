@@ -20,7 +20,6 @@ functions:
 
 import glob
 import os
-import time
 from matplotlib import pyplot as plt
 import numpy as np
 from functions import unpack as f_up
@@ -63,9 +62,9 @@ def plot_valid(path, pix, timestamps, scale: str = 'linear',
 
     for i, num in enumerate(DATA_FILES):
 
-        print("=========================================\n"
+        print("=================================================\n"
               "Plotting timestamps, Working on {}\n"
-              "=========================================".format(num))
+              "=================================================".format(num))
 
         data_matrix = f_up.unpack_binary_flex(num, timestamps)
 
@@ -105,7 +104,8 @@ def plot_valid(path, pix, timestamps, scale: str = 'linear',
         os.chdir("..")
 
 
-def online_plot_valid(path, pix_range, timestamps: int = 512):
+def online_plot_valid(path, pix_range, timestamps: int = 512,
+                      frame_rate: float = 0.1):
     '''
     Real-time plotting of number of valid timestamps from the last data
     file. Waits for a new file then analyzes it and shows the plot. The
@@ -122,48 +122,45 @@ def online_plot_valid(path, pix_range, timestamps: int = 512):
     timestamps : int, optional
         Number of timestamps per pixel per acquisition cycle. The default is
         512.
-
+    frame_rate : float, optional
+        Time for the script to wait for a new file.
     Returns
     -------
     None.
 
     '''
-    # =========================================================================
-    # Looking for last created file
-    # =========================================================================
-
-    path_save = path + "/results/online"
 
     os.chdir(path)
 
     last_file_ctime = 0
+
+    pixels = np.arange(0, 256, 1)
+
     plt.ion()
 
-    print("=============================\n"
+    print("==============================\n"
           "Online plotting of timestamps\n"
-          "=============================")
+          "==============================")
+
+    fig = plt.figure(figsize=(11, 7))
+    plt.rcParams.update({"font.size": 22})
+
     while True:
 
+        DATA_FILES = glob.glob('*.dat*')
         try:
-            DATA_FILES = glob.glob('*.dat*')
-            try:
-                last_file = max(DATA_FILES, key=os.path.getctime)
-            except Exception:
-                print("Waiting for a file")
-                time.sleep(5)
-                continue
+            last_file = max(DATA_FILES, key=os.path.getctime)
+        except ValueError:
+            print("Waiting for a file")
+            plt.pause(frame_rate)
+            continue
 
-            new_file_ctime = os.path.getctime(last_file)
+        new_file_ctime = os.path.getctime(last_file)
 
-            if new_file_ctime <= last_file_ctime:
-                print("Waiting for new file.")
-                last_file_ctime = new_file_ctime
-                time.sleep(5)
-                continue
+        if new_file_ctime > last_file_ctime:
 
-    # =========================================================================
-    # Data analysis
-    # =========================================================================
+            waiting = False
+
             last_file_ctime = new_file_ctime
 
             print("Analysing the last file.")
@@ -185,27 +182,37 @@ def online_plot_valid(path, pix_range, timestamps: int = 512):
             else:
                 chosen_color = "salmon"
 
-            plt.close('all')
-            plt.pause(1)
-            plt.figure(figsize=(11, 7))
-            plt.rcParams.update({"font.size": 20})
-            plt.title("Peak is {}".format(peak))
-            plt.xlabel("Pixel [-]")
-            plt.ylabel("Valid timestamps [-]")
-            plt.yscale('log')
-            plt.plot(valid_per_pixel, 'o', color=chosen_color)
-            plt.show()
-
-            plt.pause(1)
             try:
-                os.chdir(path_save)
-            except Exception:
-                os.mkdir(path_save)
-                os.chdir(path_save)
-            plt.savefig("{}.png".format(last_file))
-            os.chdir('../..')
-        except KeyboardInterrupt:
-            break
+                plot.set_xdata(pixels)
+                plot.set_ydata(valid_per_pixel)
+                plt.title("Peak is {}".format(peak))  # show new peak value
+
+                # re-drawing the figure, recalculating the axes limits
+                ax.relim()
+                ax.autoscale_view()
+                fig.canvas.draw()
+
+                # to flush the GUI events
+                fig.canvas.flush_events()
+                plt.pause(frame_rate)
+            except NameError:
+                ax = fig.add_subplot(111)
+                plot, = ax.plot(pixels, valid_per_pixel, 'o',
+                                color=chosen_color)
+                plt.rcParams.update({"font.size": 22})
+                plt.title("Peak is {}".format(peak))
+                plt.xlabel("Pixel [-]")
+                plt.ylabel("Valid timestamps [-]")
+                plt.yscale('log')
+                plt.show()
+                plt.pause(frame_rate)
+        else:
+            if waiting is False:
+                print("Waiting for new file.")
+            waiting = True
+            last_file_ctime = new_file_ctime
+            plt.pause(frame_rate)
+            continue
 
 
 def plot_pixel_hist(path, pix1, timestamps: int = 512, show_fig: bool = False):
@@ -241,9 +248,10 @@ def plot_pixel_hist(path, pix1, timestamps: int = 512, show_fig: bool = False):
 
     for i, num in enumerate(DATA_FILES):
 
-        print("========================================\n"
+        print("=====================================================\n"
               "Plotting pixel histograms, Working on {}\n"
-              "=========================================".format(num))
+              "====================================================="
+              .format(num))
 
         data = f_up.unpack_binary_flex(num, timestamps)
 
