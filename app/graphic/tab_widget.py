@@ -1,4 +1,5 @@
-from PyQt5.QtWidgets import QPushButton, QWidget, QTabWidget,QVBoxLayout, QFileDialog, QLineEdit
+from PyQt5.QtWidgets import QPushButton, QWidget, QTabWidget, QVBoxLayout,\
+    QFileDialog, QLineEdit
 from PyQt5.QtCore import pyqtSlot
 from functions import plot_valid
 from app.graphic.plot_figure import PltCanvas
@@ -27,7 +28,7 @@ class TableWidget(QWidget):
         self.tab1.layout = QVBoxLayout(self)
         self.pushButtonLoadPath = QPushButton("Set path")
         self.lineEditPath = QLineEdit('')
-        self.pushButtonStartSync = QPushButton("Show hits from LinoSpad")
+        self.pushButtonStartSync = QPushButton("Show hits from LinoSPAD2")
         self.tab1.layout.addWidget(self.pushButtonLoadPath)
         self.tab1.layout.addWidget(self.lineEditPath)
         self.tab1.layout.addWidget(self.pushButtonStartSync)
@@ -39,24 +40,17 @@ class TableWidget(QWidget):
 
         # adding tool bar to the layout
 
-
-
         # Add tabs to widget
         self.layout.addWidget(self.tabs)
         self.setLayout(self.layout)
         self.pushButtonLoadPath.clicked.connect(self.load_path)
         self.pushButtonStartSync.clicked.connect(self.start_stream)
 
-
-
-
-
     @pyqtSlot()
     def load_path(self):
         file = str(QFileDialog.getExistingDirectory(self, "Select Directory"))
         self.lineEditPath.setText(file)
-        print( file + "\n")
+        print(file + "\n")
 
     def start_stream(self):
-        plot_valid.online_plot_valid(self.lineEditPath.text(),range(256),512)
-
+        plot_valid.online_plot_valid(self.lineEditPath.text(), range(256), 512)

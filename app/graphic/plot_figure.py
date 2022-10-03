@@ -1,9 +1,13 @@
 import sys
-from PyQt5.QtWidgets import QWidget, QDialog, QApplication, QPushButton, QVBoxLayout
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
+from PyQt5.QtWidgets import QWidget, QDialog, QApplication, QPushButton,\
+    QVBoxLayout
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg\
+    as FigureCanvas
+from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT\
+    as NavigationToolbar
 import matplotlib.pyplot as plt
 import random
+
 
 class PltCanvas(QWidget):
 
@@ -33,5 +37,3 @@ class PltCanvas(QWidget):
 
         # refresh canvas
         self.canvas.draw()
-
-
