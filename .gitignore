@@ -132,3 +132,8 @@ dmypy.json
 *.dat
 *.ini
 *.stats
+.idea/vcs.xml
+.idea/modules.xml
+.idea/misc.xml
+.idea/LinoSPAD2.iml
+.idea/inspectionProfiles/profiles_settings.xml

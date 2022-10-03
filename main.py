@@ -1,41 +1,53 @@
 """ The main hub for analysis of data from LinoSPAD2.
 
 """
-
+# Scripts import
 import numpy as np
-
 from functions import delta_t
-
 from functions import plot_valid
-
 from functions import fits as gf
 
-# =============================================================================
-# Paths to where either data or the 'csv' files with the resuts are located.
-# =============================================================================
+# Application import
+import sys
+from app.main_window import MainWindow
+from PyQt5.QtWidgets import QApplication
 
-path_2208_540 = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD"\
-    "/Software/Data/Ne lamp/FW 2208/540 nm"
+run_application = True
 
-path_2208_653 = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD"\
-    "/Software/Data/Ne lamp/FW 2208/653 nm"
+if run_application is True:
+        app = QApplication(sys.argv)
+        window = MainWindow()
+        window.show()
+        app.exec()
+else:
+    # =============================================================================
+    # Paths to where either data or the 'csv' files with the resuts are located.
+    # =============================================================================
 
-path_2208_Ar = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/"\
-    "Software/Data/Ar lamp/FW 2208"
+    path_2208_540 = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD"\
+        "/Software/Data/Ne lamp/FW 2208/540 nm"
 
-path_2208_TF = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/"\
-    "Software/Data/Ne lamp/FW 2208/two fiber"
+    path_2208_653 = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD"\
+        "/Software/Data/Ne lamp/FW 2208/653 nm"
 
-# =============================================================================
-# Function execution.
-# =============================================================================
+    path_2208_Ar = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/"\
+        "Software/Data/Ar lamp/FW 2208"
 
-# pix = np.arange(140, 161, 1)
-# plot_valid.online_plot_valid(path_2208_653, pix_range=pix)
+    path_2208_TF = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/"\
+        "Software/Data/Ne lamp/FW 2208/two fiber"
 
-# pix = np.arange(130, 161, 1)
-# plot_valid.plot_valid(path_2208_653, pix=pix, timestamps=512,
-#                       scale='log', show_fig=False)
+    # =============================================================================
+    # Function execution.
+    # =============================================================================
 
-delta_t.plot_grid(path_2208_653, (135, 136, 137, 138, 140), show_fig=False,
-                  same_y=True)
+    # pix = np.arange(140, 161, 1)
+    # plot_valid.online_plot_valid(path_2208_653, pix_range=pix)
+
+    # pix = np.arange(130, 161, 1)
+    # plot_valid.plot_valid(path_2208_653, pix=pix, timestamps=512,
+    #                       scale='log', show_fig=False)
+
+    delta_t.plot_grid(path_2208_653, (135, 136, 137, 138, 140), show_fig=False,
+                      same_y=True)
+
+
