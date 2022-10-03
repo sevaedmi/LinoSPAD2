@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QPushButton, QWidget, QTabWidget, QVBoxLayout, \
+from PyQt5.QtWidgets import QPushButton, QWidget, QTabWidget, QVBoxLayout,\
     QFileDialog, QLineEdit
 from PyQt5.QtCore import pyqtSlot
 from functions import plot_valid
