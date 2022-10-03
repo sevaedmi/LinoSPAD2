@@ -1,9 +1,11 @@
-from PyQt5.QtWidgets import QPushButton, QWidget, QTabWidget,QVBoxLayout, QFileDialog, QLineEdit
+from PyQt5.QtWidgets import QPushButton, QWidget, QTabWidget, QVBoxLayout, \
+    QFileDialog, QLineEdit
 from PyQt5.QtCore import pyqtSlot
 from functions import plot_valid
 from app.graphic.plot_figure import PltCanvas
 from app.graphic.tab_livehistogram import LiveHistogram
 import matplotlib
+
 matplotlib.use('Qt5Agg')
 
 
@@ -25,4 +27,3 @@ class TableWidget(QWidget):
 
         self.layout.addWidget(self.tabs)
         self.setLayout(self.layout)
-
