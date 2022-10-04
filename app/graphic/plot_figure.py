@@ -1,7 +1,7 @@
 import sys
-from PyQt5.QtWidgets import QWidget, QDialog, QApplication, QPushButton, \
-    QVBoxLayout
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg \
+from PyQt5.QtWidgets import QWidget, QDialog, QApplication, QPushButton,\
+    QVBoxLayout, QLabel
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg\
     as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT \
     as NavigationToolbar

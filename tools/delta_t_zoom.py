@@ -11,8 +11,8 @@ import numpy as np
 from matplotlib import pyplot as plt
 from functions import unpack as f_up
 
-path = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/Data/"\
-    "Ne lamp ext trig/setup 2/3.99 ms acq window/656 nm"
+path = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/"\
+    "Software/Data/Ar lamp/FW 2208"
 
 os.chdir(path)
 

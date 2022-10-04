@@ -21,6 +21,7 @@ from tqdm import tqdm
 import numpy as np
 from matplotlib import pyplot as plt
 from functions import unpack as f_up
+from functions.calc_diff import calculate_differences as cd
 
 
 def plot_grid(path, pix, timestamps: int = 512, show_fig: bool = False,
@@ -66,7 +67,7 @@ def plot_grid(path, pix, timestamps: int = 512, show_fig: bool = False,
 
         print("=====================================================\n"
               "Plotting a delta t grid, Working on {}\n"
-              "====================================================="
+              "=====================================================\n"
               .format(filename))
 
         data = f_up.unpack_binary_flex(filename, timestamps)
@@ -79,6 +80,7 @@ def plot_grid(path, pix, timestamps: int = 512, show_fig: bool = False,
         plt.rcParams.update({'font.size': 22})
         fig, axs = plt.subplots(len(pix)-1, len(pix)-1, figsize=(24, 24))
 
+        # check if the y limits of all plots should be the same
         if same_y is True:
             y_max_all = 0
 
@@ -90,35 +92,7 @@ def plot_grid(path, pix, timestamps: int = 512, show_fig: bool = False,
 
                 data_pair = np.vstack((data_pix[q], data_pix[w]))
 
-                minuend = len(data_pair)
-                timestamps_total = len(data_pair[0])
-                subtrahend = len(data_pair)
-
-                output = []
-
-                for i in range(minuend):
-                    acq = 0  # number of acq cycle
-                    for j in range(timestamps_total):
-                        if j % timestamps == 0:
-                            acq = acq + 1  # next acq cycle
-                        if data_pair[i][j] == -1:
-                            continue
-                        for k in range(subtrahend):
-                            if k <= i:
-                                continue  # to avoid repetition: 2-1, 53-45
-                            for p in range(timestamps):
-                                n = timestamps*(acq-1) + p
-                                if data_pair[k][n] == -1:
-                                    continue
-                                elif (data_pair[i][j] - data_pair[k][n]
-                                      > 2.5e3):
-                                    continue
-                                elif (data_pair[i][j] - data_pair[k][n]
-                                      < -2.5e3):
-                                    continue
-                                else:
-                                    output.append(data_pair[i][j]
-                                                  - data_pair[k][n])
+                delta_ts = cd(data_pair, timestamps=timestamps)
 
                 if "Ne" and "540" in path:
                     chosen_color = "seagreen"
@@ -130,14 +104,14 @@ def plot_grid(path, pix, timestamps: int = 512, show_fig: bool = False,
                     chosen_color = "salmon"
 
                 try:
-                    bins = np.arange(np.min(output), np.max(output),
+                    bins = np.arange(np.min(delta_ts), np.max(delta_ts),
                                      17.857*2)
                 except Exception:
                     continue
 
                 axs[q][w-1].set_xlabel('\u0394t [ps]')
                 axs[q][w-1].set_ylabel('Timestamps [-]')
-                n, b, p = axs[q][w-1].hist(output, bins=bins,
+                n, b, p = axs[q][w-1].hist(delta_ts, bins=bins,
                                            color=chosen_color)
                 # find position of the histogram peak
                 try:
@@ -162,8 +136,7 @@ def plot_grid(path, pix, timestamps: int = 512, show_fig: bool = False,
                 axs[q][w-1].set_xlim(-2.5e3, 2.5e3)
 
                 axs[q][w-1].set_title('Pixels {p1}-{p2}\nPeak position {pp}'
-                                      .format(p1=pix[q],
-                                              p2=pix[w],
+                                      .format(p1=pix[q], p2=pix[w],
                                               pp=arg_max))
 
         if same_y is True:
@@ -233,33 +206,7 @@ def plot_delta_separate(path, pix, timestamps: int = 512):
 
                 data_pair = np.vstack((data_pix[q], data_pix[w]))
 
-                minuend = len(data_pair)-1  # i=255
-                subtrahend = len(data_pair)  # k=254
-                timestamps_total = len(data_pair[0])
-
-                output = []
-
-                for i in tqdm(range(minuend)):
-                    acq = 0  # number of acq cycle
-                    for j in range(timestamps_total):
-                        if j % timestamps == 0:
-                            acq = acq + 1  # next acq cycle
-                        if data_pair[i][j] == -1:
-                            continue
-                        for k in range(subtrahend):
-                            if k <= i:
-                                continue  # to avoid repetition: 2-1, etc.
-                            for p in range(timestamps):
-                                n = timestamps*(acq-1) + p
-                                if data_pair[k][n] == -1:
-                                    continue
-                                elif data_pair[i][j] - data_pair[k][n] > 2.5e3:
-                                    continue
-                                elif data_pair[i][j] - data_pair[k][n] < -2.5e3:
-                                    continue
-                                else:
-                                    output.append(data_pair[i][j]
-                                                  - data_pair[k][n])
+                delta_ts = cd(data_pair, timestamps=timestamps)
 
                 if "Ne" and "540" in path:
                     chosen_color = "seagreen"
@@ -271,14 +218,15 @@ def plot_delta_separate(path, pix, timestamps: int = 512):
                     chosen_color = "salmon"
 
                 try:
-                    bins = np.arange(np.min(output), np.max(output), 17.857*2)
+                    bins = np.arange(np.min(delta_ts), np.max(delta_ts),
+                                     17.857*2)
                 except Exception:
                     continue
 
                 plt.figure(figsize=(11, 7))
                 plt.xlabel('\u0394t [ps]')
                 plt.ylabel('Timestamps [-]')
-                n, b, p = plt.hist(output, bins=bins, color=chosen_color)
+                n, b, p = plt.hist(delta_ts, bins=bins, color=chosen_color)
 
                 # find position of the histogram peak
                 try:

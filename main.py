@@ -3,9 +3,7 @@
 """
 # Scripts imports
 import numpy as np
-from functions import delta_t
-from functions import plot_valid
-from functions import fits as gf
+from functions import delta_t, plot_valid, fits as gf
 
 # Application imports
 import sys
