@@ -63,9 +63,9 @@ class PltCanvas(QWidget):
     def setPlotData(self, xdataplot, yplotdata, peak):
 
         # self.plot.set_xdata(xdataplot)
-        plt.title("Maximum counts is {}".format(peak))
-        self.plot.set_ydata(yplotdata)
 
+        self.plot.set_ydata(yplotdata)
+        self.ax.set_title("Maximum counts is {}".format(peak))
         self.ax.relim()
         self.ax.autoscale_view()
         self.setplotparameters()
