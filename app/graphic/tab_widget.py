@@ -3,7 +3,7 @@ from PyQt5.QtWidgets import QPushButton, QWidget, QTabWidget, QVBoxLayout, \
 from PyQt5.QtCore import pyqtSlot
 from functions import plot_valid
 from app.graphic.plot_figure import PltCanvas
-from app.graphic.tab_livehistogram import LiveHistogram
+from app.graphic.tab_livetimestamps import LiveTimestamps
 import matplotlib
 
 matplotlib.use('Qt5Agg')
@@ -17,12 +17,12 @@ class TableWidget(QWidget):
 
         # Initialize tab screen
         self.tabs = QTabWidget()
-        self.tab1 = LiveHistogram(self)
+        self.tab1 = LiveTimestamps(self)
         self.tab2 = QWidget()
         self.tabs.resize(300, 200)
 
         # Add tabs
-        self.tabs.addTab(self.tab1, "Live histogram")
+        self.tabs.addTab(self.tab1, "Live timestamps")
         self.tabs.addTab(self.tab2, "Tab 2")
 
         self.layout.addWidget(self.tabs)
