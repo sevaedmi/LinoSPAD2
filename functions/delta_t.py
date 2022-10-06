@@ -126,6 +126,7 @@ def plot_grid(path, pix, timestamps: int = 512, show_fig: bool = False,
                     try:
                         y_max = np.max(n)
                     except ValueError:
+                        y_max = 0
                         print("\nCould not find maximum y value\n")
                         pass
 

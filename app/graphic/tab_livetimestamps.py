@@ -53,7 +53,7 @@ class LiveTimestamps(QWidget):
                 # print("updateTimeStamp: new file")
                 self.last_file_ctime = new_file_ctime
                 # print("updateTimeStamp:" + self.pathtotimestamp + last_file)
-                validtimestemps, peak = timestamp_computation.get_nmr_validtimestamps(self.pathtotimestamp + '/' + last_file, range(255), 512)
+                validtimestemps, peak = timestamp_computation.get_nmr_validtimestamps(self.pathtotimestamp + '/' + last_file, np.arange(145, 155, 1), 512)
 
                 self.plotWidget.setPlotData(np.arange(0, 256, 1),validtimestemps,peak)
             # else:
@@ -79,5 +79,5 @@ class LiveTimestamps(QWidget):
             self.pushButtonStartSync.setText('Start stream')
         else:
             self.pushButtonStartSync.setText('Stop stream')
-            self.timer.start(200)
+            self.timer.start(100)
             self.timerRunning = True
