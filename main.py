@@ -24,6 +24,9 @@ else:
 
     tools.jakub_playground.main_playground()
 
+    # First peak 51 - 58
+    # Second peak 203 - 211
+
 
     # path_2208_540 = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD"\
     #     "/Software/Data/Ne lamp/FW 2208/540 nm"
