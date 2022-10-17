@@ -4,7 +4,7 @@ analysis and visualization application.
 """
 
 from PyQt5.QtWidgets import QWidget, QTabWidget, QVBoxLayout
-from app.graphic.tab_livehistogram import LiveHistogram
+from app.graphic.tab_livetimestamps import LiveTimestamps
 from app.graphic.tab_single_pixel_histogram import SinglePixelHistogram
 import matplotlib
 
@@ -33,13 +33,15 @@ class TableWidget(QWidget):
 
         # Initialize tab screen
         self.tabs = QTabWidget()
-        self.tab1 = LiveHistogram(self)
+
+        self.tab1 = LiveTimestamps(self)
         self.tab2 = SinglePixelHistogram(self)
         self.tabs.resize(300, 200)
 
         # Add tabs
-        self.tabs.addTab(self.tab1, "Live histogram")
+        self.tabs.addTab(self.tab1, "Live timestamps")
         self.tabs.addTab(self.tab2, "Single pixel histogram")
+
 
         self.layout.addWidget(self.tabs)
         self.setLayout(self.layout)
