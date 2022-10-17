@@ -10,7 +10,8 @@ import sys
 from app.main_window import MainWindow
 from PyQt5.QtWidgets import QApplication
 import tools.jakub_playground
-run_application = False
+
+run_application = True
 
 if run_application is True:
     app = QApplication(sys.argv)
@@ -26,7 +27,6 @@ else:
 
     # First peak 51 - 58
     # Second peak 203 - 211
-
 
     # path_2208_540 = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD"\
     #     "/Software/Data/Ne lamp/FW 2208/540 nm"

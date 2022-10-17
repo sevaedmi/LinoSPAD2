@@ -10,10 +10,13 @@ functions:
 """
 
 
-def calculate_differences(data_pair, timestamps: int = 512,
-                          range_left: float = -2.5e3,
-                          range_right: float = 2.5e3):
-    '''
+def calculate_differences(
+    data_pair,
+    timestamps: int = 512,
+    range_left: float = -2.5e3,
+    range_right: float = 2.5e3,
+):
+    """
     Function for calculating timestamp differences for a given pair of pixels.
 
     Parameters
@@ -37,7 +40,7 @@ def calculate_differences(data_pair, timestamps: int = 512,
     output : array-like
         An array of timestamp differences for the given pair of pixels.
 
-    '''
+    """
 
     minuend = len(data_pair)
     timestamps_total = len(data_pair[0])
@@ -56,14 +59,12 @@ def calculate_differences(data_pair, timestamps: int = 512,
                 if k <= i:
                     continue  # to avoid repetition: 2-1, 53-45
                 for p in range(timestamps):
-                    n = timestamps*(acq-1) + p
+                    n = timestamps * (acq - 1) + p
                     if data_pair[k][n] == -1:
                         continue
-                    elif (data_pair[i][j] - data_pair[k][n]
-                          > range_right):
+                    elif data_pair[i][j] - data_pair[k][n] > range_right:
                         continue
-                    elif (data_pair[i][j] - data_pair[k][n]
-                          < range_left):
+                    elif data_pair[i][j] - data_pair[k][n] < range_left:
                         continue
                     else:
                         output.append(data_pair[i][j] - data_pair[k][n])

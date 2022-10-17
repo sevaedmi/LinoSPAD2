@@ -27,9 +27,8 @@ import numpy as np
 from functions import unpack as f_up
 
 
-def plot_valid(path, pix, timestamps, scale: str = 'linear',
-               show_fig: bool = False):
-    '''
+def plot_valid(path, pix, timestamps, scale: str = "linear", show_fig: bool = False):
+    """
     Plots number of valid timestamps in each pixel for each 'dat' file in
     given folder. The plots are saved as 'png' in the 'results' folder. In
     the case there is no such folder, it is created where the data files are.
@@ -50,10 +49,10 @@ def plot_valid(path, pix, timestamps, scale: str = 'linear',
     -------
     None.
 
-    '''
+    """
     os.chdir(path)
 
-    DATA_FILES = glob.glob('*.dat*')
+    DATA_FILES = glob.glob("*.dat*")
 
     valid_per_pixel = np.zeros(256)
 
@@ -61,19 +60,19 @@ def plot_valid(path, pix, timestamps, scale: str = 'linear',
         plt.ion()
     else:
         plt.ioff()
-
     for i, num in enumerate(DATA_FILES):
 
-        print("=================================================\n"
-              "Plotting timestamps, Working on {}\n"
-              "=================================================".format(num))
+        print(
+            "=================================================\n"
+            "Plotting timestamps, Working on {}\n"
+            "=================================================".format(num)
+        )
 
         data_matrix = f_up.unpack_binary_flex(num, timestamps)
 
         for j in range(len(data_matrix)):
             valid_per_pixel[j] = len(np.where(data_matrix[j] > 0)[0])
-
-        peak = np.max(valid_per_pixel[pix[0]:pix[-1]])
+        peak = np.max(valid_per_pixel[pix[0] : pix[-1]])
 
         if "Ne" and "540" in path:
             chosen_color = "seagreen"
@@ -83,32 +82,29 @@ def plot_valid(path, pix, timestamps, scale: str = 'linear',
             chosen_color = "mediumslateblue"
         else:
             chosen_color = "salmon"
-
         plt.figure(figsize=(16, 10))
         plt.rcParams.update({"font.size": 20})
         plt.title("{file}\n Peak is {peak}".format(file=num, peak=peak))
         plt.xlabel("Pixel [-]")
         plt.ylabel("Valid timestamps [-]")
-        if scale == 'log':
-            plt.yscale('log')
-        plt.plot(valid_per_pixel, 'o', color=chosen_color)
+        if scale == "log":
+            plt.yscale("log")
+        plt.plot(valid_per_pixel, "o", color=chosen_color)
 
         try:
             os.chdir("results")
         except Exception:
             os.mkdir("results")
             os.chdir("results")
-
         plt.savefig("{}.png".format(num))
         plt.pause(0.1)
         if show_fig is False:
-            plt.close('all')
+            plt.close("all")
         os.chdir("..")
 
 
-def online_plot_valid(path, pix_range, timestamps: int = 512,
-                      frame_rate: float = 0.1):
-    '''
+def online_plot_valid(path, pix_range, timestamps: int = 512, frame_rate: float = 0.1):
+    """
     Real-time plotting of number of valid timestamps from the last data
     file. Waits for a new file then analyzes it and shows the plot. The
     output is saved in the "results/online" directory. In the case the folder
@@ -130,7 +126,7 @@ def online_plot_valid(path, pix_range, timestamps: int = 512,
     -------
     None.
 
-    '''
+    """
 
     os.chdir(path)
 
@@ -140,23 +136,24 @@ def online_plot_valid(path, pix_range, timestamps: int = 512,
 
     plt.ion()
 
-    print("==============================\n"
-          "Online plotting of timestamps\n"
-          "==============================")
+    print(
+        "==============================\n"
+        "Online plotting of timestamps\n"
+        "=============================="
+    )
 
     fig = plt.figure(figsize=(11, 7))
     plt.rcParams.update({"font.size": 22})
 
     while True:
 
-        DATA_FILES = glob.glob('*.dat*')
+        DATA_FILES = glob.glob("*.dat*")
         try:
             last_file = max(DATA_FILES, key=os.path.getctime)
         except ValueError:
             print("Waiting for a file")
             plt.pause(frame_rate)
             continue
-
         new_file_ctime = os.path.getctime(last_file)
 
         if new_file_ctime > last_file_ctime:
@@ -172,7 +169,6 @@ def online_plot_valid(path, pix_range, timestamps: int = 512,
 
             for j in range(len(data)):
                 valid_per_pixel[j] = len(np.where(data[j] > 0)[0])
-
             peak = np.max(valid_per_pixel[pix_range])
 
             if "Ne" and "540" in path:
@@ -183,7 +179,6 @@ def online_plot_valid(path, pix_range, timestamps: int = 512,
                 chosen_color = "mediumslateblue"
             else:
                 chosen_color = "salmon"
-
             try:
                 plot.set_xdata(pixels)
                 plot.set_ydata(valid_per_pixel)
@@ -199,13 +194,12 @@ def online_plot_valid(path, pix_range, timestamps: int = 512,
                 plt.pause(frame_rate)
             except NameError:
                 ax = fig.add_subplot(111)
-                plot, = ax.plot(pixels, valid_per_pixel, 'o',
-                                color=chosen_color)
+                (plot,) = ax.plot(pixels, valid_per_pixel, "o", color=chosen_color)
                 plt.rcParams.update({"font.size": 22})
                 plt.title("Peak is {}".format(peak))
                 plt.xlabel("Pixel [-]")
                 plt.ylabel("Valid timestamps [-]")
-                plt.yscale('log')
+                plt.yscale("log")
                 plt.show()
                 plt.pause(frame_rate)
         else:
@@ -218,7 +212,7 @@ def online_plot_valid(path, pix_range, timestamps: int = 512,
 
 
 def plot_pixel_hist(path, pix1, timestamps: int = 512, show_fig: bool = False):
-    '''
+    """
     Plots a histogram for each pixel in a preset range.
 
     Parameters
@@ -237,23 +231,23 @@ def plot_pixel_hist(path, pix1, timestamps: int = 512, show_fig: bool = False):
     -------
     None.
 
-    '''
+    """
 
     os.chdir(path)
 
-    DATA_FILES = glob.glob('*.dat*')
+    DATA_FILES = glob.glob("*.dat*")
 
     if show_fig is True:
         plt.ion()
     else:
         plt.ioff()
-
     for i, num in enumerate(DATA_FILES):
 
-        print("=====================================================\n"
-              "Plotting pixel histograms, Working on {}\n"
-              "====================================================="
-              .format(num))
+        print(
+            "=====================================================\n"
+            "Plotting pixel histograms, Working on {}\n"
+            "=====================================================".format(num)
+        )
 
         data = f_up.unpack_binary_flex(num, timestamps)
 
@@ -261,11 +255,10 @@ def plot_pixel_hist(path, pix1, timestamps: int = 512, show_fig: bool = False):
             pixels = np.arange(145, 165, 1)
         else:
             pixels = pix1
-
         for i, pixel in enumerate(pixels):
             plt.figure(figsize=(16, 10))
-            plt.rcParams.update({'font.size': 22})
-            bins = np.arange(0, 4e9, 17.867*1e6)  # bin size of 17.867 us
+            plt.rcParams.update({"font.size": 22})
+            bins = np.arange(0, 4e9, 17.867 * 1e6)  # bin size of 17.867 us
             plt.hist(data[pixel], bins=bins, color="teal")
             plt.xlabel("Time [ms]")
             plt.ylabel("Counts [-]")
@@ -275,6 +268,5 @@ def plot_pixel_hist(path, pix1, timestamps: int = 512, show_fig: bool = False):
             except Exception:
                 os.mkdir("results/single pixel histograms")
                 os.chdir("results/single pixel histograms")
-            plt.savefig("{file}, pixel {pixel}.png".format(file=num,
-                                                           pixel=pixel))
+            plt.savefig("{file}, pixel {pixel}.png".format(file=num, pixel=pixel))
             os.chdir("../..")
