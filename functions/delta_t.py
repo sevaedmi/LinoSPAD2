@@ -148,7 +148,7 @@ def plot_grid(path, pix, timestamps: int = 512, show_fig: bool = False,
 
         try:
             os.chdir("results/delta_t")
-        except Exception:
+        except FileNotFoundError:
             os.mkdir("results/delta_t")
             os.chdir("results/delta_t")
         fig.tight_layout()  # for perfect spacing between the plots
