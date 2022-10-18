@@ -11,7 +11,7 @@ from app.main_window import MainWindow
 from PyQt5.QtWidgets import QApplication
 import tools.jakub_playground
 
-run_application = True
+run_application = False
 
 
 if run_application is True:

@@ -143,7 +143,7 @@ def plot_grid(
                     continue
                 axs[q][w - 1].set_xlabel("\u0394t [ps]")
                 axs[q][w - 1].set_ylabel("Timestamps [-]")
-                (n,) = axs[q][w - 1].hist(delta_ts, bins=bins, color=chosen_color)
+                n, b, p = axs[q][w - 1].hist(delta_ts, bins=bins, color=chosen_color)
 
                 # find position of the histogram peak
                 try:
@@ -249,7 +249,7 @@ def plot_delta_separate(path, pix, timestamps: int = 512):
                 plt.figure(figsize=(11, 7))
                 plt.xlabel("\u0394t [ps]")
                 plt.ylabel("Timestamps [-]")
-                (n,) = plt.hist(delta_ts, bins=bins, color=chosen_color)
+                n, b, p = plt.hist(delta_ts, bins=bins, color=chosen_color)
 
                 # find position of the histogram peak
                 try:
