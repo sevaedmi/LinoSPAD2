@@ -22,6 +22,42 @@ import numpy as np
 from matplotlib import pyplot as plt
 from functions import unpack as f_up
 from functions.calc_diff import calculate_differences as cd
+import time
+
+#def compute_delta_t(path_to_file, pixels, timestampsnmr: int = 512, timewindow: int = 5000):
+    # data_ps_float = np.round(f_up.unpack_binary_flex(path_to_file, timestampsnmr))
+    # data_ps_int = data_ps_float.astype(np.int64)
+    # print(np.amax(data_ps_int))
+    # pixel_0 = data_ps_int[pixels[0]]
+    # pixel_1 = data_ps_int[pixels[1]]
+
+def compute_delta_t(pixel_0,pixel_1, timestampsnmr: int = 512, timewindow: int = 5000):
+
+    nmr_of_cycles = int(len(pixel_0) / timestampsnmr)
+    output = []
+
+    # start = time.time()
+    for cycle in range(nmr_of_cycles):
+        for timestamp_pix0 in range(timestampsnmr):
+            if pixel_0[cycle * timestampsnmr + timestamp_pix0] == -1:
+                break
+            for timestamp_pix1 in range(timestampsnmr):
+                if pixel_1[cycle * timestampsnmr + timestamp_pix1] == -1:
+                    break
+                if np.abs(pixel_0[cycle * timestampsnmr + timestamp_pix0] - pixel_1[
+                    cycle * timestampsnmr + timestamp_pix1]) < timewindow:
+                    output.append(pixel_0[cycle * timestampsnmr + timestamp_pix0] - pixel_1[
+                        cycle * timestampsnmr + timestamp_pix1])
+                else:
+                    continue
+    # end = time.time()
+    # print(f"Time kuba {start-end} ")
+    # data_pair = np.vstack((pixel_0, pixel_1))
+    # start = time.time()
+    # output = cd(data_pair, timestamps=512, range_left=-timewindow, range_right=timewindow)
+    # end = time.time()
+    # print(f"Time sergei {start-end} ")
+    return output
 
 
 def plot_grid(path, pix, timestamps: int = 512, show_fig: bool = False,
@@ -78,7 +114,7 @@ def plot_grid(path, pix, timestamps: int = 512, show_fig: bool = False,
             data_pix[i] = data[num]
 
         plt.rcParams.update({'font.size': 22})
-        fig, axs = plt.subplots(len(pix)-1, len(pix)-1, figsize=(24, 24))
+        fig, axs = plt.subplots(len(pix) - 1, len(pix) - 1, figsize=(24, 24))
 
         # check if the y limits of all plots should be the same
         if same_y is True:
@@ -92,7 +128,7 @@ def plot_grid(path, pix, timestamps: int = 512, show_fig: bool = False,
 
                 data_pair = np.vstack((data_pix[q], data_pix[w]))
 
-                delta_ts = cd(data_pair, timestamps=timestamps)
+                delta_ts = cd(data_pair, timestamps=timestamps, range_left=-25.5e3, range_right=25.5e3)
 
                 if "Ne" and "540" in path:
                     chosen_color = "seagreen"
@@ -105,14 +141,16 @@ def plot_grid(path, pix, timestamps: int = 512, show_fig: bool = False,
 
                 try:
                     bins = np.arange(np.min(delta_ts), np.max(delta_ts),
-                                     17.857*2)
+                                     17.857 * 2)
+                    # bins = np.arange(np.min(delta_ts), np.max(delta_ts),
+                    #                  (np.max(delta_ts) - np.min(delta_ts))/100)
                 except Exception:
                     continue
 
-                axs[q][w-1].set_xlabel('\u0394t [ps]')
-                axs[q][w-1].set_ylabel('Timestamps [-]')
-                n, b, p = axs[q][w-1].hist(delta_ts, bins=bins,
-                                           color=chosen_color)
+                axs[q][w - 1].set_xlabel('\u0394t [ps]')
+                axs[q][w - 1].set_ylabel('Timestamps [-]')
+                n, b, p = axs[q][w - 1].hist(delta_ts, bins=bins,
+                                             color=chosen_color)
                 # find position of the histogram peak
                 try:
                     n_max = np.argmax(n)
@@ -133,19 +171,19 @@ def plot_grid(path, pix, timestamps: int = 512, show_fig: bool = False,
                     if y_max_all < y_max:
                         y_max_all = y_max
 
-                    axs[q][w-1].set_ylim(0, y_max+4)
-                axs[q][w-1].set_xlim(-2.5e3, 2.5e3)
+                    axs[q][w - 1].set_ylim(0, y_max + 4)
+                axs[q][w - 1].set_xlim(-25.5e3, 25.5e3)
 
-                axs[q][w-1].set_title('Pixels {p1}-{p2}\nPeak position {pp}'
-                                      .format(p1=pix[q], p2=pix[w],
-                                              pp=arg_max))
+                axs[q][w - 1].set_title('Pixels {p1}-{p2}\nPeak position {pp}'
+                                        .format(p1=pix[q], p2=pix[w],
+                                                pp=arg_max))
 
         if same_y is True:
             for q in range(len(pix)):
                 for w in range(len(pix)):
                     if w <= q:
                         continue
-                    axs[q][w-1].set_ylim(0, y_max_all+10)
+                    axs[q][w - 1].set_ylim(0, y_max_all + 10)
 
         try:
             os.chdir("results/delta_t")
@@ -220,7 +258,7 @@ def plot_delta_separate(path, pix, timestamps: int = 512):
 
                 try:
                     bins = np.arange(np.min(delta_ts), np.max(delta_ts),
-                                     17.857*2)
+                                     17.857 * 2)
                 except Exception:
                     continue
 

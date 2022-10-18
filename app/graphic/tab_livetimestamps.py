@@ -1,9 +1,9 @@
 import glob
 import os
 
-from PyQt5.QtWidgets import QPushButton, QWidget, QTabWidget, QVBoxLayout, QFileDialog, QLineEdit
+from PyQt5.QtWidgets import QPushButton, QWidget, QTabWidget, QVBoxLayout, QFileDialog, QLineEdit, QCheckBox, \
+    QHBoxLayout, QGridLayout
 from PyQt5.QtCore import pyqtSlot, QTimer
-
 from app.tools import timestamp_computation
 from functions import plot_valid
 from app.graphic.plot_figure import PltCanvas
@@ -18,32 +18,53 @@ class LiveTimestamps(QWidget):
 
     def __init__(self, parent):
         super(LiveTimestamps, self).__init__(parent)
-        self.layout = QVBoxLayout(self)
+        self.mainLayout = QHBoxLayout(self)
+        self.setLayout(self.mainLayout)
 
-        # Create first tab
+        self.leftQwidget = QWidget(self)
+        self.leftLayout = QVBoxLayout(self)
         self.pushButtonLoadPath = QPushButton("Set path")
+        self.checkBoxScale = QCheckBox("Linear scale", self)
         self.lineEditPath = QLineEdit('')
+        self.refreshBtn = QPushButton("Refresh plot")
         self.pushButtonStartSync = QPushButton("Start stream")
         self.plotWidget = PltCanvas(self)
         self.timer = QTimer()
         self.timerRunning = False
         self.last_file_ctime = 0
         self.pathtotimestamp = ''
-        self.layout.addWidget(self.pushButtonLoadPath)
-        self.layout.addWidget(self.lineEditPath)
-        self.layout.addWidget(self.pushButtonStartSync)
-        self.layout.addWidget(self.plotWidget)
+        self.leftLayout.addWidget(self.pushButtonLoadPath)
+        self.leftLayout.addWidget(self.lineEditPath)
+        self.leftLayout.addWidget(self.pushButtonStartSync)
+        self.leftLayout.addWidget(self.refreshBtn)
+        self.leftLayout.addWidget(self.plotWidget)
+        self.leftLayout.addWidget(self.checkBoxScale)
+        self.leftQwidget.setLayout(self.leftLayout)
+        self.mainLayout.addWidget(self.leftQwidget)
 
-        self.setLayout(self.layout)
+        self.checkBoxWidget = QWidget(self)
+        self.checkBoxLayoutlayout = QGridLayout(self)
+        self.checkBoxWidget.setLayout(self.checkBoxLayoutlayout)
+        self.checkBoxPixel = []
+        self.maskValidPixels = np.zeros(256)
+        for clm in range(8):
+            for row in range(32):
+                self.checkBoxPixel.append(QCheckBox(str(row + clm * 32), self))
+                self.checkBoxLayoutlayout.addWidget(self.checkBoxPixel[row + clm * 32], row, clm)
+        self.checkBoxWidget.resize(400, 500)
+        self.mainLayout.addWidget(self.checkBoxWidget)
 
         # Add tabs to widget
         self.pushButtonLoadPath.clicked.connect(self.slot_loadpath)
         self.pushButtonStartSync.clicked.connect(self.slot_startstream)
         self.timer.timeout.connect(self.updateTimeStamp)
+        self.checkBoxScale.stateChanged.connect(self.slot_checkplotscale)
+        self.refreshBtn.clicked.connect(self.slot_refresh)
 
     def updateTimeStamp(self):
-        DATA_FILES = glob.glob('*.dat*')
+        self.getvalidtimestamps()
         os.chdir(self.pathtotimestamp)
+        DATA_FILES = glob.glob('*.dat*')
         print("updateTimeStamp: timer running")
         try:
             last_file = max(DATA_FILES, key=os.path.getctime)
@@ -53,14 +74,22 @@ class LiveTimestamps(QWidget):
                 # print("updateTimeStamp: new file")
                 self.last_file_ctime = new_file_ctime
                 # print("updateTimeStamp:" + self.pathtotimestamp + last_file)
-                validtimestemps, peak = timestamp_computation.get_nmr_validtimestamps(self.pathtotimestamp + '/' + last_file, np.arange(145, 155, 1), 512)
-
-                self.plotWidget.setPlotData(np.arange(0, 256, 1),validtimestemps,peak)
+                validtimestemps, peak = timestamp_computation.get_nmr_validtimestamps(
+                    self.pathtotimestamp + '/' + last_file, np.arange(145, 155, 1), 512)
+                validtimestemps = validtimestemps*self.maskValidPixels
+                self.plotWidget.setPlotData(np.arange(0, 256, 1), validtimestemps, peak)
             # else:
-                # print("updateTimeStamp:  not a new file")
+            # print("updateTimeStamp:  not a new file")
 
         except ValueError:
-             print("updateTimeStamp:  waiting for a file")
+            print("updateTimeStamp:  waiting for a file")
+
+    def getvalidtimestamps(self):
+        for i in range(256):
+            if self.checkBoxPixel[i].isChecked():
+                self.maskValidPixels[i] = 0
+            else:
+                self.maskValidPixels[i] = 1
 
 
     @pyqtSlot()
@@ -81,3 +110,13 @@ class LiveTimestamps(QWidget):
             self.pushButtonStartSync.setText('Stop stream')
             self.timer.start(100)
             self.timerRunning = True
+
+    def slot_checkplotscale(self):
+        if self.checkBoxScale.isChecked():
+            self.plotWidget.setPlotScale(True)
+        else:
+            self.plotWidget.setPlotScale(False)
+
+    def slot_refresh(self):
+        self.updateTimeStamp()
+        self.last_file_ctime = 0

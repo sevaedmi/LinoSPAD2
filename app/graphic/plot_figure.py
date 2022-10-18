@@ -34,7 +34,7 @@ class PltCanvas(QWidget):
         self.ax = self.figure.add_subplot(111)
 
         # plot data
-        self.plot, = self.ax.plot(data, 'o')
+        self.plot, = self.ax.plot(data, '-ok')
         self.setplotparameters()
         # refresh canvas
         self.canvas.draw()
@@ -46,7 +46,7 @@ class PltCanvas(QWidget):
         plt.rcParams.update({"font.size": 18})
         plt.xlabel("Pixel [-]")
         plt.ylabel("Valid timestamps [-]")
-        plt.yscale('log')
+
         plt.box(bool(1))
         plt.grid(False)
         plt.subplots_adjust(left=0.15)
@@ -65,11 +65,24 @@ class PltCanvas(QWidget):
         # self.plot.set_xdata(xdataplot)
 
         self.plot.set_ydata(yplotdata)
-        self.ax.set_title("Maximum counts is {}".format(peak))
+        # self.ax.set_title("Maximum counts is {}".format(peak))
         self.ax.relim()
         self.ax.autoscale_view()
         self.setplotparameters()
 
         self.figure.canvas.draw()
         self.figure.canvas.flush_events()
+
+    def setPlotScale(self, scaleLin=True):
+        if scaleLin:
+            self.ax.set_yscale('linear')
+            self.figure.canvas.draw()
+            self.figure.canvas.flush_events()
+        else:
+            self.ax.set_yscale('log')
+            self.figure.canvas.draw()
+            self.figure.canvas.flush_events()
+
+
+
 
