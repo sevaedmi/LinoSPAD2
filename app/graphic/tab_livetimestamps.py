@@ -3,6 +3,7 @@ import os
 
 from PyQt5.QtWidgets import QPushButton, QWidget, QTabWidget, QVBoxLayout, QFileDialog, QLineEdit, QCheckBox, \
     QHBoxLayout, QGridLayout
+
 from PyQt5.QtCore import pyqtSlot, QTimer
 from app.tools import timestamp_computation
 from functions import plot_valid
@@ -11,11 +12,10 @@ import app.tools.timestamp_computation
 import numpy as np
 import matplotlib
 
-matplotlib.use('Qt5Agg')
+matplotlib.use("Qt5Agg")
 
 
 class LiveTimestamps(QWidget):
-
     def __init__(self, parent):
         super(LiveTimestamps, self).__init__(parent)
         self.mainLayout = QHBoxLayout(self)
@@ -24,6 +24,7 @@ class LiveTimestamps(QWidget):
         self.leftQwidget = QWidget(self)
         self.leftLayout = QVBoxLayout(self)
         self.pushButtonLoadPath = QPushButton("Set path")
+
         self.checkBoxScale = QCheckBox("Linear scale", self)
         self.lineEditPath = QLineEdit('')
         self.refreshBtn = QPushButton("Refresh plot")
@@ -32,6 +33,7 @@ class LiveTimestamps(QWidget):
         self.timer = QTimer()
         self.timerRunning = False
         self.last_file_ctime = 0
+
         self.pathtotimestamp = ''
         self.leftLayout.addWidget(self.pushButtonLoadPath)
         self.leftLayout.addWidget(self.lineEditPath)
@@ -41,6 +43,7 @@ class LiveTimestamps(QWidget):
         self.leftLayout.addWidget(self.checkBoxScale)
         self.leftQwidget.setLayout(self.leftLayout)
         self.mainLayout.addWidget(self.leftQwidget)
+
 
         self.checkBoxWidget = QWidget(self)
         self.checkBoxLayoutlayout = QGridLayout(self)
@@ -92,6 +95,7 @@ class LiveTimestamps(QWidget):
                 self.maskValidPixels[i] = 1
 
 
+
     @pyqtSlot()
     def slot_loadpath(self):
         file = str(QFileDialog.getExistingDirectory(self, "Select Directory"))
@@ -105,9 +109,9 @@ class LiveTimestamps(QWidget):
         if self.timerRunning is True:
             self.timer.stop()
             self.timerRunning = False
-            self.pushButtonStartSync.setText('Start stream')
+            self.pushButtonStartSync.setText("Start stream")
         else:
-            self.pushButtonStartSync.setText('Stop stream')
+            self.pushButtonStartSync.setText("Stop stream")
             self.timer.start(100)
             self.timerRunning = True
 

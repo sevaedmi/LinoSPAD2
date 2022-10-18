@@ -1,17 +1,13 @@
-import sys
-from PyQt5.QtWidgets import QWidget, QDialog, QApplication, QPushButton,\
-    QVBoxLayout, QLabel
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg\
-    as FigureCanvas
-from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT \
-    as NavigationToolbar
+from PyQt5.QtWidgets import (
+    QWidget,
+    QVBoxLayout,
+)
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 import matplotlib.pyplot as plt
-import random
-from matplotlib.ticker import AutoMinorLocator
 
 
 class PltCanvas(QWidget):
-
     def __init__(self, parent=None, width=5, height=4, dpi=100):
         super(PltCanvas, self).__init__(parent)
         # a figure instance to plot on
@@ -27,14 +23,16 @@ class PltCanvas(QWidget):
         self.layout.addWidget(self.toolbar)
         plt.rcParams.update({"font.size": 18})
         # random data
-        data =[1 for i in range(256)]
+        data = [1 for i in range(256)]
         # clearing old figure
         self.figure.clear()
         # create an axis
         self.ax = self.figure.add_subplot(111)
 
         # plot data
-        self.plot, = self.ax.plot(data, '-ok')
+
+        (self.plot,) = self.ax.plot(data, '-ok')
+
         self.setplotparameters()
         # refresh canvas
         self.canvas.draw()
@@ -51,13 +49,13 @@ class PltCanvas(QWidget):
         plt.grid(False)
         plt.subplots_adjust(left=0.15)
 
-        self.ax.tick_params(which='both', width=2, direction="in")
-        self.ax.tick_params(which='major', length=7, direction="in")
-        self.ax.tick_params(which='minor', length=4, direction="in")
-        self.ax.yaxis.set_ticks_position('both')
-        self.ax.xaxis.set_ticks_position('both')
+        self.ax.tick_params(which="both", width=2, direction="in")
+        self.ax.tick_params(which="major", length=7, direction="in")
+        self.ax.tick_params(which="minor", length=4, direction="in")
+        self.ax.yaxis.set_ticks_position("both")
+        self.ax.xaxis.set_ticks_position("both")
 
-        for axis in ['top', 'bottom', 'left', 'right']:
+        for axis in ["top", "bottom", "left", "right"]:
             self.ax.spines[axis].set_linewidth(2)
 
     def setPlotData(self, xdataplot, yplotdata, peak):
@@ -82,7 +80,4 @@ class PltCanvas(QWidget):
             self.ax.set_yscale('log')
             self.figure.canvas.draw()
             self.figure.canvas.flush_events()
-
-
-
 

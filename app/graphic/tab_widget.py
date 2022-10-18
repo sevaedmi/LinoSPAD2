@@ -8,13 +8,12 @@ from app.graphic.tab_livetimestamps import LiveTimestamps
 from app.graphic.tab_single_pixel_histogram import SinglePixelHistogram
 import matplotlib
 
-matplotlib.use('Qt5Agg')
+matplotlib.use("Qt5Agg")
 
 
 class TableWidget(QWidget):
-
     def __init__(self, parent):
-        '''
+        """
         Class initialization. Widgets 'LiveHistogram' and
         'SinglePixelHistogram' will be initialized.
 
@@ -27,7 +26,7 @@ class TableWidget(QWidget):
         -------
         None.
 
-        '''
+        """
         super(QWidget, self).__init__(parent)
         self.layout = QVBoxLayout(self)
 
@@ -41,7 +40,6 @@ class TableWidget(QWidget):
         # Add tabs
         self.tabs.addTab(self.tab1, "Live timestamps")
         self.tabs.addTab(self.tab2, "Single pixel histogram")
-
 
         self.layout.addWidget(self.tabs)
         self.setLayout(self.layout)

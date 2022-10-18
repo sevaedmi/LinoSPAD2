@@ -4,21 +4,18 @@ and visualization application.
 """
 
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QPushButton, QLineEdit
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg\
-    as FigureCanvas
-from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT\
-    as NavigationToolbar
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 import matplotlib.pyplot as plt
 import random
 import matplotlib
 
-matplotlib.use('Qt5Agg')
+matplotlib.use("Qt5Agg")
 
 
 class PlotHistogram(QWidget):
-
     def __init__(self, parent=None, width=5, height=4, dpi=100):
-        '''
+        """
         Initialization of the class. A widget for the plot together
         with a toolbar will be initialized.
 
@@ -37,7 +34,7 @@ class PlotHistogram(QWidget):
         -------
         None.
 
-        '''
+        """
         super(PlotHistogram, self).__init__(parent)
 
         # a figure instance to plot on

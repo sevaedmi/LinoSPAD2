@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QMainWindow
+from PyQt5.QtWidgets import QMainWindow, QApplication
 from app.graphic.tab_widget import TableWidget
 
 
@@ -13,3 +13,6 @@ class MainWindow(QMainWindow):
         # self.setFixedSize(QSize(400, 300))
         self.table_widget = TableWidget(self)
         self.setCentralWidget(self.table_widget)
+
+    def closeEvent(self, event):
+        QApplication.quit()

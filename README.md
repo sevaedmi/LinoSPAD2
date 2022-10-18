@@ -1,15 +1,21 @@
-Scripts for unpacking ana analyzing data collected with LinoSPAD2.
+Scripts for unpacking and analyzing data collected with LinoSPAD2. The data
+should be binary (the ".dat" format) as the ".txt" format takes much longer
+to unpack. The 1D binary streams of data from the detector can be unpacked
+and saved with the "unpack" module in the "functions" directory; the output
+is a 2D matrix, where the columns cover the array of pixels (256 total) and
+the rows are data values from each pixel.
 
-The 'main' is the main hub where individual modules are called.
-Following modules can be used:
+The "main" is the main hub where individual modules are called. Modules for
+real time plotting of the number of valid timestamps vs the pixel index
+("plot_valid"), for plotting a grid of differences in timestamps for a given
+range of pixels ("delta_t"), and for fitting the timestamp differences with
+a gaussian function are available ("fits").
 
-    * cross_talk - calculation of the cross-talk rate
-    * cross_talk_plot - plots the cross-talk rate distribution in the
-    LinoSPAD2 pixels
-    * cross_talk_fast - 4-times faster script for calcultion of the cross-talk
-    rate that does not work with the pixel coordinates
-    * differences - calculation of the differences between all timestamps
-    which can be used to calculate the Hanbury-Brown and Twiss peaks
-    * td_plot - plot a histogram of timestamp differences from LinoSPAD2
+Additionally, an application with a GUI is available in "app" directory.
+Currently, two functions are available in the application: real-time plotting
+and single pixel histogram, the latter can be used to check the data
+streams for abnormalities.
 
-The modules themselves can be found in the 'functions' directory. 'tools' is a collection of some may-be-useful scripts that can be utilized for data manipulation. In the 'test' directory, modules without a function definition are placed for functionality tests. '_old' contains older scripts that are were either redone completely or merely upgraded in some aspects but still are left for future reference.
+The "tools" directory contains numerous scripts, some of which mirror some of
+the modules in the "functions" as a standalone scripts that can be used as a
+debugging tool. Other scripts were used in the testing of new functions.

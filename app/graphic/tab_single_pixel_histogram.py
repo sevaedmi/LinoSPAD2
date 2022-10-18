@@ -3,21 +3,26 @@ data analysis and visualization application.
 
 """
 
-from PyQt5.QtWidgets import QPushButton, QWidget, QTabWidget, QVBoxLayout,\
-    QFileDialog, QLineEdit
+from PyQt5.QtWidgets import (
+    QPushButton,
+    QWidget,
+    QTabWidget,
+    QVBoxLayout,
+    QFileDialog,
+    QLineEdit,
+)
 from PyQt5.QtCore import pyqtSlot
 from functions import plot_valid
 from app.graphic.plot_hist import PlotHistogram
 
 import matplotlib
 
-matplotlib.use('Qt5Agg')
+matplotlib.use("Qt5Agg")
 
 
 class SinglePixelHistogram(QWidget):
-
     def __init__(self, parent):
-        ''' Initialization of the class. Widget with an input window for path
+        """ Initialization of the class. Widget with an input window for path
         to a data file and a histogram widget 'PlotHistogram' will be
         initialized.
 
@@ -30,13 +35,13 @@ class SinglePixelHistogram(QWidget):
         -------
         None.
 
-        '''
+        """
         super(SinglePixelHistogram, self).__init__(parent)
         self.layout = QVBoxLayout(self)
 
         # Create first tab
         self.pushButtonLoadPath = QPushButton("Set path")
-        self.lineEditPath = QLineEdit('')
+        self.lineEditPath = QLineEdit("")
         self.pushButtonStartSync = QPushButton("Show hits from LinoSpad")
         self.plotWidget = PlotHistogram(self)
 
