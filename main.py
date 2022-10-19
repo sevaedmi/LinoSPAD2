@@ -14,6 +14,7 @@ import tools.jakub_playground
 
 run_application = False
 
+
 if run_application is True:
     app = QApplication(sys.argv)
     window = MainWindow()
@@ -26,8 +27,8 @@ else:
 
     # tools.jakub_playground.main_playground()
 
-    # First peak 51 - 58
-    # Second peak 203 - 211
+    # First peak 84 85 86 87 88 89
+    # Second peak 218 219 220 221 222
 
     # path_2208_540 = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD"\
     #     "/Software/Data/Ne lamp/FW 2208/540 nm"
