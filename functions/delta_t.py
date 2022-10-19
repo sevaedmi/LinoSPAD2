@@ -38,7 +38,7 @@ def plot_grid(
     path : str
         Path to the data file.
     pix : array-like
-        Array of indices of 5 pixels for analysis.
+        Array of indices of pixels for analysis.
     timestamps : int, optional
         Number of timestamps per pixel per acquisition cycle. The default is
         512.
@@ -90,7 +90,12 @@ def plot_grid(
                     continue
                 data_pair = np.vstack((data_pix[q], data_pix[w]))
 
-                delta_ts = cd(data_pair, timestamps=timestamps)
+                delta_ts = cd(
+                    data_pair,
+                    timestamps=timestamps,
+                    range_left=-2.5e6,
+                    range_right=2.5e6,
+                )
 
                 if "Ne" and "540" in path:
                     chosen_color = "seagreen"
@@ -101,12 +106,13 @@ def plot_grid(
                 else:
                     chosen_color = "salmon"
                 try:
-                    bins = np.arange(np.min(delta_ts), np.max(delta_ts), 17.857 * 2)
+                    bins = np.arange(np.min(delta_ts), np.max(delta_ts), 17.857 * 28e2)
                 except Exception:
+                    print("Couldn't calculate bins: probably not enough delta ts.")
                     continue
                 axs[q][w - 1].set_xlabel("\u0394t [ps]")
                 axs[q][w - 1].set_ylabel("Timestamps [-]")
-                (n,) = axs[q][w - 1].hist(delta_ts, bins=bins, color=chosen_color)
+                n, b, p = axs[q][w - 1].hist(delta_ts, bins=bins, color=chosen_color)
                 # find position of the histogram peak
                 try:
                     n_max = np.argmax(n)
@@ -122,7 +128,7 @@ def plot_grid(
                     if y_max_all < y_max:
                         y_max_all = y_max
                     axs[q][w - 1].set_ylim(0, y_max + 4)
-                axs[q][w - 1].set_xlim(-2.5e3, 2.5e3)
+                axs[q][w - 1].set_xlim(-2.5e6, 2.5e6)
 
                 axs[q][w - 1].set_title(
                     "Pixels {p1}-{p2}\nPeak position {pp}".format(
