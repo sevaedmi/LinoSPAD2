@@ -9,8 +9,10 @@ import numpy as np
 from matplotlib import pyplot as plt
 from functions import unpack as f_up
 
-path = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/Data/"\
-    "Ar lamp/FW 2208"
+path = (
+    "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software"
+    "/Data/BNL-Jakub/SPDC"
+)
 
 os.chdir(path)
 

@@ -17,11 +17,17 @@ functions:
     per acquisition point
     * unpack_binary_flex - unpacks the 'dat' data files with a given number of
     timestamps per acquisition cycle
+    * unpack_binary_df - unpacks the 'dat' data files with a given number of
+    timestamps per acquisition cycle into a pandas dataframe. Unlike the
+    others, this functions does not write '-1' nonvalid timestamps which makes
+    this the fastest approach compared to other. The dataframe output allows
+    faster plots using seaborn.
 
 """
 
 from struct import unpack
 import numpy as np
+import pandas as pd
 
 
 def unpack_txt_512(filename):
@@ -297,3 +303,50 @@ def unpack_binary_flex(filename, lines_of_data: int = 512):
             i = i + 1
         k = k + 1
     return data_matrix
+
+
+# TODO: add 'apply_mask: bool = True'
+def unpack_binary_df(filename, lines_of_data: int = 512):
+    """ Unpacks the 'dat' files with a given number of timestamps per acquisition cycle
+    into a pandas dataframe. The faster unpacking compared to others.
+
+    Parameters
+    ----------
+    filename : str
+        The 'dat' binary-encoded datafile.
+    lines_of_data : int, optional
+        Number of timestamps per acquisition cycle per pixel. The default is 512.
+
+    Returns
+    -------
+    timestamps : pandas.DataFrame
+        A dataframe with two columns: first is the pixel number, second are the
+        timestamps.
+
+    """
+
+    timestamp_list = list()
+    pixels = list()
+    i = 0
+    cycles = lines_of_data * 256
+
+    with open(filename, "rb") as f:
+        while True:
+            i += 1
+            if i == cycles:
+                i = 0
+            rawpacket = f.read(4)
+            if not rawpacket:
+                break
+            packet = unpack("<I", rawpacket)
+            if (packet[0] >> 31) == 1:
+                # timestamps cover last 28 bits of the total 32
+                timestamp = packet[0] & 0xFFFFFFF
+                # 17.857 ps - average bin size
+                timestamp = timestamp * 17.857
+                pixels.append(int(i / 512) + 1)
+                timestamp_list.append(timestamp)
+    dic = {"Pixel": pixels, "Timestamp": timestamp_list}
+    timestamps = pd.DataFrame(dic)
+
+    return timestamps

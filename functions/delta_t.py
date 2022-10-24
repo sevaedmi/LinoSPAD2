@@ -22,14 +22,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from functions import unpack as f_up
 from functions.calc_diff import calculate_differences as cd
-import time
 
-#def compute_delta_t(path_to_file, pixels, timestampsnmr: int = 512, timewindow: int = 5000):
-    # data_ps_float = np.round(f_up.unpack_binary_flex(path_to_file, timestampsnmr))
-    # data_ps_int = data_ps_float.astype(np.int64)
-    # print(np.amax(data_ps_int))
-    # pixel_0 = data_ps_int[pixels[0]]
-    # pixel_1 = data_ps_int[pixels[1]]
 
 def compute_delta_t(pixel_0,pixel_1, timestampsnmr: int = 512, timewindow: int = 5000):
 
@@ -50,15 +43,7 @@ def compute_delta_t(pixel_0,pixel_1, timestampsnmr: int = 512, timewindow: int =
                         cycle * timestampsnmr + timestamp_pix1])
                 else:
                     continue
-    # end = time.time()
-    # print(f"Time kuba {start-end} ")
-    # data_pair = np.vstack((pixel_0, pixel_1))
-    # start = time.time()
-    # output = cd(data_pair, timestamps=512, range_left=-timewindow, range_right=timewindow)
-    # end = time.time()
-    # print(f"Time sergei {start-end} ")
     return output
-
 
 def plot_grid(
     path, pix, timestamps: int = 512, show_fig: bool = False, same_y: bool = True
@@ -74,7 +59,7 @@ def plot_grid(
     path : str
         Path to the data file.
     pix : array-like
-        Array of indices of 5 pixels for analysis.
+        Array of indices of pixels for analysis.
     timestamps : int, optional
         Number of timestamps per pixel per acquisition cycle. The default is
         512.
@@ -114,7 +99,6 @@ def plot_grid(
         for i, num1 in enumerate(pix):
             data_pix[i] = data[num1]
         plt.rcParams.update({"font.size": 22})
-
         fig, axs = plt.subplots(len(pix) - 1, len(pix) - 1, figsize=(24, 24))
 
         # check if the y limits of all plots should be the same
@@ -127,7 +111,12 @@ def plot_grid(
                     continue
                 data_pair = np.vstack((data_pix[q], data_pix[w]))
 
-                delta_ts = cd(data_pair, timestamps=timestamps, range_left=-25.5e3, range_right=25.5e3)
+                delta_ts = cd(
+                    data_pair,
+                    timestamps=timestamps,
+                    range_left=-2.5e6,
+                    range_right=2.5e6,
+                )
 
                 if "Ne" and "540" in path:
                     chosen_color = "seagreen"
@@ -138,13 +127,13 @@ def plot_grid(
                 else:
                     chosen_color = "salmon"
                 try:
-                    bins = np.arange(np.min(delta_ts), np.max(delta_ts), 17.857 * 2)
+                    bins = np.arange(np.min(delta_ts), np.max(delta_ts), 17.857 * 28e2)
                 except Exception:
+                    print("Couldn't calculate bins: probably not enough delta ts.")
                     continue
                 axs[q][w - 1].set_xlabel("\u0394t [ps]")
                 axs[q][w - 1].set_ylabel("Timestamps [-]")
                 n, b, p = axs[q][w - 1].hist(delta_ts, bins=bins, color=chosen_color)
-
                 # find position of the histogram peak
                 try:
                     n_max = np.argmax(n)
@@ -160,18 +149,19 @@ def plot_grid(
                     if y_max_all < y_max:
                         y_max_all = y_max
                     axs[q][w - 1].set_ylim(0, y_max + 4)
-                axs[q][w - 1].set_xlim(-25.5e3, 25.5e3)
+                axs[q][w - 1].set_xlim(-2.5e6, 2.5e6)
 
-                axs[q][w - 1].set_title('Pixels {p1}-{p2}\nPeak position {pp}'
-                                        .format(p1=pix[q], p2=pix[w],
-                                                pp=arg_max))
+                axs[q][w - 1].set_title(
+                    "Pixels {p1}-{p2}\nPeak position {pp}".format(
+                        p1=pix[q], p2=pix[w], pp=arg_max
+                    )
+                )
         if same_y is True:
             for q in range(len(pix)):
                 for w in range(len(pix)):
                     if w <= q:
                         continue
                     axs[q][w - 1].set_ylim(0, y_max_all + 10)
-
         try:
             os.chdir("results/delta_t")
         except FileNotFoundError:
@@ -243,13 +233,12 @@ def plot_delta_separate(path, pix, timestamps: int = 512):
                     chosen_color = "salmon"
                 try:
                     bins = np.arange(np.min(delta_ts), np.max(delta_ts), 17.857 * 2)
-
                 except Exception:
                     continue
                 plt.figure(figsize=(11, 7))
                 plt.xlabel("\u0394t [ps]")
                 plt.ylabel("Timestamps [-]")
-                n, b, p = plt.hist(delta_ts, bins=bins, color=chosen_color)
+                (n,) = plt.hist(delta_ts, bins=bins, color=chosen_color)
 
                 # find position of the histogram peak
                 try:

@@ -27,7 +27,15 @@ import numpy as np
 from functions import unpack as f_up
 
 
-def plot_valid(path, pix, timestamps, scale: str = "linear", show_fig: bool = False):
+def plot_valid(
+    path,
+    pix,
+    mask: [],
+    timestamps,
+    scale: str = "linear",
+    style: str = "-o",
+    show_fig: bool = False,
+):
     """
     Plots number of valid timestamps in each pixel for each 'dat' file in
     given folder. The plots are saved as 'png' in the 'results' folder. In
@@ -74,6 +82,8 @@ def plot_valid(path, pix, timestamps, scale: str = "linear", show_fig: bool = Fa
             valid_per_pixel[j] = len(np.where(data_matrix[j] > 0)[0])
         peak = np.max(valid_per_pixel[pix[0] : pix[-1]])
 
+        valid_per_pixel[mask] = 0
+
         if "Ne" and "540" in path:
             chosen_color = "seagreen"
         elif "Ne" and "656" in path:
@@ -89,7 +99,7 @@ def plot_valid(path, pix, timestamps, scale: str = "linear", show_fig: bool = Fa
         plt.ylabel("Valid timestamps [-]")
         if scale == "log":
             plt.yscale("log")
-        plt.plot(valid_per_pixel, "o", color=chosen_color)
+        plt.plot(valid_per_pixel, style, color=chosen_color)
 
         try:
             os.chdir("results")
