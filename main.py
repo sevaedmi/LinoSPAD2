@@ -12,8 +12,8 @@ from app.main_window import MainWindow
 from PyQt5.QtWidgets import QApplication
 import tools.jakub_playground
 
-run_application = False
-
+# runs the applicaiton
+run_application = True
 
 if run_application is True:
     app = QApplication(sys.argv)
@@ -21,15 +21,12 @@ if run_application is True:
     window.show()
     app.exec()
 else:
-    # =========================================================================
-    # Paths to where either data or the 'csv' files with the resuts are located.
-    # =========================================================================
 
     # tools.jakub_playground.main_playground()
 
-    # First peak 84 85 86 87 88 89
-    # Second peak 218 219 220 221 222
-
+    # =========================================================================
+    # Paths to where either data or the 'csv' files with the resuts are located.
+    # =========================================================================
     # path_2208_540 = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD"\
     #     "/Software/Data/Ne lamp/FW 2208/540 nm"
     #
@@ -100,3 +97,4 @@ else:
 # lp_wrapper = lp(delta_t.plot_grid(path_BNL, (87, 88, 223), show_fig=True,
 #                                   same_y=True))
 # lp.print_stats()
+

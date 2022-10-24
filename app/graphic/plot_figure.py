@@ -13,28 +13,21 @@ class PltCanvas(QWidget):
         # a figure instance to plot on
         self.figure = plt.figure()
         self.canvas = FigureCanvas(self.figure)
+        self.toolbar = NavigationToolbar(self.canvas, self)
+
         # creating a Vertical Box layout
         self.layout = QVBoxLayout(self)
         self.layout.addWidget(self.canvas)
+        self.layout.addWidget(self.toolbar)
+
         self.setLayout(self.layout)
 
-        self.toolbar = NavigationToolbar(self.canvas, self)
-        # adding tool bar to the layout
-        self.layout.addWidget(self.toolbar)
+        # Create initial plot with initial data set to 1
         plt.rcParams.update({"font.size": 18})
-        # random data
-        data = [1 for i in range(256)]
-        # clearing old figure
         self.figure.clear()
-        # create an axis
         self.ax = self.figure.add_subplot(111)
-
-        # plot data
-
-        (self.plot,) = self.ax.plot(data, '-ok')
-
+        (self.plot,) = self.ax.plot([1 for i in range(256)], '-ok')
         self.setplotparameters()
-        # refresh canvas
         self.canvas.draw()
 
     def setplotion(self):
@@ -61,13 +54,10 @@ class PltCanvas(QWidget):
     def setPlotData(self, xdataplot, yplotdata, peak):
 
         # self.plot.set_xdata(xdataplot)
-
         self.plot.set_ydata(yplotdata)
-        # self.ax.set_title("Maximum counts is {}".format(peak))
         self.ax.relim()
         self.ax.autoscale_view()
         self.setplotparameters()
-
         self.figure.canvas.draw()
         self.figure.canvas.flush_events()
 

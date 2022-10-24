@@ -11,7 +11,7 @@ real time plotting of the number of valid timestamps vs the pixel index
 range of pixels ("delta_t"), and for fitting the timestamp differences with
 a gaussian function are available ("fits").
 
-Additionally, an application with a GUI is available in "app" directory.
+Additionally, an application with a GUI is available in the "app" directory.
 Currently, two functions are available in the application: real-time plotting
 and single pixel histogram, the latter can be used to check the data
 streams for abnormalities.

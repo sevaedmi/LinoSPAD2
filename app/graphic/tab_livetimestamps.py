@@ -1,14 +1,11 @@
 import glob
 import os
 
-from PyQt5.QtWidgets import QPushButton, QWidget, QTabWidget, QVBoxLayout, QFileDialog, QLineEdit, QCheckBox, \
+from PyQt5.QtWidgets import QPushButton, QWidget, QVBoxLayout, QFileDialog, QLineEdit, QCheckBox, \
     QHBoxLayout, QGridLayout
-
 from PyQt5.QtCore import pyqtSlot, QTimer
 from app.tools import timestamp_computation
-from functions import plot_valid
 from app.graphic.plot_figure import PltCanvas
-import app.tools.timestamp_computation
 import numpy as np
 import matplotlib
 
