@@ -2,7 +2,7 @@ import os
 import glob
 import numpy as np
 from functions.unpack import unpack_binary_flex
-from functions.unpack import unpack_binary_flex1
+from functions.unpack import unpack_binary_df
 from functions.plot_valid import plot_valid
 import seaborn as sns
 
@@ -15,9 +15,7 @@ os.chdir(path_BNL)
 
 filename = glob.glob("*.dat*")[0]
 
-# %timeit data = unpack_binary_flex(filename, 512)
-data = unpack_binary_flex(filename, 512)
-# %timeit data1 = unpack_binary_flex1(filename, 512)
+# data = unpack_binary_flex(filename, 512)
 
 mask = [
     15,
@@ -43,7 +41,16 @@ mask = [
     236,
     238,
 ]
-data1 = unpack_binary_flex1(filename, 512)
+data1 = unpack_binary_df(filename, 512)
+
+fig = sns.countplot(x="Pixel [-]", data=data1, color="salmon")
+
+valid = data1["Pixel [-]"].value_counts()
+valid = valid.sort_index()
+
+
+valid.plot()
+
 data2 = data1.sort_values('Pixel')
 
 data3 = data2[data2.Timestamp > 0]
@@ -58,7 +65,7 @@ sns.relplot(x='Pixel', y='Timestamp', data=data3)
 plot_valid(path_BNL, pix=[87,88,222,223,224], mask=[], timestamps=512, show_fig=True)
 
 %timeit unpack_binary_flex(filename, 512)
-%timeit unpack_binary_flex1(filename, 512)
+%timeit unpack_binary_df(filename, 512)
 
 %timeit plot_valid(path_BNL, pix=[87,88,222,223,224], mask=[], timestamps=512, show_fig=True)
 %timeit sns.countplot(data1.Pixel)

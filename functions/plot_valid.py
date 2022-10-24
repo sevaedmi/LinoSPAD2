@@ -18,6 +18,10 @@ functions:
     The function can be used mainly for controlling the homogenity of the
     LinoSPAD2 output.
 
+    * plot_valid_df - plots the number of valid timestamps vs the pixel number;
+    works with tidy dataframes. Currently, the fastest option for plotting valid
+    timestamps.
+
 """
 
 import glob
@@ -280,3 +284,32 @@ def plot_pixel_hist(path, pix1, timestamps: int = 512, show_fig: bool = False):
                 os.chdir("results/single pixel histograms")
             plt.savefig("{file}, pixel {pixel}.png".format(file=num, pixel=pixel))
             os.chdir("../..")
+
+
+def plot_valid_df(path, timestamps, log: bool = True, show_fig: bool = False):
+
+    os.chdir(path)
+
+    DATA_FILES = glob.glob("*.dat*")
+    for i, file in enumerate(DATA_FILES):
+        data = f_up.unpack_binary_df(file, lines_of_data=timestamps)
+        # count values: how many valid timestamps in each pixel
+        valid = data["Pixel [-]"].value_counts()
+        # sort by index
+        valid = valid.sort_index()
+        fig = valid.plot(figsize=(11, 7), color="salmon", fontsize=20, marker="o")
+        fig.set_title(
+            "{name}\nmax count: {maxc}".format(name=file, maxc=valid.max()), fontsize=20
+        )
+        fig.set_xlabel("Pixel [-]", fontsize=20)
+        fig.set_ylabel("Number of timestamps [-]", fontsize=20)
+
+        if log is True:
+            fig.set_yscale("log")
+        try:
+            os.chdir("results")
+        except FileNotFoundError:
+            os.mkdir("results")
+            os.chdir("results")
+            fig.savefig("{}.png".format(file))
+            os.chdir("..")
