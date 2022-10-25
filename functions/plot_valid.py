@@ -286,7 +286,9 @@ def plot_pixel_hist(path, pix1, timestamps: int = 512, show_fig: bool = False):
             os.chdir("../..")
 
 
-def plot_valid_df(path, timestamps, log: bool = True, show_fig: bool = False):
+def plot_valid_df(
+    path, timestamps: int = 512, log: bool = True, show_fig: bool = False
+):
 
     os.chdir(path)
 

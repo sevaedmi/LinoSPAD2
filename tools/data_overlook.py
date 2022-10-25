@@ -48,7 +48,6 @@ fig = sns.countplot(x="Pixel [-]", data=data1, color="salmon")
 valid = data1["Pixel [-]"].value_counts()
 valid = valid.sort_index()
 
-
 valid.plot()
 
 data2 = data1.sort_values('Pixel')

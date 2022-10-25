@@ -82,19 +82,3 @@ else:
 
     # delta_t.plot_grid(path_BNL, (87, 88, 223), show_fig=True, same_y=True)
     plot_valid.plot_valid_df(path_BNL, timestamps=512)
-
-
-# =============================================================================
-# Profiler: evaluation of code performance in terms of time consumption, line by line
-# =============================================================================
-
-# %load_ext line_profiler
-# %lprun -f delta_t.plot_grid(path_BNL, (87, 88, 223), show_fig=True, same_y=True)
-
-# from line_profiler import LineProfiler
-
-# lp = LineProfiler()
-# lp_wrapper = lp(delta_t.plot_grid(path_BNL, (87, 88, 223), show_fig=True,
-#                                   same_y=True))
-# lp.print_stats()
-

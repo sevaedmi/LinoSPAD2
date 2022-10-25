@@ -305,7 +305,9 @@ def unpack_binary_flex(filename, lines_of_data: int = 512):
     return data_matrix
 
 
-def unpack_binary_df(filename, lines_of_data: int = 512, apply_mask: bool = True):
+def unpack_binary_df(
+    filename, lines_of_data: int = 512, apply_mask: bool = True, cut_empty: bool = True
+):
     """ Unpacks the 'dat' files with a given number of timestamps per acquisition cycle
     per pixel into a pandas dataframe. The fastest unpacking compared to others.
 
@@ -317,6 +319,9 @@ def unpack_binary_df(filename, lines_of_data: int = 512, apply_mask: bool = True
         Number of timestamps per acquisition cycle per pixel. The default is 512.
     apply_mask : bool, optional
         Switch for masking the warm/hot pixels. Default is True.
+    cut_empty : bool, optional
+        Switch for appending '-1', or either non-valid or empty timestamps, to the
+        output. Default is True.
 
     Returns
     -------
@@ -372,8 +377,11 @@ def unpack_binary_df(filename, lines_of_data: int = 512, apply_mask: bool = True
                 timestamp = timestamp * 17.857
                 pixels.append(int(i / 512) + 1)
                 timestamp_list.append(timestamp)
-    dic = {"Pixel [-]": pixels, "Timestamp [ps]": timestamp_list}
+            elif cut_empty is False:
+                timestamp_list.append(-1)
+                pixels.append(int(i / 512 + 1))
+    dic = {"Pixel": pixels, "Timestamp": timestamp_list}
     timestamps = pd.DataFrame(dic)
-    timestamps = timestamps[~timestamps["Pixel [-]"].isin(mask)]
+    timestamps = timestamps[~timestamps["Pixel"].isin(mask)]
 
     return timestamps

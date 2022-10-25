@@ -21,7 +21,7 @@ from tqdm import tqdm
 import numpy as np
 from matplotlib import pyplot as plt
 from functions import unpack as f_up
-from functions.calc_diff import calculate_differences as cd
+from functions.calc_diff import calc_diff as cd
 
 
 def compute_delta_t(pixel_0,pixel_1, timestampsnmr: int = 512, timewindow: int = 5000):
