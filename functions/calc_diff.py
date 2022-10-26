@@ -8,6 +8,7 @@ functions:
     pair of pixels. Returns an array of differences.
 
 """
+import pandas as pd
 
 
 def calc_diff(
@@ -62,15 +63,23 @@ def calc_diff(
                     n = timestamps * (acq - 1) + p
                     if data_pair[k][n] == -1:
                         continue
-                    elif data_pair[i][j] - data_pair[k][n] > range_right:
-                        continue
-                    elif data_pair[i][j] - data_pair[k][n] < range_left:
-                        continue
+                    # elif data_pair[i][j] - data_pair[k][n] > range_right:
+                    #     continue
+                    # elif data_pair[i][j] - data_pair[k][n] < range_left:
+                    #     continue
+                    # else:
+                    #     output.append(data_pair[i][j] - data_pair[k][n])
                     else:
-                        output.append(data_pair[i][j] - data_pair[k][n])
+                        delta = data_pair[i][j] - data_pair[k][n]
+                        if delta > range_right:
+                            continue
+                        elif delta < range_left:
+                            continue
+                        else:
+                            output.append(delta)
     return output
 
-# TODO: finish the code!
+
 def calc_diff_df(
     data_1,
     data_2,
@@ -106,26 +115,24 @@ def calc_diff_df(
 
     """
 
-    minuend = 1
-    # timestamps_total = len(data_pair[0])
-    subtrahend = 2
+    output = []
+    cycles = data_1.Cycle.max()
+    c = 1
 
-    # output = []
+    while c != cycles:
+        data_1_c = data_1.Timestamp[data_1.Cycle == c].values
+        data_2_c = data_2.Timestamp[data_2.Cycle == c].values
+        for i in range(len(data_1_c)):
+            for j in range(len(data_2_c)):
+                delta = data_1_c[i] - data_2_c[j]
+                if delta < range_left:
+                    continue
+                elif delta > range_right:
+                    continue
+                else:
+                    output.append(delta)
+        c += 1
+    dic = {"Delta t": output}
+    output = pd.DataFrame(dic)
 
-    # for i in range(minuend):
-    #     acq = 0  # number of acq cycle
-    #     for j in range(timestamps_total):
-    #         if j % timestamps == 0:
-    #             acq = acq + 1  # next acq cycle
-    #         for k in range(subtrahend):
-    #             if k <= i:
-    #                 continue  # to avoid repetition: 2-1, 53-45
-    #             for p in range(timestamps):
-    #                 n = timestamps * (acq - 1) + p
-    #                 if data_pair[i][j] - data_pair[k][n] > range_right:
-    #                     continue
-    #                 elif data_pair[i][j] - data_pair[k][n] < range_left:
-    #                     continue
-    #                 else:
-    #                     output.append(data_pair[i][j] - data_pair[k][n])
-    # return output
+    return output

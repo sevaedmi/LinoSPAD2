@@ -6,7 +6,7 @@ and visualization application.
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QPushButton, QLineEdit
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
-import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
 import random
 import matplotlib
 
@@ -38,7 +38,7 @@ class PlotHistogram(QWidget):
         super(PlotHistogram, self).__init__(parent)
 
         # a figure instance to plot on
-        self.figure = plt.figure()
+        self.figure = Figure(figsize=(width, height), dpi=dpi)
         self.canvas = FigureCanvas(self.figure)
         # creating a Vertical Box layout
         self.layout = QVBoxLayout(self)

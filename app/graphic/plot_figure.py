@@ -5,13 +5,14 @@ from PyQt5.QtWidgets import (
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
 
 
 class PltCanvas(QWidget):
     def __init__(self, parent=None, width=5, height=4, dpi=100):
         super(PltCanvas, self).__init__(parent)
         # a figure instance to plot on
-        self.figure = plt.figure()
+        self.figure = Figure(figsize=(width, height), dpi=dpi)
         self.canvas = FigureCanvas(self.figure)
         self.toolbar = NavigationToolbar(self.canvas, self)
 

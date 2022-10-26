@@ -357,15 +357,15 @@ def unpack_binary_df(
     ]
 
     timestamp_list = list()
-    pixels = list()
+    pixels_list = list()
+    cycles_list = list()
+    acq = 1
     i = 0
     cycles = lines_of_data * 256
 
     with open(filename, "rb") as f:
         while True:
             i += 1
-            if i == cycles:
-                i = 0
             rawpacket = f.read(4)
             if not rawpacket:
                 break
@@ -375,12 +375,17 @@ def unpack_binary_df(
                 timestamp = packet[0] & 0xFFFFFFF
                 # 17.857 ps - average bin size
                 timestamp = timestamp * 17.857
-                pixels.append(int(i / 512) + 1)
+                pixels_list.append(int(i / 512) + 1)
                 timestamp_list.append(timestamp)
+                cycles_list.append(acq)
             elif cut_empty is False:
                 timestamp_list.append(-1)
-                pixels.append(int(i / 512 + 1))
-    dic = {"Pixel": pixels, "Timestamp": timestamp_list}
+                pixels_list.append(int(i / 512 + 1))
+                cycles_list.append(acq)
+            if i == cycles:
+                i = 0
+                acq += 1
+    dic = {"Pixel": pixels_list, "Timestamp": timestamp_list, "Cycle": cycles_list}
     timestamps = pd.DataFrame(dic)
     timestamps = timestamps[~timestamps["Pixel"].isin(mask)]
 

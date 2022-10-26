@@ -1,9 +1,9 @@
 """ Time profiler: for analyzing time-consumption of codes
 
 """
-from functions.unpack import unpack_binary_df
+from functions.unpack import unpack_binary_df, unpack_binary_flex
 from functions.plot_valid import plot_valid_df
-from functions.calc_diff import calc_diff
+from functions.calc_diff import calc_diff_df, calc_diff
 import os
 import glob
 import numpy as np
@@ -13,15 +13,19 @@ path = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/Data/"\
 os.chdir(path)
 filename = glob.glob("*.dat*")[0]
 
-data = unpack_binary_df(filename, cut_empty=False)
-data = unpack_binary_df(filename, cut_empty=True)
+%timeit data = unpack_binary_flex(filename)
+data_df = unpack_binary_df(filename, cut_empty=True)
 
-dp1 = data.Timestamp[data.Pixel == 135]
-dp2 = data.Timestamp[data.Pixel == 144]
+#Standard
+data_pair = np.vstack((data[134], data[143]))
 
-data_pair = np.vstack((dp1, dp2))
+%timeit deltas = calc_diff(data_pair)
 
-plot_df = plot_valid_df(path)
+# Dataframe
+dp1 = data_df[data_df.Pixel == 135]
+dp2 = data_df[data_df.Pixel == 144]
+
+%timeit deltas_df = calc_diff_df(dp1, dp2)
 
 # > > > > > Using magic function timeit for quick analysis < < < < <
 %timeit calc_diff(data_pair)
@@ -29,10 +33,16 @@ plot_df = plot_valid_df(path)
 # > > > > > Using external module line_profiler for line-by-line analysis < < < < <
 %load_ext line_profiler
 
-%lprun -f plot_valid_df plot_valid_df(path)
+%lprun -T profiler/unpack_df -f unpack_binary_df unpack_binary_df(filename, cut_empty=True)
+
+os.chdir("profiler")
+file = "unpack_df"
+with open("{}".format(file), "rb") as bin_file, open("{}.txt".format(file), "w") as text_file:
+    text_file.write(bin_file.read().decode())
+os.chdir("..")
 
 # > > > > > Using line profiler library < < < < <
-from line_profiler import LineProfiler
+# from line_profiler import LineProfiler
 
 # lp = LineProfiler()
 # lp_wrapper = lp(delta_t.plot_grid(path_BNL, (87, 88, 223), show_fig=True,

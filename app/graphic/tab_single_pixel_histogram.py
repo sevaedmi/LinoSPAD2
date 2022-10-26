@@ -12,7 +12,6 @@ from PyQt5.QtWidgets import (
     QLineEdit,
 )
 from PyQt5.QtCore import pyqtSlot
-from functions import plot_valid
 from app.graphic.plot_hist import PlotHistogram
 
 import matplotlib
