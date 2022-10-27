@@ -34,7 +34,7 @@ class TableWidget(QWidget):
         self.tabs = QTabWidget()
 
         self.tab1 = LiveTimestamps(self)
-        self.tab2 = SinglePixelHistogram(self)
+        self.tab2 = SinglePixelHistogram()
         self.tabs.resize(300, 200)
 
         # Add tabs

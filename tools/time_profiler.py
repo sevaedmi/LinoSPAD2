@@ -13,7 +13,7 @@ path = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/Data/"\
 os.chdir(path)
 filename = glob.glob("*.dat*")[0]
 
-%timeit data = unpack_binary_flex(filename)
+data = unpack_binary_flex(filename)
 data_df = unpack_binary_df(filename, cut_empty=True)
 
 #Standard
@@ -33,10 +33,10 @@ dp2 = data_df[data_df.Pixel == 144]
 # > > > > > Using external module line_profiler for line-by-line analysis < < < < <
 %load_ext line_profiler
 
-%lprun -T profiler/unpack_df -f unpack_binary_df unpack_binary_df(filename, cut_empty=True)
+%lprun -T profiler/calc_diff_df1 -f calc_diff_df calc_diff_df(dp1, dp2)
 
 os.chdir("profiler")
-file = "unpack_df"
+file = "calc_diff_df1"
 with open("{}".format(file), "rb") as bin_file, open("{}.txt".format(file), "w") as text_file:
     text_file.write(bin_file.read().decode())
 os.chdir("..")

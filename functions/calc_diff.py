@@ -79,26 +79,24 @@ def calc_diff(
                             output.append(delta)
     return output
 
-
+#TODO: add raise error for checking the 1) tidyness of the input dataframes 2) for
+# absence of "-1" timestamps
 def calc_diff_df(
     data_1,
     data_2,
-    timestamps: int = 512,
     range_left: float = -2.5e3,
     range_right: float = 2.5e3,
 ):
     """
-    Function for calculating timestamp differences for a given pair of pixels.
+    Function for calculating timestamp differences for a given pair of pixels. Input
+    dataframes for both pixels should be 1) tidy and 2) without the invalid "-1" timestamps.
 
     Parameters
     ----------
-    data_1 : pandas.Series
-        Data from the 1st pixel of the pair.
-    data_2 : pandas.Series
-        Data from the 2nd pixel of the pair.
-    timestamps : int, optional
-        Number of timestamps per pixel per acquisition window. The default is
-        512.
+    data_1 : pandas.DataFrame
+        Tidy dataframe with data from the 1st pixel of the pair.
+    data_2 : pandas.DataFrame
+        Tidy dataframe with data from the 2nd pixel of the pair.
     range_left : float, optional
         Left limit for the timestamp differences. Values below that are not
         taken into account and the differences are not returned. The default
@@ -110,8 +108,8 @@ def calc_diff_df(
 
     Returns
     -------
-    output : array-like
-        An array of timestamp differences for the given pair of pixels.
+    output : pandas.DataFrame
+        A dataframe of timestamp differences for the given pair of pixels.
 
     """
 
@@ -120,6 +118,7 @@ def calc_diff_df(
     c = 1
 
     while c != cycles:
+        # with .values turn dataframes to numpy arrays -> faster computation time
         data_1_c = data_1.Timestamp[data_1.Cycle == c].values
         data_2_c = data_2.Timestamp[data_2.Cycle == c].values
         for i in range(len(data_1_c)):

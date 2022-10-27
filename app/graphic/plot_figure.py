@@ -27,7 +27,7 @@ class PltCanvas(QWidget):
         plt.rcParams.update({"font.size": 18})
         self.figure.clear()
         self.ax = self.figure.add_subplot(111)
-        (self.plot,) = self.ax.plot([1 for i in range(256)], '-ok')
+        (self.plot,) = self.ax.plot([1 for i in range(256)], "-ok")
         self.setplotparameters()
         self.canvas.draw()
 
@@ -64,11 +64,10 @@ class PltCanvas(QWidget):
 
     def setPlotScale(self, scaleLin=True):
         if scaleLin:
-            self.ax.set_yscale('linear')
+            self.ax.set_yscale("linear")
             self.figure.canvas.draw()
             self.figure.canvas.flush_events()
         else:
-            self.ax.set_yscale('log')
+            self.ax.set_yscale("log")
             self.figure.canvas.draw()
             self.figure.canvas.flush_events()
-
