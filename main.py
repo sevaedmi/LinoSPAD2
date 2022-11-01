@@ -13,7 +13,7 @@ from PyQt5.QtWidgets import QApplication
 import tools.jakub_playground
 
 # runs the applicaiton
-run_application = True
+run_application = False
 
 if run_application is True:
     app = QApplication(sys.argv)
@@ -27,9 +27,11 @@ else:
     # =========================================================================
     # Paths to where either data or the 'csv' files with the resuts are located.
     # =========================================================================
-    # path_2208_540 = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD"\
-    #     "/Software/Data/Ne lamp/FW 2208/540 nm"
-    #
+    path_2208_540 = (
+        "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD"
+        "/Software/Data/Ne lamp/FW 2208/540 nm"
+    )
+
     path_2208_653 = (
         "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD"
         "/Software/Data/Ne lamp/FW 2208/653 nm"
@@ -53,7 +55,7 @@ else:
     # pix = np.arange(140, 161, 1)
     # plot_valid.online_plot_valid(path_2208_653, pix_range=pix)
 
-    pix = np.arange(130, 161, 1)
+    # pix = np.arange(130, 161, 1)
     # warm/hot pixels, which are stable for this LinoSPAD2 desk
     mask = [
         15,
@@ -81,4 +83,6 @@ else:
     ]
 
     # delta_t.plot_grid(path_BNL, (87, 88, 223), show_fig=True, same_y=True)
-    plot_valid.plot_valid_df(path_BNL, timestamps=512)
+    # plot_valid.plot_valid_df(path_BNL, timestamps=512)
+    # delta_t.plot_grid_df(path_2208_540, pix=(155, 156, 158, 159, 160))
+    delta_t.plot_peak_vs_peak(path_BNL, pix1=(135, 136, 137), pix2=(143, 144, 145))

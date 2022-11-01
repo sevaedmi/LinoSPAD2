@@ -296,7 +296,7 @@ def plot_valid_df(
     for i, file in enumerate(DATA_FILES):
         data = f_up.unpack_binary_df(file, lines_of_data=timestamps)
         # count values: how many valid timestamps in each pixel
-        valid = data["Pixel [-]"].value_counts()
+        valid = data["Pixel"].value_counts()
         # sort by index
         valid = valid.sort_index()
         fig = valid.plot(figsize=(11, 7), color="salmon", fontsize=20, marker="o")

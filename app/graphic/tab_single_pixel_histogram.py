@@ -9,6 +9,7 @@ from PyQt5.QtWidgets import (
     QLineEdit,
     QFileDialog,
     QFormLayout,
+    QSizePolicy,
 )
 from PyQt5.QtCore import QSize
 from matplotlib.figure import Figure
@@ -37,14 +38,14 @@ class SinglePixelHistogram(QWidget):
         # buttons
         self.folder = ""
         self.buttonbrowse = QPushButton("Browse")
-        self.buttonbrowse.setFixedSize(QSize(100, 35))
+        self.buttonbrowse.setMinimumSize(QSize(100, 35))
         self.buttonplot = QPushButton("Plot histogram")
         self.buttonbrowse.clicked.connect(self._get_dir)
         self.buttonplot.clicked.connect(self._plot_hist)
 
         # text fields
         self.path = QLineEdit()
-        self.path.setFixedSize(QSize(400, 35))
+        self.path.setMinimumSize(QSize(400, 35))
 
         # layout
         outerLayout = QVBoxLayout()

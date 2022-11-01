@@ -79,17 +79,16 @@ def calc_diff(
                             output.append(delta)
     return output
 
-#TODO: add raise error for checking the 1) tidyness of the input dataframes 2) for
+
+# TODO: add raise error for checking the 1) tidyness of the input dataframes 2) for
 # absence of "-1" timestamps
 def calc_diff_df(
-    data_1,
-    data_2,
-    range_left: float = -2.5e3,
-    range_right: float = 2.5e3,
+    data_1, data_2, range_left: float = -2.5e3, range_right: float = 2.5e3,
 ):
     """
     Function for calculating timestamp differences for a given pair of pixels. Input
-    dataframes for both pixels should be 1) tidy and 2) without the invalid "-1" timestamps.
+    dataframes for both pixels should be 1) tidy and 2) without the invalid "-1"
+    timestamps.
 
     Parameters
     ----------
