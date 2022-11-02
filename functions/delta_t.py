@@ -19,12 +19,14 @@ import os
 import glob
 from tqdm import tqdm
 import numpy as np
+import seaborn as sns
+import pandas as pd
 from matplotlib import pyplot as plt
 from functions import unpack as f_up
-from functions.calc_diff import calculate_differences as cd
+from functions.calc_diff import calc_diff_df, calc_diff as cd
 
 
-def compute_delta_t(pixel_0,pixel_1, timestampsnmr: int = 512, timewindow: int = 5000):
+def compute_delta_t(pixel_0, pixel_1, timestampsnmr: int = 512, timewindow: int = 5000):
 
     nmr_of_cycles = int(len(pixel_0) / timestampsnmr)
     output = []
@@ -32,18 +34,32 @@ def compute_delta_t(pixel_0,pixel_1, timestampsnmr: int = 512, timewindow: int =
     # start = time.time()
     for cycle in range(nmr_of_cycles):
         for timestamp_pix0 in range(timestampsnmr):
-            if pixel_0[cycle * timestampsnmr + timestamp_pix0] == -1 or pixel_0[cycle * timestampsnmr + timestamp_pix0] <= 1e-9:
+            if (
+                pixel_0[cycle * timestampsnmr + timestamp_pix0] == -1
+                or pixel_0[cycle * timestampsnmr + timestamp_pix0] <= 1e-9
+            ):
                 break
             for timestamp_pix1 in range(timestampsnmr):
-                if pixel_1[cycle * timestampsnmr + timestamp_pix1] == -1 or pixel_1[cycle * timestampsnmr + timestamp_pix1] == 0:
+                if (
+                    pixel_1[cycle * timestampsnmr + timestamp_pix1] == -1
+                    or pixel_1[cycle * timestampsnmr + timestamp_pix1] == 0
+                ):
                     break
-                if np.abs(pixel_0[cycle * timestampsnmr + timestamp_pix0] - pixel_1[
-                    cycle * timestampsnmr + timestamp_pix1]) < timewindow:
-                    output.append(pixel_0[cycle * timestampsnmr + timestamp_pix0] - pixel_1[
-                        cycle * timestampsnmr + timestamp_pix1])
+                if (
+                    np.abs(
+                        pixel_0[cycle * timestampsnmr + timestamp_pix0]
+                        - pixel_1[cycle * timestampsnmr + timestamp_pix1]
+                    )
+                    < timewindow
+                ):
+                    output.append(
+                        pixel_0[cycle * timestampsnmr + timestamp_pix0]
+                        - pixel_1[cycle * timestampsnmr + timestamp_pix1]
+                    )
                 else:
                     continue
     return output
+
 
 def plot_grid(
     path, pix, timestamps: int = 512, show_fig: bool = False, same_y: bool = True
@@ -265,3 +281,141 @@ def plot_delta_separate(path, pix, timestamps: int = 512):
                 plt.pause(0.1)
                 plt.close()
                 os.chdir("../../..")
+
+
+def plot_grid_df(path, pix, timestamps: int = 512):
+    """
+    This function plots a grid of timestamp differences for the given range of
+    pixels. This function utilizes the pandas dataframes.
+
+    Parameters
+    ----------
+    path : str
+        Path to data files.
+    pix : list or array-like
+        Pixel numbers for which the delta ts are calculated.
+    timestamps : int, optional
+        Number of timestamps per acquisition cycle per pixel. The default is 512.
+
+    Returns
+    -------
+    None.
+
+    """
+
+    os.chdir(path)
+
+    DATA_FILES = glob.glob("*.dat*")
+
+    for num, file in enumerate(DATA_FILES):
+
+        data = f_up.unpack_binary_df(file, timestamps)
+
+        fig, axes = plt.subplots(len(pix) - 1, len(pix) - 1, figsize=(24, 24))
+        plt.suptitle("{} delta ts".format(file))
+
+        print("\n> > > Calculating the timestamp differences < < <\n")
+        for q in tqdm(range(len(pix)), desc="Minuend pixel   "):
+            for w in tqdm(range(len(pix)), desc="Subtrahend pixel"):
+                if w <= q:
+                    continue
+                deltas = calc_diff_df(
+                    data[data.Pixel == pix[q]], data[data.Pixel == pix[w]]
+                )
+
+                if "Ne" and "540" in path:
+                    chosen_color = "seagreen"
+                elif "Ne" and "656" in path:
+                    chosen_color = "orangered"
+                elif "Ar" in path:
+                    chosen_color = "mediumslateblue"
+                else:
+                    chosen_color = "salmon"
+                try:
+                    bins = np.arange(int(deltas.min()), int(deltas.max()), 17.857 * 2)
+                except Exception:
+                    continue
+                sns.histplot(
+                    ax=axes[q, w - 1],
+                    x="Delta t",
+                    data=deltas,
+                    bins=bins,
+                    color=chosen_color,
+                )
+                axes[q, w - 1].set_title(
+                    "Pixels {pix1}-{pix2}".format(pix1=pix[q], pix2=pix[w])
+                )
+        try:
+            os.chdir("results/delta_t")
+        except FileNotFoundError:
+            os.mkdir("results/delta_t")
+            os.chdir("results/delta_t")
+        fig.tight_layout()  # for perfect spacing between the plots
+        plt.savefig("{name}_delta_t_grid_df.png".format(name=file))
+        os.chdir("../..")
+
+
+def plot_peak_vs_peak(path, pix1, pix2, timestamps: int = 512):
+    """
+    Function for calculating timestamp differences between two groups of pixels where
+    the light beam falls. The differences are plotted as a histogram.
+
+    Parameters
+    ----------
+    path : str
+        Path to data files.
+    pix1 : list or array-like
+        List of pixel numbers from the first peak.
+    pix2 : list or array-like
+        List of pixel numbers from the second peak.
+    timestamps : int, optional
+        Number of timestamps per acquisition cycle per pixel. The default is 512.
+
+    Returns
+    -------
+    None.
+
+    """
+
+    os.chdir(path)
+
+    DATA_FILES = glob.glob("*.dat*")
+
+    for num, file in enumerate(DATA_FILES):
+
+        data = f_up.unpack_binary_df(file, timestamps)
+
+        deltas_total = pd.DataFrame()
+
+        print("\n> > > Calculating the timestamp differences < < <\n")
+        for q in tqdm(range(len(pix1)), desc="Minuend pixel   "):
+            for w in tqdm(range(len(pix2)), desc="Subtrahend pixel"):
+                deltas = calc_diff_df(
+                    data[data.Pixel == pix1[q]], data[data.Pixel == pix2[w]]
+                )
+                deltas_total = pd.concat([deltas_total, deltas], ignore_index=True)
+        if "Ne" and "540" in path:
+            chosen_color = "seagreen"
+        elif "Ne" and "656" in path:
+            chosen_color = "orangered"
+        elif "Ar" in path:
+            chosen_color = "mediumslateblue"
+        else:
+            chosen_color = "salmon"
+        try:
+            bins = np.arange(
+                int(deltas_total.min()), int(deltas_total.max()), 17.857 * 2
+            )
+        except Exception:
+            continue
+        fig_sns = sns.histplot(
+            x="Delta t", data=deltas_total, color=chosen_color, bins=bins
+        )
+        fig = fig_sns.get_figure()
+        try:
+            os.chdir("results/delta_t")
+        except FileNotFoundError:
+            os.mkdir("results/delta_t")
+            os.chdir("results/delta_t")
+        fig.savefig("{name}_peak_v_peak_df.png".format(name=file))
+        os.chdir("../..")

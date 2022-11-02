@@ -305,10 +305,11 @@ def unpack_binary_flex(filename, lines_of_data: int = 512):
     return data_matrix
 
 
-# TODO: add 'apply_mask: bool = True'
-def unpack_binary_df(filename, lines_of_data: int = 512):
+def unpack_binary_df(
+    filename, lines_of_data: int = 512, apply_mask: bool = True, cut_empty: bool = True
+):
     """ Unpacks the 'dat' files with a given number of timestamps per acquisition cycle
-    into a pandas dataframe. The faster unpacking compared to others.
+    per pixel into a pandas dataframe. The fastest unpacking compared to others.
 
     Parameters
     ----------
@@ -316,6 +317,11 @@ def unpack_binary_df(filename, lines_of_data: int = 512):
         The 'dat' binary-encoded datafile.
     lines_of_data : int, optional
         Number of timestamps per acquisition cycle per pixel. The default is 512.
+    apply_mask : bool, optional
+        Switch for masking the warm/hot pixels. Default is True.
+    cut_empty : bool, optional
+        Switch for appending '-1', or either non-valid or empty timestamps, to the
+        output. Default is True.
 
     Returns
     -------
@@ -325,16 +331,41 @@ def unpack_binary_df(filename, lines_of_data: int = 512):
 
     """
 
+    mask = [
+        15,
+        16,
+        29,
+        39,
+        40,
+        50,
+        52,
+        66,
+        73,
+        93,
+        95,
+        96,
+        98,
+        101,
+        109,
+        122,
+        127,
+        196,
+        210,
+        231,
+        236,
+        238,
+    ]
+
     timestamp_list = list()
-    pixels = list()
+    pixels_list = list()
+    cycles_list = list()
+    acq = 1
     i = 0
     cycles = lines_of_data * 256
 
     with open(filename, "rb") as f:
         while True:
             i += 1
-            if i == cycles:
-                i = 0
             rawpacket = f.read(4)
             if not rawpacket:
                 break
@@ -344,9 +375,18 @@ def unpack_binary_df(filename, lines_of_data: int = 512):
                 timestamp = packet[0] & 0xFFFFFFF
                 # 17.857 ps - average bin size
                 timestamp = timestamp * 17.857
-                pixels.append(int(i / 512) + 1)
+                pixels_list.append(int(i / 512) + 1)
                 timestamp_list.append(timestamp)
-    dic = {"Pixel": pixels, "Timestamp": timestamp_list}
+                cycles_list.append(acq)
+            elif cut_empty is False:
+                timestamp_list.append(-1)
+                pixels_list.append(int(i / 512 + 1))
+                cycles_list.append(acq)
+            if i == cycles:
+                i = 0
+                acq += 1
+    dic = {"Pixel": pixels_list, "Timestamp": timestamp_list, "Cycle": cycles_list}
     timestamps = pd.DataFrame(dic)
+    timestamps = timestamps[~timestamps["Pixel"].isin(mask)]
 
     return timestamps

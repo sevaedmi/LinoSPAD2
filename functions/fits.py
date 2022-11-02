@@ -18,7 +18,7 @@ import numpy as np
 from scipy.optimize import curve_fit
 from matplotlib import pyplot as plt
 from functions import unpack as f_up
-from functions.calc_diff import calculate_differences as cd
+from functions.calc_diff import calc_diff as cd
 
 
 def fit_gauss(path, pix, timestamps: int = 512, show_fig: bool = False):
