@@ -51,13 +51,14 @@ class PltCanvas(QWidget):
         for axis in ["top", "bottom", "left", "right"]:
             self.ax.spines[axis].set_linewidth(2)
 
-    def setPlotData(self, xdataplot, yplotdata, peak):
+    def setPlotData(self, xdataplot, yplotdata, peak,xLim):
 
         # self.plot.set_xdata(xdataplot)
         self.plot.set_ydata(yplotdata)
         self.ax.relim()
         self.ax.autoscale_view()
         self.setplotparameters()
+        self.ax.set_xlim(xLim[0], xLim[1])
         self.figure.canvas.draw()
         self.figure.canvas.flush_events()
 

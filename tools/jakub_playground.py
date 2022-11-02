@@ -7,10 +7,113 @@ import matplotlib as plt
 from matplotlib import pyplot as plt
 from functions import unpack as f_up
 from matplotlib.ticker import (MultipleLocator, AutoMinorLocator)
-
+from struct import unpack
+import time
+import torch
 def main_playground():
-    data = np.random.normal(loc=5.0, scale=2.0, size=1000)
-    mean, std = norm.fit(data)
+    filename = "C:/Users/jakub/Documents/LinoSpad2/data/SPDC_221021/acq_221021_202311_timeStamps512.dat"
+    # filename = "C:/Users/jakub/Documents/LinoSpad2/data/SPDC_221028_calibration/acq_221028_171552.dat"  # DONE OK
+    filename = "C:/Users/jakub/Documents/LinoSpad2/data/SPDC_221021/pixel_movement/acq_221021_212530_199_206.dat"  # DONE OK
+    lines_of_data = 512
+    timestamp_list = []
+    address_list = []
+
+
+    st = time.time()
+    f = open(filename, "r")
+    a = np.fromfile(f, dtype=np.uint32) #uint32
+    data = (a & 0xFFFFFFF).astype(int)*17.857
+    data[np.where(a < 0x80000000)] = -1
+    data = data[0:lines_of_data*3*256]
+    print(a[0])
+    noc = int(len(data) / lines_of_data / 256)  # number of cycles,
+
+
+    # b = data.reshape((lines_of_data,256*noc)).transpose()#.reshape((lines_of_data*noc,256),order='F').transpose()
+    #
+    # B = np.reshape(np.transpose(np.reshape(b, (512,256,-1)), (0, 2, 1)),(-1,256))
+    #
+    t0 = data.reshape((lines_of_data,256*noc),order='F')
+
+    t1 = np.reshape(data, (lines_of_data,noc*256), order='F')
+    t2 = np.reshape(t1, (lines_of_data, 256,-1),order='F')
+    t3 = np.transpose(t2,(0,2,1))
+    t4 = np.reshape(t2.transpose((0,2,1)), (-1, 256),order='F')
+
+     # t3 = np.transpose(t1, (0, 2, 1))
+    # t4= np.reshape(t2, (-1, 256))
+
+    print(t4.transpose()[0:2, 0:3])
+    t2.transpose(())
+
+    et = time.time()
+    print('Execution time:', et - st, 'seconds')
+
+    st = time.time()
+    with open(filename, "rb") as f:
+        while True:
+            rawpacket = f.read(4)  # read 32 bits
+            if not rawpacket:
+                break  # stop when the are no further 4 bytes to readout
+            packet = unpack("<I", rawpacket)
+            if (packet[0] >> 31) == 1:  # check validity bit: if 1
+                # - timestamp is valid
+                timestamp = packet[0] & 0xFFFFFFF  # cut the higher bits,
+                # timestamp = packet[0] & 0xFF  # cut the higher bits,
+                # leave only timestamp ones
+                # 2.5 ns from TDC 400 MHz clock read out 140 bins from 35
+                # elements of the delay line - average bin size is 17.857 ps
+                timestamp = timestamp * 17.857  # in ps
+            else:
+                timestamp = -1
+            timestamp_list.append(timestamp)
+            address = (packet[0] >> 28) & 0x3  # gives away only zeroes -
+            # not in this firmware??
+            address_list.append(address)
+    # rows=#pixels, cols=#cycles
+    data_matrix = np.zeros((256, int(len(timestamp_list) / 256)))
+
+    noc = len(timestamp_list) / lines_of_data / 256  # number of cycles,
+    # lines_of_data data lines per pixel per cycle, 256 pixels
+
+    # pack the data from a 1D array into a 2D matrix
+    k = 0
+    while k != noc:
+        i = 0
+        while i < 256:
+            data_matrix[i][
+            k * lines_of_data: k * lines_of_data + lines_of_data
+            ] = timestamp_list[
+                (i + 256 * k) * lines_of_data: (i + 256 * k) * lines_of_data
+                                               + lines_of_data
+                ]
+            i = i + 1
+        k = k + 1
+
+    et = time.time()
+    print('Execution time:', et - st, 'seconds')
+    print('Execution time:', et - st, 'seconds')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    # data = np.random.normal(loc=5.0, scale=2.0, size=1000)
+    # mean, std = norm.fit(data)
     # First peak 84 85 86 87 88 89
     # Second peak 218 219 220 221 222
     ## hist two pixels

@@ -2,8 +2,8 @@ import glob
 import os
 
 from PyQt5.QtWidgets import QPushButton, QWidget, QVBoxLayout, QFileDialog, QLineEdit, QCheckBox, \
-    QHBoxLayout, QGridLayout
-from PyQt5.QtCore import pyqtSlot, QTimer
+    QHBoxLayout, QGridLayout, QSlider
+from PyQt5.QtCore import pyqtSlot, QTimer, Qt
 from app.tools import timestamp_computation
 from app.graphic.plot_figure import PltCanvas
 import numpy as np
@@ -22,6 +22,8 @@ class LiveTimestamps(QWidget):
         self.leftLayout = QVBoxLayout(self)
         self.pushButtonLoadPath = QPushButton("Set path")
 
+        self.xSliderLeft = QSlider(Qt.Horizontal)
+        self.xSliderRight = QSlider(Qt.Horizontal)
         self.checkBoxScale = QCheckBox("Linear scale", self)
         self.lineEditPath = QLineEdit('')
         self.refreshBtn = QPushButton("Refresh plot")
@@ -37,10 +39,11 @@ class LiveTimestamps(QWidget):
         self.leftLayout.addWidget(self.pushButtonStartSync)
         self.leftLayout.addWidget(self.refreshBtn)
         self.leftLayout.addWidget(self.plotWidget)
+        self.leftLayout.addWidget(self.xSliderLeft)
+        self.leftLayout.addWidget(self.xSliderRight)
         self.leftLayout.addWidget(self.checkBoxScale)
         self.leftQwidget.setLayout(self.leftLayout)
         self.mainLayout.addWidget(self.leftQwidget)
-
 
         self.checkBoxWidget = QWidget(self)
         self.checkBoxLayoutlayout = QGridLayout(self)
@@ -60,6 +63,18 @@ class LiveTimestamps(QWidget):
         self.timer.timeout.connect(self.updateTimeStamp)
         self.checkBoxScale.stateChanged.connect(self.slot_checkplotscale)
         self.refreshBtn.clicked.connect(self.slot_refresh)
+        self.xSliderLeft.valueChanged.connect(self.slot_updateLeftSlider)
+        self.xSliderRight.valueChanged.connect(self.slot_updateRightSlider)
+
+        self.leftPlotLim = 0
+        self.rightPlotLim = 255
+        self.xSliderLeft.setMinimum(0)
+        self.xSliderLeft.setMaximum(255)
+        self.xSliderRight.setMinimum(0)
+        self.xSliderRight.setMaximum(255)
+        self.xSliderRight.setSliderPosition(255)
+        self.leftPosition = 0
+        self.rightPosition = 255
 
     def updateTimeStamp(self):
         self.getvalidtimestamps()
@@ -76,8 +91,8 @@ class LiveTimestamps(QWidget):
                 # print("updateTimeStamp:" + self.pathtotimestamp + last_file)
                 validtimestemps, peak = timestamp_computation.get_nmr_validtimestamps(
                     self.pathtotimestamp + '/' + last_file, np.arange(145, 155, 1), 512)
-                validtimestemps = validtimestemps*self.maskValidPixels
-                self.plotWidget.setPlotData(np.arange(0, 256, 1), validtimestemps, peak)
+                validtimestemps = validtimestemps * self.maskValidPixels
+                self.plotWidget.setPlotData(np.arange(0, 256, 1), validtimestemps, peak,[self.leftPosition,self.rightPosition])
             # else:
             # print("updateTimeStamp:  not a new file")
 
@@ -90,8 +105,6 @@ class LiveTimestamps(QWidget):
                 self.maskValidPixels[i] = 0
             else:
                 self.maskValidPixels[i] = 1
-
-
 
     @pyqtSlot()
     def slot_loadpath(self):
@@ -121,3 +134,14 @@ class LiveTimestamps(QWidget):
     def slot_refresh(self):
         self.updateTimeStamp()
         self.last_file_ctime = 0
+
+    def slot_updateLeftSlider(self):
+        if self.xSliderLeft.value() >= self.xSliderRight.value():
+            self.xSliderLeft.setValue(self.xSliderRight.value()-1)
+        self.leftPosition = self.xSliderLeft.value()
+
+
+    def slot_updateRightSlider(self):
+        if self.xSliderRight.value() <= self.xSliderLeft.value():
+            self.xSliderRight.setValue(self.xSliderLeft.value()+1)
+        self.rightPosition = self.xSliderRight.value()

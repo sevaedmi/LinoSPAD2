@@ -28,7 +28,7 @@ def get_nmr_validtimestamps(path, pix_range, timestamps: int = 512):
 
     """
 
-    data = unpk.unpack_binary_flex(path, 512)
+    data = unpk.unpack_numpy(path, 512)
 
     valid_per_pixel = np.zeros(256)
 
