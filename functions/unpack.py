@@ -390,3 +390,35 @@ def unpack_binary_df(
     timestamps = timestamps[~timestamps["Pixel"].isin(mask)]
 
     return timestamps
+
+
+def unpack_numpy(filename, lines_of_data: int = 512):
+    """
+    Function for unpacking binary data based on the numpy library.
+
+    Parameters
+    ----------
+    filename : str
+        Name of the file with the binary-encoded data.
+    lines_of_data : int, optional
+        Number of timestamps per acquisition cycle per pixel. Default is 512.
+
+    Returns
+    -------
+    data_matrix : array_like
+        A 2D matrix (256 pixels by lines_of_data X number-of-cycles) of
+        timestamps.
+
+    """
+    rawFile = np.fromfile(filename, dtype=np.uint32)  # read data
+    data = (rawFile & 0xFFFFFFF).astype(int) * 17.857  # Multiply with the lowes bin
+    data[np.where(rawFile < 0x80000000)] = -1  # Mask not valid data
+    nmrCycles = int(len(data) / lines_of_data / 256)  # number of cycles,
+    data_matrix = (
+        data.reshape((lines_of_data, nmrCycles * 256), order="F")
+        .reshape((lines_of_data, 256, -1), order="F")
+        .transpose((0, 2, 1))
+        .reshape((-1, 256), order="F")
+        .transpose()
+    )  # reshape the matrix
+    return data_matrix

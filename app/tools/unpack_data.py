@@ -299,10 +299,16 @@ def unpack_binary_flex(filename, lines_of_data: int = 512):
     return data_matrix
 
 
-def unpack_numpy(filename,lines_of_data):
+def unpack_numpy(filename, lines_of_data):
     rawFile = np.fromfile(filename, dtype=np.uint32)  # read data
     data = (rawFile & 0xFFFFFFF).astype(int) * 17.857  # Multiply with the lowes bin
     data[np.where(rawFile < 0x80000000)] = -1  # Mask not valid data
     nmrCycles = int(len(data) / lines_of_data / 256)  # number of cycles,
-    data_matrix = data.reshape((lines_of_data, nmrCycles * 256), order='F').reshape((lines_of_data, 256, -1), order='F').transpose((0, 2, 1)).reshape((-1, 256), order='F').transpose()  # reshape the matrix
+    data_matrix = (
+        data.reshape((lines_of_data, nmrCycles * 256), order="F")
+        .reshape((lines_of_data, 256, -1), order="F")
+        .transpose((0, 2, 1))
+        .reshape((-1, 256), order="F")
+        .transpose()
+    )  # reshape the matrix
     return data_matrix
