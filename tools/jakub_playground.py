@@ -9,7 +9,7 @@ from functions import unpack as f_up
 from matplotlib.ticker import MultipleLocator, AutoMinorLocator
 from struct import unpack
 import time
-import torch
+# import torch
 
 
 def main_playground():

@@ -13,7 +13,7 @@ from PyQt5.QtWidgets import QApplication
 import tools.jakub_playground
 
 # runs the applicaiton
-run_application = False
+run_application = True
 
 if run_application is True:
     app = QApplication(sys.argv)
