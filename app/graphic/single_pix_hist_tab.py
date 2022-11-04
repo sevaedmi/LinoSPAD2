@@ -1,8 +1,8 @@
 from PyQt5.QtWidgets import QWidget
-from app.graphic.ui.LiveTimestamps_tab_ui import Ui_LiveTimestamps
+from app.graphic.ui.SinglePixelHistogram_ui import Ui_SinglePixelHistogram
 
 
-class LiveTimestamps(QWidget, Ui_LiveTimestamps):
+class SinglePixelHistogram(QWidget, Ui_SinglePixelHistogram):
     def __init__(self, parent=None):
 
         super().__init__(parent)

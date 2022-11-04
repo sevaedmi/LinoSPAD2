@@ -30,6 +30,13 @@ class Ui_LiveTimestamps(object):
 
         self.lineEditPath = QtWidgets.QLineEdit(Form)
         self.lineEditPath.setObjectName("lineEdit")
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred
+        )
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.lineEditPath.sizePolicy().hasHeightForWidth())
+        self.lineEditPath.setSizePolicy(sizePolicy)
         self.gridLayout.addWidget(self.lineEditPath, 0, 2, 1, 1)
 
         self.label = QtWidgets.QLabel(Form)
@@ -58,33 +65,39 @@ class Ui_LiveTimestamps(object):
             self.scrollAreaWidgetContents
         )
         self.maskValidPixels = np.zeros(256)
-        for col in range(8):
-            for row in range(32):
+        for col in range(4):
+            for row in range(64):
                 self.checkBoxPixel.append(
                     QtWidgets.QCheckBox(
-                        str(row + col * 32), self.scrollAreaWidgetContents
+                        str(row + col * 64), self.scrollAreaWidgetContents
                     )
                 )
                 self.scrollAreaWidgetContentslayout.addWidget(
-                    self.checkBoxPixel[row + col * 32], col, row, 1, 1
+                    self.checkBoxPixel[row + col * 64], row, col, 1, 1
                 )
         self.scrollAreaWidgetContents.setObjectName("scrollAreaWidgetContents")
         self.scrollArea.setWidget(self.scrollAreaWidgetContents)
         self.gridLayout.addWidget(self.scrollArea, 1, 3, 1, 1)
+        # button for pix masking reset
+        self.btnPixMaskReset = QtWidgets.QPushButton(Form)
+        self.btnPixMaskReset.setObjectName("pushButton_4")
+        self.gridLayout.addWidget(self.btnPixMaskReset, 2, 3, 1, 1)
+        self.btnPixMaskReset.clicked.connect(self._reset_pix_mask)
         # linear scale check box
         self.checkBoxScale = QtWidgets.QCheckBox(Form)
         self.checkBoxScale.setObjectName("checkBox")
-        self.gridLayout.addWidget(self.checkBoxScale, 2, 3, 1, 1)
+        self.gridLayout.addWidget(self.checkBoxScale, 3, 3, 1, 1)
         self.checkBoxScale.stateChanged.connect(self._slot_checkplotscale)
         # plot refresh button
         self.refreshBtn = QtWidgets.QPushButton(Form)
         self.refreshBtn.setObjectName("pushButton_2")
-        self.gridLayout.addWidget(self.refreshBtn, 3, 3, 1, 1)
+        self.gridLayout.addWidget(self.refreshBtn, 4, 3, 1, 1)
         self.refreshBtn.clicked.connect(self._slot_refresh)
         # real-time plotting button
         self.pushButtonStartSync = QtWidgets.QPushButton(Form)
+        self.pushButtonStartSync.setMinimumSize(QtCore.QSize(385, 40))
         self.pushButtonStartSync.setObjectName("pushButton_3")
-        self.gridLayout.addWidget(self.pushButtonStartSync, 4, 3, 1, 1)
+        self.gridLayout.addWidget(self.pushButtonStartSync, 5, 3, 1, 1)
         self.pushButtonStartSync.clicked.connect(self._slot_startstream)
 
         self.label_2 = QtWidgets.QLabel(Form)
@@ -117,16 +130,16 @@ class Ui_LiveTimestamps(object):
         self.leftPosition = 0
         self.rightPosition = 255
 
-        self.retranslateUi(Form)
+        self._retranslateUi(Form)
         QtCore.QMetaObject.connectSlotsByName(Form)
 
         # timer
         self.timer = QtCore.QTimer()
         self.timerRunning = False
         self.last_file_ctime = 0
-        self.timer.timeout.connect(self.updateTimeStamp)
+        self.timer.timeout.connect(self._update_time_stamp)
 
-    def retranslateUi(self, Form):
+    def _retranslateUi(self, Form):
         _translate = QtCore.QCoreApplication.translate
         Form.setWindowTitle(_translate("Form", "Form"))
         self.pushButtonLoadPath.setText(_translate("Form", "Browse"))
@@ -136,6 +149,7 @@ class Ui_LiveTimestamps(object):
         self.pushButtonStartSync.setText(_translate("Form", "Start stream"))
         self.label_2.setText(_translate("Form", "Left xlim"))
         self.label_3.setText(_translate("Form", "Right xlim"))
+        self.btnPixMaskReset.setText(_translate("Form", "Reset pixel masking"))
 
     def _slot_loadpath(self):
         file = str(QtWidgets.QFileDialog.getExistingDirectory(self, "Select Directory"))
@@ -161,7 +175,7 @@ class Ui_LiveTimestamps(object):
             self.plotWidget.setPlotScale(False)
 
     def _slot_refresh(self):
-        self.updateTimeStamp()
+        self._update_time_stamp()
         self.last_file_ctime = 0
 
     def _slot_updateLeftSlider(self):
@@ -174,11 +188,11 @@ class Ui_LiveTimestamps(object):
             self.xSliderRight.setValue(self.xSliderLeft.value() + 1)
         self.rightPosition = self.xSliderRight.value()
 
-    def updateTimeStamp(self):
-        self.getvalidtimestamps()
+    def _update_time_stamp(self):
+        self._mask_pixels()
         os.chdir(self.pathtotimestamp)
         DATA_FILES = glob.glob("*.dat*")
-        print("updateTimeStamp: timer running")
+        print("_update_time_stamp: timer running")
         try:
             last_file = max(DATA_FILES, key=os.path.getctime)
             new_file_ctime = os.path.getctime(last_file)
@@ -198,11 +212,33 @@ class Ui_LiveTimestamps(object):
                     [self.leftPosition, self.rightPosition],
                 )
         except ValueError:
-            print("updateTimeStamp:  waiting for a file")
+            print("_update_time_stamp:  waiting for a file")
 
-    def getvalidtimestamps(self):
+    def _mask_pixels(self):
+        '''
+        Function for masking the chosen pixels.
+
+        Returns
+        -------
+        None.
+
+        '''
         for i in range(256):
             if self.checkBoxPixel[i].isChecked():
                 self.maskValidPixels[i] = 0
             else:
                 self.maskValidPixels[i] = 1
+
+    def _reset_pix_mask(self):
+        """
+        Function for resetting the pixel masking by unchecking all pixel
+        mask check boxes.
+
+        Returns
+        -------
+        None.
+
+        """
+        for i in range(256):
+            cb = self.scrollAreaWidgetContentslayout.itemAt(i).widget()
+            cb.setChecked(False)

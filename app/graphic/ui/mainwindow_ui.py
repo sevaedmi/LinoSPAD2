@@ -8,6 +8,7 @@
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 from app.graphic.live_timestamps_tab import LiveTimestamps
+from app.graphic.single_pix_hist_tab import SinglePixelHistogram
 
 
 class Ui_MainWindow(object):
@@ -56,7 +57,8 @@ class Ui_MainWindow(object):
         self.gridLayout = QtWidgets.QGridLayout(self.tab)
         self.gridLayout.setObjectName("gridLayout")
         self.tabWidget.addTab(self.tab, "")
-        self.tab_2 = QtWidgets.QWidget()
+        # self.tab_2 = QtWidgets.QWidget()
+        self.tab_2 = SinglePixelHistogram(self)
         self.tab_2.setObjectName("tab_2")
         self.tabWidget.addTab(self.tab_2, "")
         self.gridLayout_2.addWidget(self.tabWidget, 0, 0, 1, 1)
