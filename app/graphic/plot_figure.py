@@ -34,12 +34,12 @@ class PltCanvas(QWidget):
 
     def setplotparameters(self):
         plt.rcParams.update({"font.size": 18})
-        plt.xlabel("Pixel [-]")
-        plt.ylabel("Valid timestamps [-]")
+        self.ax.set_xlabel("Pixel [-]")
+        self.ax.set_ylabel("Valid timestamps [-]")
 
-        plt.box(bool(1))
-        plt.grid(False)
-        plt.subplots_adjust(left=0.15)
+        # plt.box(bool(1))
+        # plt.grid(False)
+        # plt.subplots_adjust(left=0.15)
 
         self.ax.tick_params(which="both", width=2, direction="in")
         self.ax.tick_params(which="major", length=7, direction="in")
@@ -58,6 +58,7 @@ class PltCanvas(QWidget):
         self.ax.autoscale_view()
         self.setplotparameters()
         self.ax.set_xlim(xLim[0], xLim[1])
+        self.figure.tight_layout()
         self.figure.canvas.draw()
         self.figure.canvas.flush_events()
 
