@@ -1,7 +1,7 @@
 """ Time profiler: for analyzing time-consumption of codes
 
 """
-from functions.unpack import unpack_binary_df, unpack_binary_flex
+from functions.unpack import unpack_binary_df, unpack_binary_flex, unpack_numpy
 from functions.plot_valid import plot_valid_df, plot_valid
 from functions.delta_t import plot_grid_df, plot_grid
 from functions.calc_diff import calc_diff_df, calc_diff
@@ -18,6 +18,7 @@ filename = glob.glob("*.dat*")[0]
 data = unpack_binary_flex(filename)
 data_df = unpack_binary_df(filename, cut_empty=True)
 
+data_np = unpack_numpy(filename)
 # Standard plot_valid
 
 %timeit plot_valid(path, pix=(149, 150, 151), mask=[], timestamps=512)

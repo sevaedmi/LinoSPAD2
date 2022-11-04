@@ -1,18 +1,14 @@
 from PyQt5.QtWidgets import QMainWindow, QApplication
-from app.graphic.tab_widget import TableWidget
+from app.ui.mainwindow_ui import Ui_MainWindow
 
 
-class MainWindow(QMainWindow):
-    def __init__(self):
-        super().__init__()
+class MainWindow(QMainWindow, Ui_MainWindow):
+    def __init__(self, parent=None):
 
-        # self.setWindowTitle("My App")
-        # button = QPushButton("Press Me!")
-        # Set the central widget of the Window.
-        # self.setCentralWidget(button)
-        # self.setFixedSize(QSize(400, 300))
-        self.table_widget = TableWidget(self)
-        self.setCentralWidget(self.table_widget)
+        super().__init__(parent)
 
+        self.setupUi(self)
+
+    # for stopping the script upon closing the app window
     def closeEvent(self, event):
         QApplication.quit()

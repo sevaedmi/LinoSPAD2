@@ -6,10 +6,12 @@ import functions.delta_t
 import matplotlib as plt
 from matplotlib import pyplot as plt
 from functions import unpack as f_up
-from matplotlib.ticker import (MultipleLocator, AutoMinorLocator)
+from matplotlib.ticker import MultipleLocator, AutoMinorLocator
 from struct import unpack
 import time
-import torch
+# import torch
+
+
 def main_playground():
     filename = "C:/Users/jakub/Documents/LinoSpad2/data/SPDC_221021/acq_221021_202311_timeStamps512.dat"
     # filename = "C:/Users/jakub/Documents/LinoSpad2/data/SPDC_221028_calibration/acq_221028_171552.dat"  # DONE OK
@@ -18,36 +20,34 @@ def main_playground():
     timestamp_list = []
     address_list = []
 
-
     st = time.time()
     f = open(filename, "r")
-    a = np.fromfile(f, dtype=np.uint32) #uint32
-    data = (a & 0xFFFFFFF).astype(int)*17.857
+    a = np.fromfile(f, dtype=np.uint32)  # uint32
+    data = (a & 0xFFFFFFF).astype(int) * 17.857
     data[np.where(a < 0x80000000)] = -1
-    data = data[0:lines_of_data*3*256]
+    data = data[0 : lines_of_data * 3 * 256]
     print(a[0])
     noc = int(len(data) / lines_of_data / 256)  # number of cycles,
-
 
     # b = data.reshape((lines_of_data,256*noc)).transpose()#.reshape((lines_of_data*noc,256),order='F').transpose()
     #
     # B = np.reshape(np.transpose(np.reshape(b, (512,256,-1)), (0, 2, 1)),(-1,256))
     #
-    t0 = data.reshape((lines_of_data,256*noc),order='F')
+    t0 = data.reshape((lines_of_data, 256 * noc), order="F")
 
-    t1 = np.reshape(data, (lines_of_data,noc*256), order='F')
-    t2 = np.reshape(t1, (lines_of_data, 256,-1),order='F')
-    t3 = np.transpose(t2,(0,2,1))
-    t4 = np.reshape(t2.transpose((0,2,1)), (-1, 256),order='F')
+    t1 = np.reshape(data, (lines_of_data, noc * 256), order="F")
+    t2 = np.reshape(t1, (lines_of_data, 256, -1), order="F")
+    t3 = np.transpose(t2, (0, 2, 1))
+    t4 = np.reshape(t2.transpose((0, 2, 1)), (-1, 256), order="F")
 
-     # t3 = np.transpose(t1, (0, 2, 1))
+    # t3 = np.transpose(t1, (0, 2, 1))
     # t4= np.reshape(t2, (-1, 256))
 
     print(t4.transpose()[0:2, 0:3])
     t2.transpose(())
 
     et = time.time()
-    print('Execution time:', et - st, 'seconds')
+    print("Execution time:", et - st, "seconds")
 
     st = time.time()
     with open(filename, "rb") as f:
@@ -82,35 +82,16 @@ def main_playground():
         i = 0
         while i < 256:
             data_matrix[i][
-            k * lines_of_data: k * lines_of_data + lines_of_data
+                k * lines_of_data : k * lines_of_data + lines_of_data
             ] = timestamp_list[
-                (i + 256 * k) * lines_of_data: (i + 256 * k) * lines_of_data
-                                               + lines_of_data
-                ]
+                (i + 256 * k) * lines_of_data : (i + 256 * k) * lines_of_data
+                + lines_of_data
+            ]
             i = i + 1
         k = k + 1
-
     et = time.time()
-    print('Execution time:', et - st, 'seconds')
-    print('Execution time:', et - st, 'seconds')
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    print("Execution time:", et - st, "seconds")
+    print("Execution time:", et - st, "seconds")
 
     # data = np.random.normal(loc=5.0, scale=2.0, size=1000)
     # mean, std = norm.fit(data)
@@ -185,8 +166,3 @@ def main_playground():
     #
     # axs.hist(pixel_0, bins=bins)
     # plt.show()
-
-
-
-
-
