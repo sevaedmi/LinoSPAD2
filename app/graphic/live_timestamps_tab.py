@@ -208,6 +208,11 @@ class LiveTimestamps(QtWidgets.QWidget):
                 self.maskValidPixels[i] = 0
                 cb = self.scrollAreaWidgetContentslayout.itemAt(i).widget()
                 cb.setChecked(True)
+        else:
+            for i in mask:
+                self.maskValidPixels[i] = 0
+                cb = self.scrollAreaWidgetContentslayout.itemAt(i).widget()
+                cb.setChecked(False)
 
     def _reset_pix_mask(self):
         """
