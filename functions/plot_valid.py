@@ -80,7 +80,7 @@ def plot_valid(
             "=================================================".format(num)
         )
 
-        data_matrix = f_up.unpack_binary_flex(num, timestamps)
+        data_matrix = f_up.unpack_numpy(num, timestamps)
 
         for j in range(len(data_matrix)):
             valid_per_pixel[j] = len(np.where(data_matrix[j] > 0)[0])
@@ -177,7 +177,7 @@ def online_plot_valid(path, pix_range, timestamps: int = 512, frame_rate: float 
             last_file_ctime = new_file_ctime
 
             print("Analysing the last file.")
-            data = f_up.unpack_binary_flex(last_file, timestamps)
+            data = f_up.unpack_numpy(last_file, timestamps)
 
             valid_per_pixel = np.zeros(256)
 
@@ -263,7 +263,7 @@ def plot_pixel_hist(path, pix1, timestamps: int = 512, show_fig: bool = False):
             "=====================================================".format(num)
         )
 
-        data = f_up.unpack_binary_flex(num, timestamps)
+        data = f_up.unpack_numpy(num, timestamps)
 
         if pix1 is None:
             pixels = np.arange(145, 165, 1)

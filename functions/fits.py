@@ -57,7 +57,7 @@ def fit_gauss(path, pix, timestamps: int = 512, show_fig: bool = False):
             "Fitting with gauss, Working on {}\n"
             "=========================================".format(filename)
         )
-        data = f_up.unpack_binary_flex(filename)
+        data = f_up.unpack_numpy(filename)
 
         data_1 = data[pix[0]]  # 1st pixel
         data_2 = data[pix[1]]  # 2nd pixel

@@ -10,13 +10,12 @@ from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib import pyplot as plt
-import os
 import glob
 import numpy as np
 import app.tools.unpack_data as unpk
 
 
-class SinglePixelHistogram(QWidget):
+class HistCanvas(QWidget):
     def __init__(self, height=4, width=4, dpi=100):
         super().__init__()
 
@@ -52,10 +51,10 @@ class SinglePixelHistogram(QWidget):
         self.canvas.draw()
         self.canvas.flush_events()
 
-        try:
-            os.chdir("results/single pixel histograms")
-        except Exception:
-            os.mkdir("results/single pixel histograms")
-            os.chdir("results/single pixel histograms")
-        plt.savefig("{file}, pixel {pixel}.png".format(file=file, pixel=pix))
-        os.chdir("../..")
+        # try:
+        #     os.chdir("results/single pixel histograms")
+        # except Exception:
+        #     os.mkdir("results/single pixel histograms")
+        #     os.chdir("results/single pixel histograms")
+        # plt.savefig("{file}, pixel {pixel}.png".format(file=file, pixel=pix))
+        # os.chdir("../..")
