@@ -15,6 +15,7 @@ functions:
 import os
 import glob
 import numpy as np
+from tqdm import tqdm
 from scipy.optimize import curve_fit
 from matplotlib import pyplot as plt
 from functions import unpack as f_up
@@ -43,7 +44,7 @@ def fit_gauss(path, pix, timestamps: int = 512, show_fig: bool = False):
     None.
 
     """
-
+# TODO: tidy up the code
     def gauss(x, A, x0, sigma):
         return A * np.exp(-((x - x0) ** 2) / (2 * sigma ** 2))
 
@@ -59,26 +60,21 @@ def fit_gauss(path, pix, timestamps: int = 512, show_fig: bool = False):
         )
         data = f_up.unpack_numpy(filename)
 
-        data_1 = data[pix[0]]  # 1st pixel
-        data_2 = data[pix[1]]  # 2nd pixel
-        data_3 = data[pix[2]]  # 3d pixel
-        data_4 = data[pix[3]]  # 4th pixel
-        data_5 = data[pix[4]]  # 5th pixel
-
-        pix_num = np.arange(pix[0], pix[-1] + 1, 1)
-
-        all_data = np.vstack((data_1, data_2, data_3, data_4, data_5))
+        data_pix = np.zeros((len(pix), len(data[0])))
 
         plt.rcParams.update({"font.size": 20})
-        fig, axs = plt.subplots(4, 4, figsize=(24, 24))
-
-        for q in range(5):
-            for w in range(5):
+        # if len(pix) > 2:
+        #     fig, axs = plt.subplots(len(pix) - 1, len(pix) - 1, figsize=(20, 20))
+        # else:
+        #     fig = plt.figure(figsize=(14, 14))
+        print("\n> > > Fitting with gauss < < <\n")
+        for q in tqdm(range(len(pix)), desc="Minuend pixel   "):
+            for w in tqdm(range(len(pix)), desc="Subtrahend pixel"):
                 if w <= q:
                     continue
-                data_pair = np.vstack((all_data[q], all_data[w]))
+                data_pair = np.vstack((data_pix[q], data_pix[w]))
 
-                output = cd(data_pair, timestamps=timestamps)
+                output = cd(data_pair, timestamps=timestamps, range_left=17e3, range_right=20e3)
 
                 if "Ne" and "540" in path:
                     chosen_color = "seagreen"
@@ -134,7 +130,7 @@ def fit_gauss(path, pix, timestamps: int = 512, show_fig: bool = False):
                 plt.savefig(
                     "{file}_pixels"
                     "{pix1}-{pix2}_fit.png".format(
-                        file=filename, pix1=pix_num[q], pix2=pix_num[w]
+                        file=filename, pix1=pix[q], pix2=pix[w]
                     )
                 )
                 plt.pause(0.1)

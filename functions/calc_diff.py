@@ -63,12 +63,6 @@ def calc_diff(
                     n = timestamps * (acq - 1) + p
                     if data_pair[k][n] == -1:
                         continue
-                    # elif data_pair[i][j] - data_pair[k][n] > range_right:
-                    #     continue
-                    # elif data_pair[i][j] - data_pair[k][n] < range_left:
-                    #     continue
-                    # else:
-                    #     output.append(data_pair[i][j] - data_pair[k][n])
                     else:
                         delta = data_pair[i][j] - data_pair[k][n]
                         if delta > range_right:

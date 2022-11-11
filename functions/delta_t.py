@@ -60,7 +60,7 @@ def compute_delta_t(pixel_0, pixel_1, timestampsnmr: int = 512, timewindow: int 
                     continue
     return output
 
-
+# TODO: add the range
 def plot_grid(
     path, pix, timestamps: int = 512, show_fig: bool = False, same_y: bool = True
 ):
@@ -132,8 +132,8 @@ def plot_grid(
                 delta_ts = cd(
                     data_pair,
                     timestamps=timestamps,
-                    range_left=-2.5e6,
-                    range_right=2.5e6,
+                    range_left=-2.5e3,
+                    range_right=2.5e3,
                 )
 
                 if "Ne" and "540" in path:
@@ -145,7 +145,7 @@ def plot_grid(
                 else:
                     chosen_color = "salmon"
                 try:
-                    bins = np.arange(np.min(delta_ts), np.max(delta_ts), 17.857 * 28e2)
+                    bins = np.arange(np.min(delta_ts), np.max(delta_ts), 17.857 * 2)
                 except Exception:
                     print("Couldn't calculate bins: probably not enough delta ts.")
                     continue
@@ -245,7 +245,7 @@ def plot_delta_separate(path, pix, timestamps: int = 512):
             "======================================================".format(filename)
         )
 
-        data = f_up.unpack_binary_flex(filename, timestamps)
+        data = f_up.unpack_numpy(filename, timestamps)
 
         data_pix = np.zeros((len(pix), len(data[0])))
 
@@ -277,7 +277,7 @@ def plot_delta_separate(path, pix, timestamps: int = 512):
                 plt.figure(figsize=(11, 7))
                 plt.xlabel("\u0394t [ps]")
                 plt.ylabel("Timestamps [-]")
-                (n,) = plt.hist(delta_ts, bins=bins, color=chosen_color)
+                n = plt.hist(delta_ts, bins=bins, color=chosen_color)[0]
 
                 # find position of the histogram peak
                 try:
