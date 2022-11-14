@@ -28,6 +28,8 @@ functions:
 from struct import unpack
 import numpy as np
 import pandas as pd
+from functions.calibrate import calibrate_load
+import sys
 
 
 def unpack_txt_512(filename):
@@ -240,23 +242,23 @@ def unpack_binary_512(filename):
     return data_matrix
 
 
-def unpack_binary_flex(filename, lines_of_data: int = 512):
+def unpack_binary_flex(filename, timestamps: int = 512):
     """Unpacks the 'dat' data files with certain timestamps per acquistion
     cycle.
 
     Parameters
     ----------
     filename : str
-        File with data from LinoSPAD2 in which precisely lines_of_data lines
+        File with data from LinoSPAD2 in which precisely timestamps lines
         of data per acquistion cycle is written.
-    lines_of_data: int, optional
+    timestamps: int, optional
         Number of binary-encoded timestamps in the 'dat' file. The default
         value is 512.
 
     Returns
     -------
     data_matrix : array_like
-        A 2D matrix (256 pixels by lines_of_data X number-of-cycles) of
+        A 2D matrix (256 pixels by timestamps X number-of-cycles) of
         timestamps.
 
     """
@@ -286,8 +288,8 @@ def unpack_binary_flex(filename, lines_of_data: int = 512):
     # rows=#pixels, cols=#cycles
     data_matrix = np.zeros((256, int(len(timestamp_list) / 256)))
 
-    noc = len(timestamp_list) / lines_of_data / 256  # number of cycles,
-    # lines_of_data data lines per pixel per cycle, 256 pixels
+    noc = len(timestamp_list) / timestamps / 256  # number of cycles,
+    # timestamps data lines per pixel per cycle, 256 pixels
 
     # pack the data from a 1D array into a 2D matrix
     k = 0
@@ -295,10 +297,9 @@ def unpack_binary_flex(filename, lines_of_data: int = 512):
         i = 0
         while i < 256:
             data_matrix[i][
-                k * lines_of_data : k * lines_of_data + lines_of_data
+                k * timestamps : k * timestamps + timestamps
             ] = timestamp_list[
-                (i + 256 * k) * lines_of_data : (i + 256 * k) * lines_of_data
-                + lines_of_data
+                (i + 256 * k) * timestamps : (i + 256 * k) * timestamps + timestamps
             ]
             i = i + 1
         k = k + 1
@@ -306,7 +307,7 @@ def unpack_binary_flex(filename, lines_of_data: int = 512):
 
 
 def unpack_binary_df(
-    filename, lines_of_data: int = 512, apply_mask: bool = True, cut_empty: bool = True
+    filename, timestamps: int = 512, apply_mask: bool = True, cut_empty: bool = True
 ):
     """ Unpacks the 'dat' files with a given number of timestamps per acquisition cycle
     per pixel into a pandas dataframe. The fastest unpacking compared to others.
@@ -315,7 +316,7 @@ def unpack_binary_df(
     ----------
     filename : str
         The 'dat' binary-encoded datafile.
-    lines_of_data : int, optional
+    timestamps : int, optional
         Number of timestamps per acquisition cycle per pixel. The default is 512.
     apply_mask : bool, optional
         Switch for masking the warm/hot pixels. Default is True.
@@ -361,7 +362,7 @@ def unpack_binary_df(
     cycles_list = list()
     acq = 1
     i = 0
-    cycles = lines_of_data * 256
+    cycles = timestamps * 256
 
     with open(filename, "rb") as f:
         while True:
@@ -392,7 +393,7 @@ def unpack_binary_df(
     return timestamps
 
 
-# def unpack_numpy(filename, lines_of_data: int = 512):
+# def unpack_numpy(filename, timestamps: int = 512):
 #     """
 #     Function for unpacking binary data based on the numpy library.
 
@@ -400,23 +401,23 @@ def unpack_binary_df(
 #     ----------
 #     filename : str
 #         Name of the file with the binary-encoded data.
-#     lines_of_data : int, optional
+#     timestamps : int, optional
 #         Number of timestamps per acquisition cycle per pixel. Default is 512.
 
 #     Returns
 #     -------
 #     data_matrix : array_like
-#         A 2D matrix (256 pixels by lines_of_data X number-of-cycles) of
+#         A 2D matrix (256 pixels by timestamps X number-of-cycles) of
 #         timestamps.
 
 #     """
 #     rawFile = np.fromfile(filename, dtype=np.uint32)  # read data
 #     data = (rawFile & 0xFFFFFFF).astype(int) * 17.857  # Multiply with the lowes bin
 #     data[np.where(rawFile < 0x80000000)] = -1  # Mask not valid data
-#     nmrCycles = int(len(data) / lines_of_data / 256)  # number of cycles,
+#     cycles = int(len(data) / timestamps / 256)  # number of cycles,
 #     data_matrix = (
-#         data.reshape((lines_of_data, nmrCycles * 256), order="F")
-#         .reshape((lines_of_data, 256, -1), order="F")
+#         data.reshape((timestamps, cycles * 256), order="F")
+#         .reshape((timestamps, 256, -1), order="F")
 #         .transpose((0, 2, 1))
 #         .reshape((-1, 256), order="F")
 #         .transpose()
@@ -424,7 +425,7 @@ def unpack_binary_df(
 #     return data_matrix
 
 
-def unpack_numpy(filename, lines_of_data: int = 512):
+def unpack_numpy(filename, timestamps: int = 512):
     """
     Function for unpacking the binary-encoded data from the LinoSPAD2
     based on the numpy library. Currently, the fastest option for
@@ -434,14 +435,14 @@ def unpack_numpy(filename, lines_of_data: int = 512):
     ----------
     filename : str
         Name of the file with the data.
-    lines_of_data : int, optional
+    timestamps : int, optional
         Number of timestamps per acquisition cycle per pixel.
         The default is 512.
 
     Returns
     -------
     output : ndarray
-        A 2D matrix (256 x lines_of_data*number_of_cycles) of timestamps.
+        A 2D matrix (256 x timestamps*number_of_cycles) of timestamps.
 
     Examples
     --------
@@ -501,12 +502,66 @@ def unpack_numpy(filename, lines_of_data: int = 512):
     # mask nonvalid data with '-1'
     data[np.where(rawFile < 0x80000000)] = -1
     # number of acquisition cycles
-    nmrCycles = int(len(data) / lines_of_data / 256)
+    cycles = int(len(data) / timestamps / 256)
 
     data_matrix = (
-        data.reshape(nmrCycles, 256, lines_of_data)
+        data.reshape(cycles, 256, timestamps)
         .transpose((1, 0, 2))
-        .reshape(256, lines_of_data * nmrCycles)
+        .reshape(256, timestamps * cycles)
     )
 
+    return data_matrix
+
+
+def unpack_calib(filename, timestamps: int = 512):
+    '''
+    Function for unpacking the .dat data files using the calibration
+    data. The output is a matrix of '256 x timestamps*number_of_cycles'
+    timestamps in ps.
+
+    Parameters
+    ----------
+    filename : str
+        Name of the .dat file.
+    timestamps : int, optional
+        Number of timestamps per acquisition cycle per pixel. The default is 512.
+
+    Returns
+    -------
+    data_matrix : ndarray
+        Matrix of '256 x timestamps*number_of_cycles' timestamps.
+
+    '''
+
+    # read data by 32 bit words
+    rawFile = np.fromfile(filename, dtype=np.uint32)
+    # lowest 28 bits are the timestamp; convert to longlong, int is not enough
+    data = (rawFile & 0xFFFFFFF).astype(np.longlong)
+    # mask nonvalid data with '-1'
+    data[np.where(rawFile < 0x80000000)] = -1
+    # number of acquisition cycles
+    cycles = int(len(data) / timestamps / 256)
+
+    data_matrix = (
+        data.reshape(cycles, 256, timestamps)
+        .transpose((1, 0, 2))
+        .reshape(256, timestamps * cycles)
+    )
+    path_calib_data = (
+        "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/Data/"
+        "calibration_data"
+    )
+    try:
+        cal_mat = calibrate_load(path_calib_data)
+    except FileNotFoundError or IndexError:
+        print(
+            "No .csv file with the calibration data was found, check the path"
+            "or run the calibration. "
+        )
+        sys.exit()
+    for i in range(256):
+        ind = np.where(data_matrix[i] >= 0)[0]
+        data_matrix[i, ind] = (
+            data_matrix[i, ind] - data_matrix[i, ind] % 140
+        ) * 17.857 + cal_mat[i, (data_matrix[i, ind] % 140)]
     return data_matrix
