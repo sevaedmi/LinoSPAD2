@@ -44,7 +44,7 @@ def fit_gauss(path, pix, timestamps: int = 512, show_fig: bool = False):
     None.
 
     """
-# TODO: tidy up the code
+    # TODO: tidy up the code
     def gauss(x, A, x0, sigma):
         return A * np.exp(-((x - x0) ** 2) / (2 * sigma ** 2))
 
@@ -74,7 +74,9 @@ def fit_gauss(path, pix, timestamps: int = 512, show_fig: bool = False):
                     continue
                 data_pair = np.vstack((data_pix[q], data_pix[w]))
 
-                output = cd(data_pair, timestamps=timestamps, range_left=17e3, range_right=20e3)
+                output = cd(
+                    data_pair, timestamps=timestamps, range_left=17e3, range_right=20e3
+                )
 
                 if "Ne" and "540" in path:
                     chosen_color = "seagreen"

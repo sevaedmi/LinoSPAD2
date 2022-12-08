@@ -498,7 +498,7 @@ def unpack_numpy(filename, timestamps: int = 512):
     # read data by 32 bit words
     rawFile = np.fromfile(filename, dtype=np.uint32)
     # lowest 28 bits are the timestamp; convert to ps
-    data = (rawFile & 0xFFFFFFF).astype(int) * 17.857
+    data = (rawFile & 0xFFFFFFF).astype(np.longlong) * 17.857
     # mask nonvalid data with '-1'
     data[np.where(rawFile < 0x80000000)] = -1
     # number of acquisition cycles
@@ -513,8 +513,8 @@ def unpack_numpy(filename, timestamps: int = 512):
     return data_matrix
 
 
-def unpack_calib(filename, timestamps: int = 512):
-    '''
+def unpack_calib(filename, board_number: str, timestamps: int = 512):
+    """
     Function for unpacking the .dat data files using the calibration
     data. The output is a matrix of '256 x timestamps*number_of_cycles'
     timestamps in ps.
@@ -523,6 +523,8 @@ def unpack_calib(filename, timestamps: int = 512):
     ----------
     filename : str
         Name of the .dat file.
+    board_number : str
+        LinoSPAD2 board number.
     timestamps : int, optional
         Number of timestamps per acquisition cycle per pixel. The default is 512.
 
@@ -531,7 +533,7 @@ def unpack_calib(filename, timestamps: int = 512):
     data_matrix : ndarray
         Matrix of '256 x timestamps*number_of_cycles' timestamps.
 
-    '''
+    """
 
     # read data by 32 bit words
     rawFile = np.fromfile(filename, dtype=np.uint32)
@@ -547,10 +549,16 @@ def unpack_calib(filename, timestamps: int = 512):
         .transpose((1, 0, 2))
         .reshape(256, timestamps * cycles)
     )
-    path_calib_data = (
-        "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/Data/"
-        "calibration_data"
-    )
+    if board_number == "A5":
+        path_calib_data = (
+            "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/"
+            "Software/Data/calibration_data/board_A5"
+        )
+    else:
+        path_calib_data = (
+            "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/"
+            "Software/Data/calibration_data/board_NL11"
+        )
     try:
         cal_mat = calibrate_load(path_calib_data)
     except FileNotFoundError or IndexError:

@@ -14,7 +14,7 @@ from PyQt5.QtWidgets import QApplication
 import tools.jakub_playground
 
 # runs the applicaiton
-run_application = True
+run_application = False
 
 if run_application is True:
     app = QApplication(sys.argv)
@@ -54,6 +54,16 @@ else:
         "Data/calibration_data"
     )
 
+    path_test = (
+        "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/"
+        "Data/board_A5/test"
+    )
+
+    path_calib_A5 = (
+        "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/"
+        "Data/board_A5/calibration_data"
+    )
+
     # =========================================================================
     # Function execution.
     # =========================================================================
@@ -88,12 +98,10 @@ else:
         238,
     ]
 
-    # delta_t.plot_grid(path_BNL, (134, 143), show_fig=True, same_y=True)
-    # plot_valid.plot_valid_df(path_BNL, timestamps=512)
-    # delta_t.plot_grid_df(path_2208_540, pix=(155, 156, 158, 159, 160))
-    # delta_t.plot_peak_vs_peak(path_BNL, pix1=(135, 136, 137), pix2=(143, 144, 145))
-
-    # delta_t.plot_delta_separate(path_BNL, pix=(157, 158))
-    # gf.fit_gauss(path_BNL, pix=(134, 143))
-    # calibrate_save(path_cal)
-    data_cal = calibrate_load(path_cal)
+    # plot_valid.plot_valid(path_test, pix=(np.arange(140,160,1)), mask=[], timestamps=512)
+    # delta_t.plot_grid(
+    #     path_test, pix=(116, 117, 118, 119, 120), range_left=-5e3, range_right=5e3
+    # )
+    delta_t.plot_grid_calib(
+        path_test, pix=(116, 117, 118, 119, 120), range_left=-5e3, range_right=5e3
+    )
