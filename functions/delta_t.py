@@ -615,5 +615,5 @@ def plot_grid_calib(
             os.mkdir("results/delta_t")
             os.chdir("results/delta_t")
         fig.tight_layout()  # for perfect spacing between the plots
-        plt.savefig("{name}_delta_t_grid.png".format(name=filename))
+        plt.savefig("{name}_delta_t_grid_cal.png".format(name=filename))
         os.chdir("../..")
