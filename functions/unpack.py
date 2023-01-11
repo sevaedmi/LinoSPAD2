@@ -9,19 +9,28 @@ functions:
 
     * unpack_txt_512 - unpacks the 'txt' data files with 512 timestamps
     per acquisition cycle
+
     * unpack_txt_10 - unpacks the 'txt' data files with 10 timestamps per
     acquisition cycle
+
     * unpack_binary_10 - unpacks the 'dat' data files with 10 timestamps
     per acquisition cycle
+
     * unpack_binary_512 - unpack the 'dat' data files with 512 timestamps
     per acquisition point
+
     * unpack_binary_flex - unpacks the 'dat' data files with a given number of
     timestamps per acquisition cycle
+
     * unpack_binary_df - unpacks the 'dat' data files with a given number of
     timestamps per acquisition cycle into a pandas dataframe. Unlike the
     others, this functions does not write '-1' nonvalid timestamps which makes
     this the fastest approach compared to other. The dataframe output allows
     faster plots using seaborn.
+
+    * unpack_calib - unpacks the 'dat' data files with a given number of
+    timestamps per acquisition cycle. Uses the calibration data. Imputing the
+    LinoSPAD2 board number is required.
 
 """
 
@@ -68,7 +77,7 @@ def unpack_txt_512(filename):
         i = 0
         while i < 256:
             data_matrix[i][k * 512 : k * 512 + 512] = (
-                data[(i + 256 * k) * 512 : (i + 256 * k) * 512 + 512] - 2 ** 31
+                data[(i + 256 * k) * 512 : (i + 256 * k) * 512 + 512] - 2**31
             )
             i = i + 1
         k = k + 1
@@ -115,7 +124,7 @@ def unpack_txt_10(filename):
         i = 0
         while i < 256:
             data_matrix[i][k * 10 : k * 10 + 10] = (
-                data[(i + 256 * k) * 10 : (i + 256 * k) * 10 + 10] - 2 ** 31
+                data[(i + 256 * k) * 10 : (i + 256 * k) * 10 + 10] - 2**31
             )
             i = i + 1
         k = k + 1
@@ -309,7 +318,7 @@ def unpack_binary_flex(filename, timestamps: int = 512):
 def unpack_binary_df(
     filename, timestamps: int = 512, apply_mask: bool = True, cut_empty: bool = True
 ):
-    """ Unpacks the 'dat' files with a given number of timestamps per acquisition cycle
+    """Unpacks the 'dat' files with a given number of timestamps per acquisition cycle
     per pixel into a pandas dataframe. The fastest unpacking compared to others.
 
     Parameters
@@ -513,6 +522,7 @@ def unpack_numpy(filename, timestamps: int = 512):
     return data_matrix
 
 
+# TODO: solve the calibration data path
 def unpack_calib(filename, board_number: str, timestamps: int = 512):
     """
     Function for unpacking the .dat data files using the calibration
@@ -554,11 +564,13 @@ def unpack_calib(filename, board_number: str, timestamps: int = 512):
             "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/"
             "Software/Data/calibration_data/board_A5"
         )
-    else:
+    elif board_number == "NL11":
         path_calib_data = (
             "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/"
             "Software/Data/calibration_data/board_NL11"
         )
+    else:
+        raise ValueError("Board number is required or there is no data for the given value")
     try:
         cal_mat = calibrate_load(path_calib_data)
     except FileNotFoundError or IndexError:

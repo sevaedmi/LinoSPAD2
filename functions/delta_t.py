@@ -8,10 +8,18 @@ This file can also be imported as a module and contains the following
 functions:
 
     * plot_grid - function for plotting a grid of NxN plots (N for number of
-      pixels) of timestamp differences
+    pixels) of timestamp differences
 
     * plot_delta_separate - function for plotting separate figures of
     timestamp differences for each pair of pixels in the given range
+
+    * plot_grid_df - function for plotting a grid of NxN plots (N for number of
+    pixels) of timestamps differences. Works with tidy dataframes; currently, the
+    fastest approach.
+
+    * plot_grid_calib - function for plotting a grid of NxN plots (N for number of
+    pixels) of timestamp differences. Uses the calibration data. Imputing the LinoSPAD2
+    board number is required.
 
 """
 
@@ -460,6 +468,7 @@ def plot_peak_vs_peak(path, pix1, pix2, timestamps: int = 512):
 def plot_grid_calib(
     path,
     pix,
+    board_number: str,
     timestamps: int = 512,
     range_left: float = -2.5e3,
     range_right: float = 2.5e3,
@@ -516,7 +525,7 @@ def plot_grid_calib(
             "=====================================================\n".format(filename)
         )
 
-        data = f_up.unpack_calib(filename, timestamps)
+        data = f_up.unpack_calib(filename, board_number, timestamps)
 
         data_pix = np.zeros((len(pix), len(data[0])))
 

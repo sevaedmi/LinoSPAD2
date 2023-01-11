@@ -22,6 +22,9 @@ functions:
     works with tidy dataframes. Currently, the fastest option for plotting valid
     timestamps.
 
+    * plot_calib - plots the number of valid timestamps vs the pixel number, using
+    the calibration data. Imputing the board number is required.
+
 """
 
 import glob
@@ -34,8 +37,8 @@ from functions import unpack as f_up
 def plot_valid(
     path,
     pix,
-    mask: [],
     timestamps,
+    mask: list = [],
     scale: str = "linear",
     style: str = "-o",
     show_fig: bool = False,
@@ -53,9 +56,16 @@ def plot_valid(
         Array of indices of 5 pixels for analysis.
     timestamps : int
         Number of timestamps per acquistion cycle per pixel.
+    mask : list, optional,
+        A list of pixel indices. If provided, these pixels will be cut out.
+        Default is "[]".
     scale : str, optional
         Use 'log' for logarithmic scale, leave empty for linear. Default is
         'linear'.
+    style : str, optional
+        What style for the plot should be used. Default is "-o".
+    show_fig : bool, optional
+        Switch for showing the plot. Default is "False".
 
     Returns
     -------
@@ -287,8 +297,29 @@ def plot_pixel_hist(path, pix1, timestamps: int = 512, show_fig: bool = False):
 
 
 def plot_valid_df(
-    path, timestamps: int = 512, log: bool = True, show_fig: bool = False
+    path, scale: str = "linear", timestamps: int = 512, show_fig: bool = False
 ):
+    """
+    Function for plotting the number of valid timestamps per pixel. Works
+    with tidy dataframes.
+
+    Parameters
+    ----------
+    path : str
+        Path to the datafiles.
+    scale : str, optional
+        Use 'log' for logarithmic scale, leave empty for linear. Default is
+        'linear'.
+    timestamps : int, optional
+        Number of timestamps per pixel per acquisition cycle. The default is 512.
+    show_fig : bool, optional
+        Switch for showing the plot. The default is False.
+
+    Returns
+    -------
+    None.
+
+    """
 
     os.chdir(path)
 
@@ -306,7 +337,7 @@ def plot_valid_df(
         fig.set_xlabel("Pixel [-]", fontsize=20)
         fig.set_ylabel("Number of timestamps [-]", fontsize=20)
 
-        if log is True:
+        if scale == "log":
             fig.set_yscale("log")
         try:
             os.chdir("results")
@@ -315,3 +346,99 @@ def plot_valid_df(
             os.chdir("results")
             fig.savefig("{}.png".format(file))
             os.chdir("..")
+
+
+def plot_calib(
+    path,
+    pix,
+    board_number,
+    timestamps: int = 512,
+    mask: list = [],
+    scale: str = "linear",
+    style: str = "-o",
+    show_fig: bool = False,
+):
+    """
+    Function for plotting the number of valid timestamps per pixel. Uses
+    the calibration data.
+
+    Parameters
+    ----------
+    path : str
+        Path to the datafiles.
+    pix : array-like
+        Array of pixel indices for which the max should be calculated.
+    board_number : str
+        The LinoSPAD2 board number. Required for choosing the correct
+        calibration data.
+    timestamps : int, optional
+        Number of timestamps per pixel per acquisition cycle. Default is "512".
+    mask : array-like
+        Array of pixels indices to mask.
+    scale : str, optional
+        Scale for the y-axis of the plot. Use "log" for logarithmic.
+        The default is "linear".
+    style : str, optional
+        Style of the plot. The default is "-o".
+    show_fig : bool, optional
+        Switch for showing the plot. The default is False.
+
+    Returns
+    -------
+    None.
+
+    """
+
+    os.chdir(path)
+
+    DATA_FILES = glob.glob("*.dat*")
+
+    valid_per_pixel = np.zeros(256)
+
+    if show_fig is True:
+        plt.ion()
+    else:
+        plt.ioff()
+    for i, num in enumerate(DATA_FILES):
+
+        print(
+            "=================================================\n"
+            "Plotting timestamps, Working on {}\n"
+            "=================================================".format(num)
+        )
+
+        data_matrix = f_up.unpack_calib(num, board_number, timestamps)
+
+        for j in range(len(data_matrix)):
+            valid_per_pixel[j] = len(np.where(data_matrix[j] > 0)[0])
+        peak = np.max(valid_per_pixel[pix[0] : pix[-1]])
+
+        valid_per_pixel[mask] = 0
+
+        if "Ne" and "540" in path:
+            chosen_color = "seagreen"
+        elif "Ne" and "656" in path:
+            chosen_color = "orangered"
+        elif "Ar" in path:
+            chosen_color = "mediumslateblue"
+        else:
+            chosen_color = "salmon"
+        plt.figure(figsize=(16, 10))
+        plt.rcParams.update({"font.size": 20})
+        plt.title("{file}\n Peak is {peak}".format(file=num, peak=peak))
+        plt.xlabel("Pixel [-]")
+        plt.ylabel("Valid timestamps [-]")
+        if scale == "log":
+            plt.yscale("log")
+        plt.plot(valid_per_pixel, style, color=chosen_color)
+
+        try:
+            os.chdir("results")
+        except Exception:
+            os.mkdir("results")
+            os.chdir("results")
+        plt.savefig("{}.png".format(num))
+        plt.pause(0.1)
+        if show_fig is False:
+            plt.close("all")
+        os.chdir("..")
