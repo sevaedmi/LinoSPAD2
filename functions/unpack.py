@@ -39,6 +39,7 @@ import numpy as np
 import pandas as pd
 from functions.calibrate import calibrate_load
 import sys
+import os
 
 
 def unpack_txt_512(filename):
@@ -522,7 +523,6 @@ def unpack_numpy(filename, timestamps: int = 512):
     return data_matrix
 
 
-# TODO: solve the calibration data path
 def unpack_calib(filename, board_number: str, timestamps: int = 512):
     """
     Function for unpacking the .dat data files using the calibration
@@ -559,24 +559,16 @@ def unpack_calib(filename, board_number: str, timestamps: int = 512):
         .transpose((1, 0, 2))
         .reshape(256, timestamps * cycles)
     )
-    if board_number == "A5":
-        path_calib_data = (
-            "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/"
-            "Software/Data/calibration_data/board_A5"
-        )
-    elif board_number == "NL11":
-        path_calib_data = (
-            "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/"
-            "Software/Data/calibration_data/board_NL11"
-        )
-    else:
-        raise ValueError("Board number is required or there is no data for the given value")
+    # path to the current script, two levels up (the script itself is in the path) and
+    # one level down to the calibration data
+    path_calib_data = os.path.realpath(__file__) + "/../.." + "/calibration_data"
+
     try:
-        cal_mat = calibrate_load(path_calib_data)
-    except FileNotFoundError or IndexError:
+        cal_mat = calibrate_load(path_calib_data, board_number)
+    except FileNotFoundError:
         print(
-            "No .csv file with the calibration data was found, check the path"
-            "or run the calibration. "
+            "No .csv file with the calibration data was found, check the path "
+            "or run the calibration."
         )
         sys.exit()
     for i in range(256):

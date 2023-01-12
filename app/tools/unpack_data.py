@@ -22,6 +22,8 @@ functions:
 
 from struct import unpack
 import numpy as np
+import os
+from app.tools.calibrate import calibrate_load
 
 
 def unpack_binary_flex(filename, lines_of_data: int = 512):
@@ -101,4 +103,60 @@ def unpack_numpy(filename, lines_of_data):
         .reshape((-1, 256), order="F")
         .transpose()
     )  # reshape the matrix
+    return data_matrix
+
+
+def unpack_calib(filename, board_number: str, timestamps: int = 512):
+    """
+    Function for unpacking the .dat data files using the calibration
+    data. The output is a matrix of '256 x timestamps*number_of_cycles'
+    timestamps in ps.
+
+    Parameters
+    ----------
+    filename : str
+        Name of the .dat file.
+    board_number : str
+        LinoSPAD2 board number.
+    timestamps : int, optional
+        Number of timestamps per acquisition cycle per pixel. The default is 512.
+
+    Returns
+    -------
+    data_matrix : ndarray
+        Matrix of '256 x timestamps*number_of_cycles' timestamps.
+
+    """
+
+    # read data by 32 bit words
+    rawFile = np.fromfile(filename, dtype=np.uint32)
+    # lowest 28 bits are the timestamp; convert to longlong, int is not enough
+    data = (rawFile & 0xFFFFFFF).astype(np.longlong)
+    # mask nonvalid data with '-1'
+    data[np.where(rawFile < 0x80000000)] = -1
+    # number of acquisition cycles
+    cycles = int(len(data) / timestamps / 256)
+
+    data_matrix = (
+        data.reshape(cycles, 256, timestamps)
+        .transpose((1, 0, 2))
+        .reshape(256, timestamps * cycles)
+    )
+    # path to the current script, two levels up (the script itself is in the path) and
+    # one level down to the calibration data
+    path_calib_data = os.path.realpath(__file__) + "/../../.." + "/calibration_data"
+
+    try:
+        cal_mat = calibrate_load(path_calib_data, board_number)
+    except FileNotFoundError:
+        print(
+            "No .csv file with the calibration data was found, check the path "
+            "or run the calibration."
+        )
+        sys.exit()
+    for i in range(256):
+        ind = np.where(data_matrix[i] >= 0)[0]
+        data_matrix[i, ind] = (
+            data_matrix[i, ind] - data_matrix[i, ind] % 140
+        ) * 17.857 + cal_mat[i, (data_matrix[i, ind] % 140)]
     return data_matrix

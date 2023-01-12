@@ -9,7 +9,6 @@ from PyQt5.QtWidgets import (
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
-from matplotlib import pyplot as plt
 import glob
 import numpy as np
 import app.tools.unpack_data as unpk
@@ -25,7 +24,7 @@ class HistCanvas(QWidget):
         self.axes = self.figure.add_subplot(111)
         self.toolbar = NavigationToolbar(self.canvas, self)
         # self.figure.tight_layout()
-        self.figure.subplots_adjust(left=0.195, bottom=0.154, right=0.990, top=0.917)
+        self.figure.subplots_adjust(left=0.17, bottom=0.154, right=0.990, top=0.917)
 
         # creating a Vertical Box layout
         self.layout = QVBoxLayout(self)
@@ -38,7 +37,7 @@ class HistCanvas(QWidget):
 
         file = glob.glob("*.dat*")[0]
 
-        data = unpk.unpack_numpy(file, 512)
+        data = unpk.unpack_calib(file, board_number="A5", timestamps=512)
 
         bins = np.arange(0, 4e9, 17.867 * 1e6)  # bin size of 17.867 us
 
@@ -47,6 +46,7 @@ class HistCanvas(QWidget):
         self.axes.set_xlabel("Time [ps]")
         self.axes.set_ylabel("# of timestamps [-]")
         self.axes.set_title("Pixel {} histogram".format(pix))
+        self.axes.ticklabel_format(axis="y", style="sci", scilimits=(0, 0))
         # self.figure.tight_layout()
         self.canvas.draw()
         self.canvas.flush_events()

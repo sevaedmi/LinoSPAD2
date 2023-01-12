@@ -16,7 +16,7 @@ from functions.fits import fit_gauss_cal
 # from PyQt5.QtWidgets import QApplication
 
 # # runs the applicaiton
-# run_application = False
+# run_application = True
 
 # if run_application is True:
 #     app = QApplication(sys.argv)
@@ -34,11 +34,6 @@ path_test = (
     "Data/board_A5/V_setup"
 )
 
-path_calib_A5 = (
-    "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/"
-    "Data/board_A5/calibration_data"
-)
-
 # =========================================================================
 # Function execution.
 # =========================================================================
@@ -47,8 +42,8 @@ path_calib_A5 = (
 #                       timestamps=512, show_fig=True)
 
 # delta_t.plot_grid_calib(
-#     path_test, board_number="A5", pix=(16, 17), range_left=-15e3,
-#     range_right=15e3
+#     path_test, board_number="NL11", pix=(16, 17), range_left=-5e3,
+#     range_right=5e3
 # )
 
 # fit_gauss_cal(

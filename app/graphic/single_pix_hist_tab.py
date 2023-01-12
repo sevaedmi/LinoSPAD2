@@ -15,8 +15,14 @@ import os
 class SinglePixelHistogram(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
+        print(os.getcwd())
 
-        uic.loadUi("app/graphic/ui/SinglePixelHistogram_tab_c.ui", self)
+        os.chdir(r"app/graphic/ui")
+        uic.loadUi(
+            r"SinglePixelHistogram_tab_c.ui",
+            self,
+        )
+        os.chdir("../../..")
         self.show()
 
         # Function presets: browse
