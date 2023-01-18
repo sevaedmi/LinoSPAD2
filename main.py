@@ -29,25 +29,55 @@ from functions.fits import fit_gauss_cal
 # Paths to where either data or the 'csv' files with the resuts are located.
 # =========================================================================
 
-path_test = (
+path_v = (
     "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/"
     "Data/board_A5/V_setup"
+)
+
+path_v_585 = (
+    "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/"
+    "Data/board_A5/V_setup/Ne_585"
 )
 
 # =========================================================================
 # Function execution.
 # =========================================================================
 
-# plot_valid.plot_valid(path_test, pix=(np.arange(0, 60, 1)), mask=mask,
-#                       timestamps=512, show_fig=True)
+mask = [70, 205, 212, 95, 157, 165, 57, 123, 187, 118, 251]
 
 # delta_t.plot_grid_calib(
-#     path_test, board_number="NL11", pix=(16, 17), range_left=-5e3,
-#     range_right=5e3
+#     path_v_585,
+#     board_number="A5",
+#     pix=(9, 10, 11, 48, 49, 50, 51),
+#     range_left=-25e3,
+#     range_right=25e3,
+#     timestamps=80,
+#     same_y=False,
 # )
 
 # fit_gauss_cal(
-#     path_test, pix=(40, 41), board_number="A5", range_left=-5e3, range_right=5e3
+#     path_v_585,
+#     pix=(9, 10, 11, 48, 49, 50, 51),
+#     board_number="A5",
+#     range_left=-5e3,
+#     range_right=5e3,
+#     timestamps=80,
 # )
 
-plot_valid.plot_calib(path_test, pix=[10, 11], board_number="A5")
+# plot_valid.plot_calib(
+#     path_v_585,
+#     mask=mask,
+#     pix=[9, 10, 11, 48, 49, 50, 51],
+#     board_number="A5",
+#     timestamps=80,
+# )
+
+delta_t.plot_grid_calib_mult(
+    path_v_585,
+    board_number="A5",
+    pix=(9, 10, 11, 48, 49, 50, 51),
+    range_left=-15e3,
+    range_right=15e3,
+    timestamps=80,
+    same_y=False,
+)

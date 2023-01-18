@@ -40,6 +40,7 @@ import pandas as pd
 from functions.calibrate import calibrate_load
 import sys
 import os
+from glob import glob
 
 
 def unpack_txt_512(filename):
@@ -577,3 +578,20 @@ def unpack_calib(filename, board_number: str, timestamps: int = 512):
             data_matrix[i, ind] - data_matrix[i, ind] % 140
         ) * 17.857 + cal_mat[i, (data_matrix[i, ind] % 140)]
     return data_matrix
+
+
+def unpack_calib_mult(path, board_number: str, timestamps: int = 512):
+
+    os.chdir(path)
+
+    files = glob("*.dat*")
+
+    data_all = []
+
+    for i, file in enumerate(files):
+        if not np.any(data_all):
+            data_all = unpack_calib(file, board_number, timestamps)
+        else:
+            data_all = np.append(data_all, unpack_numpy(file, timestamps), axis=1)
+
+    return data_all

@@ -43,41 +43,63 @@ def calc_diff(
 
     """
 
-    minuend = len(data_pair)
+    # minuend = len(data_pair)
     timestamps_total = len(data_pair[0])
-    subtrahend = len(data_pair)
+    # subtrahend = len(data_pair)
 
     output = []
 
-    for i in range(minuend):
-        acq = 0  # number of acq cycle
-        for j in range(timestamps_total):
-            if j % timestamps == 0:
-                acq = acq + 1  # next acq cycle
-            if data_pair[i][j] == -1:
+    # for i in range(minuend):
+    #     acq = 0  # number of acq cycle
+    #     for j in range(timestamps_total):
+    #         if j % timestamps == 0:
+    #             acq = acq + 1  # next acq cycle
+    #         if data_pair[i][j] == -1:
+    #             continue
+    #         for k in range(subtrahend):
+    #             if k <= i:
+    #                 continue  # to avoid repetition: 2-1, 53-45
+    #             for p in range(timestamps):
+    #                 n = timestamps * (acq - 1) + p
+    #                 if data_pair[k][n] == -1:
+    #                     continue
+    #                 else:
+    #                     delta = data_pair[i][j] - data_pair[k][n]
+    #                     if delta > range_right:
+    #                         continue
+    #                     elif delta < range_left:
+    #                         continue
+    #                     else:
+    #                         output.append(delta)
+
+    acq = 0  # number of acq cycle
+    for j in range(timestamps_total):
+        if j % timestamps == 0:
+            acq = acq + 1  # next acq cycle
+        if data_pair[0][j] == -1:
+            continue
+        for p in range(timestamps):
+            n = timestamps * (acq - 1) + p
+            if data_pair[1][n] == -1:
                 continue
-            for k in range(subtrahend):
-                if k <= i:
-                    continue  # to avoid repetition: 2-1, 53-45
-                for p in range(timestamps):
-                    n = timestamps * (acq - 1) + p
-                    if data_pair[k][n] == -1:
-                        continue
-                    else:
-                        delta = data_pair[i][j] - data_pair[k][n]
-                        if delta > range_right:
-                            continue
-                        elif delta < range_left:
-                            continue
-                        else:
-                            output.append(delta)
+            else:
+                delta = data_pair[0][j] - data_pair[1][n]
+                if delta > range_right:
+                    continue
+                elif delta < range_left:
+                    continue
+                else:
+                    output.append(delta)
     return output
 
 
 # TODO: add raise error for checking the 1) tidyness of the input dataframes 2) for
 # absence of "-1" timestamps
 def calc_diff_df(
-    data_1, data_2, range_left: float = -2.5e3, range_right: float = 2.5e3,
+    data_1,
+    data_2,
+    range_left: float = -2.5e3,
+    range_right: float = 2.5e3,
 ):
     """
     Function for calculating timestamp differences for a given pair of pixels. Input
