@@ -6,7 +6,7 @@
 import numpy as np
 from functions import delta_t, plot_valid, fits as gf
 from functions.calibrate import calibrate_save, calibrate_load
-from functions.fits import fit_gauss_cal
+from functions.fits import fit_gauss_cal_mult
 
 ### The app has been moved to a standalone repo ###
 
@@ -45,39 +45,27 @@ path_v_585 = (
 
 mask = [70, 205, 212, 95, 157, 165, 57, 123, 187, 118, 251]
 
-# delta_t.plot_grid_calib(
-#     path_v_585,
-#     board_number="A5",
-#     pix=(9, 10, 11, 48, 49, 50, 51),
-#     range_left=-25e3,
-#     range_right=25e3,
-#     timestamps=80,
-#     same_y=False,
-# )
-
-# fit_gauss_cal(
-#     path_v_585,
-#     pix=(9, 10, 11, 48, 49, 50, 51),
-#     board_number="A5",
-#     range_left=-5e3,
-#     range_right=5e3,
-#     timestamps=80,
-# )
-
-# plot_valid.plot_calib(
-#     path_v_585,
-#     mask=mask,
-#     pix=[9, 10, 11, 48, 49, 50, 51],
-#     board_number="A5",
-#     timestamps=80,
-# )
-
-delta_t.plot_grid_calib_mult(
+fit_gauss_cal_mult(
     path_v_585,
+    pix=(225, 226, 236, 237),
     board_number="A5",
-    pix=(9, 10, 11, 48, 49, 50, 51),
     range_left=-15e3,
     range_right=15e3,
     timestamps=80,
-    same_y=False,
+    mult_files=True,
 )
+
+plot_valid.plot_calib_mult(
+    path_v_585, board_number="A5", timestamps=80, mask=mask, mult_files=True
+)
+
+# delta_t.plot_grid_calib_mult(
+#     path_v_585,
+#     board_number="A5",
+#     pix=(225, 226, 236, 237),
+#     range_left=-20e3,
+#     range_right=20e3,
+#     timestamps=80,
+#     same_y=False,
+#     mult_files=True,
+# )

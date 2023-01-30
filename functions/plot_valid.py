@@ -303,14 +303,17 @@ def plot_calib(
 
         for j in range(len(data_matrix)):
             valid_per_pixel[j] = len(np.where(data_matrix[j] > 0)[0])
-        peak = np.max(valid_per_pixel[pix[0] : pix[-1]])
 
         valid_per_pixel[mask] = 0
+
+        peak = np.max(valid_per_pixel)
 
         if "Ne" and "540" in path:
             chosen_color = "seagreen"
         elif "Ne" and "656" in path:
             chosen_color = "orangered"
+        elif "Ne" and "585" in path:
+            chosen_color = "goldenrod"
         elif "Ar" in path:
             chosen_color = "mediumslateblue"
         else:
@@ -334,3 +337,87 @@ def plot_calib(
         if show_fig is False:
             plt.close("all")
         os.chdir("..")
+
+
+def plot_calib_mult(
+    path,
+    board_number,
+    timestamps: int = 512,
+    mask: list = [],
+    scale: str = "linear",
+    style: str = "-o",
+    show_fig: bool = False,
+    mult_files: bool = False,
+):
+
+    os.chdir(path)
+
+    valid_per_pixel = np.zeros(256)
+
+    if show_fig is True:
+        plt.ion()
+    else:
+        plt.ioff()
+
+    if mult_files is True:
+        # os.chdir(path)
+        # if len(glob.glob(".dat")) > 10:
+        #     print("Too many files.")
+        #     sys.exit()
+        print(
+            "=================================================\n"
+            "Plotting valid timestamps, Working in {}\n"
+            "=================================================".format(path)
+        )
+        data, plot_name = f_up.unpack_calib_mult(path, board_number, timestamps)
+
+    else:
+        os.chdir(path)
+        files = glob.glob("*.dat*")
+        last_file = max(files, key=os.path.getctime)
+        print(
+            "=================================================\n"
+            "Plotting valid timestamps, Working on {}\n"
+            "=================================================".format(last_file)
+        )
+        data = f_up.unpack_calib(last_file, board_number, timestamps)
+
+    for j in range(len(data)):
+        valid_per_pixel[j] = len(np.where(data[j] > 0)[0])
+
+    valid_per_pixel[mask] = 0
+
+    peak = int(np.max(valid_per_pixel))
+
+    if "Ne" and "540" in path:
+        chosen_color = "seagreen"
+    elif "Ne" and "656" in path:
+        chosen_color = "orangered"
+    elif "Ne" and "585" in path:
+        chosen_color = "goldenrod"
+    elif "Ar" in path:
+        chosen_color = "mediumslateblue"
+    else:
+        chosen_color = "salmon"
+    plt.figure(figsize=(16, 10))
+    plt.rcParams.update({"font.size": 20})
+    plt.title("Peak is {peak}".format(peak=peak))
+    plt.xlabel("Pixel [-]")
+    plt.ylabel("Valid timestamps [-]")
+    if scale == "log":
+        plt.yscale("log")
+    plt.plot(valid_per_pixel, style, color=chosen_color)
+
+    try:
+        os.chdir("results")
+    except Exception:
+        os.mkdir("results")
+        os.chdir("results")
+    if mult_files is True:
+        plt.savefig("{name}.png".format(name=plot_name))
+    else:
+        plt.savefig("{name}.png".format(name=last_file))
+    plt.pause(0.1)
+    if show_fig is False:
+        plt.close("all")
+    os.chdir("..")

@@ -32,6 +32,12 @@ functions:
     timestamps per acquisition cycle. Uses the calibration data. Imputing the
     LinoSPAD2 board number is required.
 
+    * unpack_calib_mult - unpacks all 'dat' files in the given directory.
+    Takes the number of timestamps per pixel per acquisition cycle and
+    the LinoSPAD2 board number for the appropriate calibration data as
+    parameters. Utilizes the 'unpack_calib' function for unpacking the
+    files.
+
 """
 
 from struct import unpack
@@ -586,6 +592,8 @@ def unpack_calib_mult(path, board_number: str, timestamps: int = 512):
 
     files = glob("*.dat*")
 
+    files_names = files[0][:-4] + "-" + files[-1][:-4]
+
     data_all = []
 
     for i, file in enumerate(files):
@@ -594,4 +602,4 @@ def unpack_calib_mult(path, board_number: str, timestamps: int = 512):
         else:
             data_all = np.append(data_all, unpack_numpy(file, timestamps), axis=1)
 
-    return data_all
+    return data_all, files_names

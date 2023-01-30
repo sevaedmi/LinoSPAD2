@@ -485,7 +485,7 @@ def plot_grid_calib_mult(
     Plots a grid of delta t for different pairs of pixels for the
     pixels in the given range. The output is saved in the "results/delta_t"
     folder. In the case the folder does not exist, it is created automatically.
-
+    Combines all ".dat" files in the folder or analyses only the last file created.
 
     Parameters
     ----------
@@ -533,7 +533,7 @@ def plot_grid_calib_mult(
             "Plotting timestamp differences, Working in {}\n"
             "=================================================".format(path)
         )
-        data = f_up.unpack_calib_mult(path, board_number, timestamps)
+        data, plot_name = f_up.unpack_calib_mult(path, board_number, timestamps)
     else:
         os.chdir(path)
         files = glob.glob("*.dat*")
@@ -594,6 +594,12 @@ def plot_grid_calib_mult(
                 plt.xlabel("\u0394t [ps]")
                 plt.ylabel("Timestamps [-]")
                 n, b, p = plt.hist(delta_ts, bins=bins, color=chosen_color)
+            # find position of the histogram peak
+            try:
+                n_max = np.argmax(n)
+                arg_max = format((bins[n_max] + bins[n_max + 1]) / 2, ".2f")
+            except Exception:
+                arg_max = None
             if same_y is True:
                 try:
                     y_max = np.max(n)
@@ -609,7 +615,11 @@ def plot_grid_calib_mult(
             if len(pix) > 2:
                 axs[q][w - 1].set_xlim(range_left - 100, range_right + 100)
 
-                axs[q][w - 1].set_title("Pixels {p1}-{p2}".format(p1=pix[q], p2=pix[w]))
+                axs[q][w - 1].set_title(
+                    "Pixels {p1}-{p2}\nPeak position {pp}".format(
+                        p1=pix[q], p2=pix[w], pp=arg_max
+                    )
+                )
             else:
                 plt.xlim(range_left - 100, range_right + 100)
                 plt.title("Pixels {p1}-{p2}".format(p1=pix[q], p2=pix[w]))
@@ -629,7 +639,7 @@ def plot_grid_calib_mult(
         os.chdir("results/delta_t")
     fig.tight_layout()  # for perfect spacing between the plots
     if mult_files is True:
-        plt.savefig("{name}_delta_t_grid_cal.png".format(name="mult"))
+        plt.savefig("{name}_delta_t_grid_cal.png".format(name=plot_name))
     else:
         plt.savefig("{name}_delta_t_grid_cal.png".format(name=last_file))
     os.chdir("../..")
