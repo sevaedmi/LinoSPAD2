@@ -7,6 +7,7 @@ import numpy as np
 from functions import delta_t, plot_valid, fits as gf
 from functions.calibrate import calibrate_save, calibrate_load
 from functions import fits
+from tools.collect_ct import collect_ct as cct
 
 ### The app has been moved to a standalone repo ###
 
@@ -72,13 +73,15 @@ mask = [70, 205, 212, 95, 157, 165, 57, 123, 187, 118, 251]
 #     mult_files=False,
 # )
 
-delta_t.plot_grid_calib_mult_cut(
-    path_v_585,
-    board_number="A5",
-    pix=(134, 135, 151, 152),
-    range_left=-20e3,
-    range_right=20e3,
-    timestamps=80,
-    same_y=False,
-    mult_files=True,
-)
+# delta_t.plot_grid_calib_mult_cut(
+#     path_v_585,
+#     board_number="A5",
+#     pix=(134, 135, 169, 170),
+#     range_left=-20e3,
+#     range_right=20e3,
+#     timestamps=80,
+#     same_y=False,
+#     mult_files=True,
+# )
+
+cct(path_v_585, pix=(134, 135, 136, 139, 140, 141), board_number="A5", timestamps=80)
