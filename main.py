@@ -32,6 +32,8 @@ from tools.collect_ct import collect_ct as cct
 
 path_v_585 = "D:/LinoSPAD2/Data/board_A5/V_setup/Ne_585"
 
+path_FW2212 = "D:/LinoSPAD2/Data/board_A5/FW 2212 block"
+
 # =========================================================================
 # Function execution.
 # =========================================================================
@@ -76,12 +78,14 @@ mask = [70, 205, 212, 95, 157, 165, 57, 123, 187, 118, 251]
 # delta_t.plot_grid_calib_mult_cut(
 #     path_v_585,
 #     board_number="A5",
-#     pix=(134, 135, 169, 170),
-#     range_left=-20e3,
-#     range_right=20e3,
+#     pix=(134, 135, 189, 190),
+#     range_left=-30e3,
+#     range_right=30e3,
 #     timestamps=80,
 #     same_y=False,
 #     mult_files=True,
 # )
 
-cct(path_v_585, pix=(134, 135, 136, 139, 140, 141), board_number="A5", timestamps=80)
+# cct(path_v_585, pix=(189, 190, 191), board_number="A5", timestamps=80)
+
+plot_valid(path_FW2212, timestamps = 80, )
