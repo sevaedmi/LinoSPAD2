@@ -30,7 +30,6 @@ functions:
 
 from struct import unpack
 import numpy as np
-import pandas as pd
 from functions.calibrate import calibrate_load
 import sys
 import os
@@ -101,143 +100,25 @@ def unpack_binary_flex(filename, timestamps: int = 512):
     return data_matrix
 
 
-def unpack_binary_df(
-    filename, timestamps: int = 512, apply_mask: bool = True, cut_empty: bool = True
-):
-    """Unpacks the 'dat' files with a given number of timestamps per acquisition cycle
-    per pixel into a pandas dataframe. The fastest unpacking compared to others.
+def unpack_numpy(filename, board_number: str, timestamps: int = 512):
+    """
+    Function for unpacking the .dat data files using the calibration
+    data. The output is a matrix of '256 x timestamps*number_of_cycles'
+    timestamps in ps.
 
     Parameters
     ----------
     filename : str
-        The 'dat' binary-encoded datafile.
+        Name of the .dat file.
+    board_number : str
+        LinoSPAD2 board number.
     timestamps : int, optional
         Number of timestamps per acquisition cycle per pixel. The default is 512.
-    apply_mask : bool, optional
-        Switch for masking the warm/hot pixels. Default is True.
-    cut_empty : bool, optional
-        Switch for appending '-1', or either non-valid or empty timestamps, to the
-        output. Default is True.
 
     Returns
     -------
-    timestamps : pandas.DataFrame
-        A dataframe with two columns: first is the pixel number, second are the
-        timestamps.
-
-    """
-
-    mask = [
-        15,
-        16,
-        29,
-        39,
-        40,
-        50,
-        52,
-        66,
-        73,
-        93,
-        95,
-        96,
-        98,
-        101,
-        109,
-        122,
-        127,
-        196,
-        210,
-        231,
-        236,
-        238,
-    ]
-
-    timestamp_list = list()
-    pixels_list = list()
-    cycles_list = list()
-    acq = 1
-    i = 0
-    cycles = timestamps * 256
-
-    with open(filename, "rb") as f:
-        while True:
-            i += 1
-            rawpacket = f.read(4)
-            if not rawpacket:
-                break
-            packet = unpack("<I", rawpacket)
-            if (packet[0] >> 31) == 1:
-                # timestamps cover last 28 bits of the total 32
-                timestamp = packet[0] & 0xFFFFFFF
-                # 17.857 ps - average bin size
-                timestamp = timestamp * 17.857
-                pixels_list.append(int(i / 512) + 1)
-                timestamp_list.append(timestamp)
-                cycles_list.append(acq)
-            elif cut_empty is False:
-                timestamp_list.append(-1)
-                pixels_list.append(int(i / 512 + 1))
-                cycles_list.append(acq)
-            if i == cycles:
-                i = 0
-                acq += 1
-    dic = {"Pixel": pixels_list, "Timestamp": timestamp_list, "Cycle": cycles_list}
-    timestamps = pd.DataFrame(dic)
-    timestamps = timestamps[~timestamps["Pixel"].isin(mask)]
-
-    return timestamps
-
-
-# def unpack_numpy(filename, timestamps: int = 512):
-#     """
-#     Function for unpacking binary data based on the numpy library.
-
-#     Parameters
-#     ----------
-#     filename : str
-#         Name of the file with the binary-encoded data.
-#     timestamps : int, optional
-#         Number of timestamps per acquisition cycle per pixel. Default is 512.
-
-#     Returns
-#     -------
-#     data_matrix : array_like
-#         A 2D matrix (256 pixels by timestamps X number-of-cycles) of
-#         timestamps.
-
-#     """
-#     rawFile = np.fromfile(filename, dtype=np.uint32)  # read data
-#     data = (rawFile & 0xFFFFFFF).astype(int) * 17.857  # Multiply with the lowes bin
-#     data[np.where(rawFile < 0x80000000)] = -1  # Mask not valid data
-#     cycles = int(len(data) / timestamps / 256)  # number of cycles,
-#     data_matrix = (
-#         data.reshape((timestamps, cycles * 256), order="F")
-#         .reshape((timestamps, 256, -1), order="F")
-#         .transpose((0, 2, 1))
-#         .reshape((-1, 256), order="F")
-#         .transpose()
-#     )  # reshape the matrix
-#     return data_matrix
-
-
-def unpack_numpy(filename, timestamps: int = 512):
-    """
-    Function for unpacking the binary-encoded data from the LinoSPAD2
-    based on the numpy library. Currently, the fastest option for
-    unpacking.
-
-    Parameters
-    ----------
-    filename : str
-        Name of the file with the data.
-    timestamps : int, optional
-        Number of timestamps per acquisition cycle per pixel.
-        The default is 512.
-
-    Returns
-    -------
-    output : ndarray
-        A 2D matrix (256 x timestamps*number_of_cycles) of timestamps.
+    data_matrix : ndarray
+        Matrix of '256 x timestamps*number_of_cycles' timestamps.
 
     Examples
     --------
@@ -290,45 +171,6 @@ def unpack_numpy(filename, timestamps: int = 512):
            [15, 16, 17, 18, 19, 35, 36, 37, 38, 39, 55, 56, 57, 58, 59]])
 
     """
-    # read data by 32 bit words
-    rawFile = np.fromfile(filename, dtype=np.uint32)
-    # lowest 28 bits are the timestamp; convert to ps
-    data = (rawFile & 0xFFFFFFF).astype(np.longlong) * 17.857
-    # mask nonvalid data with '-1'
-    data[np.where(rawFile < 0x80000000)] = -1
-    # number of acquisition cycles
-    cycles = int(len(data) / timestamps / 256)
-
-    data_matrix = (
-        data.reshape(cycles, 256, timestamps)
-        .transpose((1, 0, 2))
-        .reshape(256, timestamps * cycles)
-    )
-
-    return data_matrix
-
-
-def unpack_calib(filename, board_number: str, timestamps: int = 512):
-    """
-    Function for unpacking the .dat data files using the calibration
-    data. The output is a matrix of '256 x timestamps*number_of_cycles'
-    timestamps in ps.
-
-    Parameters
-    ----------
-    filename : str
-        Name of the .dat file.
-    board_number : str
-        LinoSPAD2 board number.
-    timestamps : int, optional
-        Number of timestamps per acquisition cycle per pixel. The default is 512.
-
-    Returns
-    -------
-    data_matrix : ndarray
-        Matrix of '256 x timestamps*number_of_cycles' timestamps.
-
-    """
 
     # read data by 32 bit words
     rawFile = np.fromfile(filename, dtype=np.uint32)
@@ -364,7 +206,7 @@ def unpack_calib(filename, board_number: str, timestamps: int = 512):
     return data_matrix
 
 
-def unpack_calib_mult(path, board_number: str, timestamps: int = 512):
+def unpack_mult(path, board_number: str, timestamps: int = 512):
     """
     Function for unpacking all .dat data files in the directory using
     the calibration data. The output is a matrix of
@@ -400,35 +242,60 @@ def unpack_calib_mult(path, board_number: str, timestamps: int = 512):
 
     for i, file in enumerate(files):
         if not np.any(data_all):
-            data_all = unpack_calib(file, board_number, timestamps)
+            data_all = unpack_numpy(file, board_number, timestamps)
         else:
-            data_all = np.append(data_all, unpack_numpy(file, timestamps), axis=1)
+            data_all = np.append(
+                data_all, unpack_numpy(file, board_number, timestamps), axis=1
+            )
 
     return data_all, files_names
 
 
-def unpack_calib_mult_cut(path, pixels, board_number: str, timestamps: int = 512):
+# def unpack_calib_mult_cut(path, pixels, board_number: str, timestamps: int = 512):
+#     pixels = np.sort(pixels)
 
+#     os.chdir(path)
+
+#     files = glob("*.dat*")
+
+#     files_names = files[0][:-4] + "-" + files[-1][:-4]
+
+#     data_all = []
+
+#     for i, file in enumerate(files):
+#         if not np.any(data_all):
+#             data_all = unpack_calib(file, board_number, timestamps)
+#         else:
+#             data_all = np.append(data_all, unpack_numpy(file, timestamps), axis=1)
+#     output = []
+#     for i in range(len(pixels)):
+#         if not np.any(output):
+#             output = data_all[pixels[0]]
+#         else:
+#             output = np.vstack((output, data_all[pixels[i]]))
+
+#     return output, files_names
+
+
+def unpack_mult_cut(files, pixels, board_number: str, timestamps: int = 512):
     pixels = np.sort(pixels)
-
-    os.chdir(path)
-
-    files = glob("*.dat*")
-
-    files_names = files[0][:-4] + "-" + files[-1][:-4]
 
     data_all = []
 
     for i, file in enumerate(files):
         if not np.any(data_all):
-            data_all = unpack_calib(file, board_number, timestamps)
+            data_all = unpack_numpy(file, board_number, timestamps)
         else:
-            data_all = np.append(data_all, unpack_numpy(file, timestamps), axis=1)
+            data_all = np.append(
+                data_all, unpack_numpy(file, board_number, timestamps), axis=1
+            )
+
     output = []
+
     for i in range(len(pixels)):
         if not np.any(output):
             output = data_all[pixels[0]]
         else:
             output = np.vstack((output, data_all[pixels[i]]))
 
-    return output, files_names
+    return output

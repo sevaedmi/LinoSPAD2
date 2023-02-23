@@ -167,3 +167,68 @@ def plot_grid(path, pix, lines_of_data: int = 512, show_fig: bool = False):
         fig.tight_layout()  # for perfect spacing between the plots
         plt.savefig("{name}_delta_t_grid.png".format(name=filename))
         os.chdir("../..")
+
+
+def plot_peak_vs_peak(path, pix1, pix2, timestamps: int = 512):
+    """
+    Function for calculating timestamp differences between two groups of pixels where
+    the light beam falls. The differences are plotted as a histogram.
+
+    Parameters
+    ----------
+    path : str
+        Path to data files.
+    pix1 : list or array-like
+        List of pixel numbers from the first peak.
+    pix2 : list or array-like
+        List of pixel numbers from the second peak.
+    timestamps : int, optional
+        Number of timestamps per acquisition cycle per pixel. The default is 512.
+
+    Returns
+    -------
+    None.
+
+    """
+
+    os.chdir(path)
+
+    DATA_FILES = glob.glob("*.dat*")
+
+    for num, file in enumerate(DATA_FILES):
+        data = f_up.unpack_binary_df(file, timestamps)
+
+        deltas_total = pd.DataFrame()
+
+        print("\n> > > Calculating the timestamp differences < < <\n")
+        for q in tqdm(range(len(pix1)), desc="Minuend pixel   "):
+            for w in tqdm(range(len(pix2)), desc="Subtrahend pixel"):
+                deltas = calc_diff_df(
+                    data[data.Pixel == pix1[q]], data[data.Pixel == pix2[w]]
+                )
+                deltas_total = pd.concat([deltas_total, deltas], ignore_index=True)
+        if "Ne" and "540" in path:
+            chosen_color = "seagreen"
+        elif "Ne" and "656" in path:
+            chosen_color = "orangered"
+        elif "Ar" in path:
+            chosen_color = "mediumslateblue"
+        else:
+            chosen_color = "salmon"
+        try:
+            bins = np.arange(
+                int(deltas_total.min()), int(deltas_total.max()), 17.857 * 2
+            )
+        except Exception:
+            continue
+        fig_sns = sns.histplot(
+            x="Delta t", data=deltas_total, color=chosen_color, bins=bins
+        )
+        fig = fig_sns.get_figure()
+        try:
+            os.chdir("results/delta_t")
+        except FileNotFoundError:
+            os.makedirs("results/delta_t")
+            os.chdir("results/delta_t")
+        fig.savefig("{name}_peak_v_peak_df.png".format(name=file))
+        os.chdir("../..")

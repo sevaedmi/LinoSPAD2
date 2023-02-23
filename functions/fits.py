@@ -10,6 +10,18 @@ functions:
     * gauss_fit - function for fitting the peak in the timestamp differences
     with a gaussian function.
 
+    * gauss_fit_cal - function for fitting the peak in the timestamp differences
+    with a gaussian function. Uses the calibration data.
+
+    * fig_gauss_cal_mult - function for fitting the peak in the timestamp differences
+    with a gaussian function. Uses the calibration data. Combines all data files
+    in the directory for analysis.
+
+    * fig_gauss_cal_mult_cut - function for fitting the peak in the timestamp
+    differences with a gaussian function. Uses the calibration data. Combines
+    all data files in the directory for analysis. Memory-friendly version as it
+    keeps in memory the data only for the required pixels.
+
 """
 
 import os
@@ -141,7 +153,7 @@ def fit_gauss(
                 try:
                     os.chdir("results/gauss_fit")
                 except Exception:
-                    os.mkdir("results/gauss_fit")
+                    os.makedirs("results/gauss_fit")
                     os.chdir("results/gauss_fit")
                 plt.savefig(
                     "{file}_pixels"
@@ -204,7 +216,7 @@ def fit_gauss_cal(
             "Fitting with gauss, Working on {}\n"
             "=========================================".format(filename)
         )
-        data = f_up.unpack_calib(filename, board_number, timestamps)
+        data = f_up.unpack_numpy(filename, board_number, timestamps)
 
         data_pix = np.zeros((len(pix), len(data[0])))
         for i, num in enumerate(pix):
@@ -283,7 +295,7 @@ def fit_gauss_cal(
                 try:
                     os.chdir("results/gauss_fit")
                 except Exception:
-                    os.mkdir("results/gauss_fit")
+                    os.makedirs("results/gauss_fit")
                     os.chdir("results/gauss_fit")
                 plt.savefig(
                     "{file}_pixels"
@@ -351,7 +363,7 @@ def fit_gauss_cal_mult(
             "Fitting with gauss, Working in {}\n"
             "=================================================".format(path)
         )
-        data, plot_name = f_up.unpack_calib_mult(path, board_number, timestamps)
+        data, plot_name = f_up.unpack_mult(path, board_number, timestamps)
     else:
         os.chdir(path)
         files = glob.glob("*.dat*")
@@ -361,7 +373,7 @@ def fit_gauss_cal_mult(
             "Fitting with gauss, Working on {}\n"
             "=================================================".format(last_file)
         )
-        data = f_up.unpack_calib(last_file, board_number, timestamps)
+        data = f_up.unpack_numpy(last_file, board_number, timestamps)
 
     data_pix = np.zeros((len(pix), len(data[0])))
     for i, num in enumerate(pix):
@@ -444,7 +456,7 @@ def fit_gauss_cal_mult(
             try:
                 os.chdir("results/gauss_fit")
             except Exception:
-                os.mkdir("results/gauss_fit")
+                os.makedirs("results/gauss_fit")
                 os.chdir("results/gauss_fit")
 
             if mult_files is True:
@@ -524,9 +536,7 @@ def fit_gauss_cal_mult_cut(
             "Fitting with gauss, Working in {}\n"
             "=================================================".format(path)
         )
-        data_pix, plot_name = f_up.unpack_calib_mult_cut(
-            path, pix, board_number, timestamps
-        )
+        data_pix, plot_name = f_up.unpack_mult_cut(path, pix, board_number, timestamps)
     else:
         os.chdir(path)
         files = glob.glob("*.dat*")
@@ -536,7 +546,7 @@ def fit_gauss_cal_mult_cut(
             "Fitting with gauss, Working on {}\n"
             "=================================================".format(last_file)
         )
-        data = f_up.unpack_calib(last_file, board_number, timestamps)
+        data = f_up.unpack_numpy(last_file, board_number, timestamps)
 
         data_pix = np.zeros((len(pix), len(data[0])))
         for i, num in enumerate(pix):
@@ -619,7 +629,7 @@ def fit_gauss_cal_mult_cut(
             try:
                 os.chdir("results/gauss_fit")
             except Exception:
-                os.mkdir("results/gauss_fit")
+                os.makedirs("results/gauss_fit")
                 os.chdir("results/gauss_fit")
 
             if mult_files is True:

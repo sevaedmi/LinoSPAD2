@@ -7,13 +7,6 @@ data output.
 This file can also be imported as a module and contains the following
 functions:
 
-    * plot_valid - plots the number of valid timestamps as a function of
-    pixel number
-
-    * online_plot_valid - in the chosen folder, looks for the last data file
-    created and plots the number of valid timestamps as a functions of
-    pixel number, waits for the next file and repeats the cycle
-
     * plot_pixel_hist - plots a histogram of timestamps for a single pixel.
     The function can be used mainly for controlling the homogenity of the
     LinoSPAD2 output.
@@ -32,99 +25,6 @@ import os
 from matplotlib import pyplot as plt
 import numpy as np
 from functions import unpack as f_up
-
-
-def plot_valid(
-    path,
-    pix,
-    timestamps,
-    mask: list = [],
-    scale: str = "linear",
-    style: str = "-o",
-    show_fig: bool = False,
-):
-    """
-    Plots number of valid timestamps in each pixel for each 'dat' file in
-    given folder. The plots are saved as 'png' in the 'results' folder. In
-    the case there is no such folder, it is created where the data files are.
-
-    Parameters
-    ----------
-    path : str
-        Location of the 'dat' files with the data from LinoSPAD2.
-    pix : array-like
-        Array of indices of 5 pixels for analysis.
-    timestamps : int
-        Number of timestamps per acquistion cycle per pixel.
-    mask : list, optional,
-        A list of pixel indices. If provided, these pixels will be cut out.
-        Default is "[]".
-    scale : str, optional
-        Use 'log' for logarithmic scale, leave empty for linear. Default is
-        'linear'.
-    style : str, optional
-        What style for the plot should be used. Default is "-o".
-    show_fig : bool, optional
-        Switch for showing the plot. Default is "False".
-
-    Returns
-    -------
-    None.
-
-    """
-    os.chdir(path)
-
-    DATA_FILES = glob.glob("*.dat*")
-
-    valid_per_pixel = np.zeros(256)
-
-    if show_fig is True:
-        plt.ion()
-    else:
-        plt.ioff()
-    for i, num in enumerate(DATA_FILES):
-
-        print(
-            "=================================================\n"
-            "Plotting timestamps, Working on {}\n"
-            "=================================================".format(num)
-        )
-
-        data_matrix = f_up.unpack_numpy(num, timestamps)
-
-        for j in range(len(data_matrix)):
-            valid_per_pixel[j] = len(np.where(data_matrix[j] > 0)[0])
-        peak = np.max(valid_per_pixel[pix[0] : pix[-1]])
-
-        valid_per_pixel[mask] = 0
-
-        if "Ne" and "540" in path:
-            chosen_color = "seagreen"
-        elif "Ne" and "656" in path:
-            chosen_color = "orangered"
-        elif "Ar" in path:
-            chosen_color = "mediumslateblue"
-        else:
-            chosen_color = "salmon"
-        plt.figure(figsize=(16, 10))
-        plt.rcParams.update({"font.size": 20})
-        plt.title("{file}\n Peak is {peak}".format(file=num, peak=peak))
-        plt.xlabel("Pixel [-]")
-        plt.ylabel("Valid timestamps [-]")
-        if scale == "log":
-            plt.yscale("log")
-        plt.plot(valid_per_pixel, style, color=chosen_color)
-
-        try:
-            os.chdir("results")
-        except Exception:
-            os.mkdir("results")
-            os.chdir("results")
-        plt.savefig("{}.png".format(num))
-        plt.pause(0.1)
-        if show_fig is False:
-            plt.close("all")
-        os.chdir("..")
 
 
 def plot_pixel_hist(path, pix1, timestamps: int = 512, show_fig: bool = False):
@@ -158,7 +58,6 @@ def plot_pixel_hist(path, pix1, timestamps: int = 512, show_fig: bool = False):
     else:
         plt.ioff()
     for i, num in enumerate(DATA_FILES):
-
         print(
             "=====================================================\n"
             "Plotting pixel histograms, Working on {}\n"
@@ -182,67 +81,14 @@ def plot_pixel_hist(path, pix1, timestamps: int = 512, show_fig: bool = False):
             try:
                 os.chdir("results/single pixel histograms")
             except Exception:
-                os.mkdir("results/single pixel histograms")
+                os.makedirs("results/single pixel histograms")
                 os.chdir("results/single pixel histograms")
             plt.savefig("{file}, pixel {pixel}.png".format(file=num, pixel=pixel))
             os.chdir("../..")
 
 
-def plot_valid_df(
-    path, scale: str = "linear", timestamps: int = 512, show_fig: bool = False
-):
-    """
-    Function for plotting the number of valid timestamps per pixel. Works
-    with tidy dataframes.
-
-    Parameters
-    ----------
-    path : str
-        Path to the datafiles.
-    scale : str, optional
-        Use 'log' for logarithmic scale, leave empty for linear. Default is
-        'linear'.
-    timestamps : int, optional
-        Number of timestamps per pixel per acquisition cycle. The default is 512.
-    show_fig : bool, optional
-        Switch for showing the plot. The default is False.
-
-    Returns
-    -------
-    None.
-
-    """
-
-    os.chdir(path)
-
-    DATA_FILES = glob.glob("*.dat*")
-    for i, file in enumerate(DATA_FILES):
-        data = f_up.unpack_binary_df(file, lines_of_data=timestamps)
-        # count values: how many valid timestamps in each pixel
-        valid = data["Pixel"].value_counts()
-        # sort by index
-        valid = valid.sort_index()
-        fig = valid.plot(figsize=(11, 7), color="salmon", fontsize=20, marker="o")
-        fig.set_title(
-            "{name}\nmax count: {maxc}".format(name=file, maxc=valid.max()), fontsize=20
-        )
-        fig.set_xlabel("Pixel [-]", fontsize=20)
-        fig.set_ylabel("Number of timestamps [-]", fontsize=20)
-
-        if scale == "log":
-            fig.set_yscale("log")
-        try:
-            os.chdir("results")
-        except FileNotFoundError:
-            os.mkdir("results")
-            os.chdir("results")
-            fig.savefig("{}.png".format(file))
-            os.chdir("..")
-
-
-def plot_calib(
+def plot_valid(
     path,
-    pix,
     board_number,
     timestamps: int = 512,
     mask: list = [],
@@ -258,8 +104,6 @@ def plot_calib(
     ----------
     path : str
         Path to the datafiles.
-    pix : array-like
-        Array of pixel indices for which the max should be calculated.
     board_number : str
         The LinoSPAD2 board number. Required for choosing the correct
         calibration data.
@@ -292,14 +136,13 @@ def plot_calib(
     else:
         plt.ioff()
     for i, num in enumerate(DATA_FILES):
-
         print(
             "=================================================\n"
             "Plotting timestamps, Working on {}\n"
             "=================================================".format(num)
         )
 
-        data_matrix = f_up.unpack_calib(num, board_number, timestamps)
+        data_matrix = f_up.unpack_numpy(num, board_number, timestamps)
 
         for j in range(len(data_matrix)):
             valid_per_pixel[j] = len(np.where(data_matrix[j] > 0)[0])
@@ -330,7 +173,7 @@ def plot_calib(
         try:
             os.chdir("results")
         except Exception:
-            os.mkdir("results")
+            os.makedirs("results")
             os.chdir("results")
         plt.savefig("{}.png".format(num))
         plt.pause(0.1)
@@ -339,7 +182,7 @@ def plot_calib(
         os.chdir("..")
 
 
-def plot_calib_mult(
+def plot_valid_mult(
     path,
     board_number,
     timestamps: int = 512,
@@ -349,7 +192,6 @@ def plot_calib_mult(
     show_fig: bool = False,
     mult_files: bool = False,
 ):
-
     os.chdir(path)
 
     valid_per_pixel = np.zeros(256)
@@ -369,7 +211,7 @@ def plot_calib_mult(
             "Plotting valid timestamps, Working in {}\n"
             "=================================================".format(path)
         )
-        data, plot_name = f_up.unpack_calib_mult(path, board_number, timestamps)
+        data, plot_name = f_up.unpack_mult(path, board_number, timestamps)
 
     else:
         os.chdir(path)
@@ -380,7 +222,7 @@ def plot_calib_mult(
             "Plotting valid timestamps, Working on {}\n"
             "=================================================".format(last_file)
         )
-        data = f_up.unpack_calib(last_file, board_number, timestamps)
+        data = f_up.unpack_numpy(last_file, board_number, timestamps)
 
     for j in range(len(data)):
         valid_per_pixel[j] = len(np.where(data[j] > 0)[0])
@@ -411,7 +253,7 @@ def plot_calib_mult(
     try:
         os.chdir("results")
     except Exception:
-        os.mkdir("results")
+        os.makedirs("results")
         os.chdir("results")
     if mult_files is True:
         plt.savefig("{name}.png".format(name=plot_name))
