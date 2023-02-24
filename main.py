@@ -79,6 +79,6 @@ mask = [70, 205, 212, 95, 157, 165, 57, 123, 187, 118, 251]
 
 # cct(path_v_585, pix=(189, 190, 191), board_number="A5", timestamps=80)
 
-plot_valid.plot_calib(path_FW2212, timestamps=512, board_number="A5", mask=mask)
+plot_valid.plot_valid(path_BNL, timestamps=512, board_number="A5", mask=[])
 
 # delta_t.plot_grid_calib(path_BNL, pix=(130,131,143,144), board_number="A5", timestamps=300)
