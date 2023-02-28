@@ -10,21 +10,22 @@ functions:
     * unpack_binary_flex - unpacks the 'dat' data files with a given number of
     timestamps per acquisition cycle
 
-    * unpack_binary_df - unpacks the 'dat' data files with a given number of
-    timestamps per acquisition cycle into a pandas dataframe. Unlike the
-    others, this functions does not write '-1' nonvalid timestamps which makes
-    this the fastest approach compared to other. The dataframe output allows
-    faster plots using seaborn.
-
-    * unpack_calib - unpacks the 'dat' data files with a given number of
+    * unpack_numpy - unpacks the 'dat' data files with a given number of
     timestamps per acquisition cycle. Uses the calibration data. Imputing the
     LinoSPAD2 board number is required.
 
-    * unpack_calib_mult - unpacks all 'dat' files in the given directory.
+    * unpack_mult - unpacks all 'dat' files in the given directory.
     Takes the number of timestamps per pixel per acquisition cycle and
     the LinoSPAD2 board number for the appropriate calibration data as
     parameters. Utilizes the 'unpack_calib' function for unpacking the
     files.
+
+    * unpack_mult_cut - unpacks all 'dat' files in the given directory.
+    Returns data only for the requested pixels.
+
+    * unpack_2212 - function for unpacking data into a dictionary for the
+    LinoSPAD2 firmware 2212 versions "skip" and "block".
+
 
 """
 
@@ -297,5 +298,78 @@ def unpack_mult_cut(files, pixels, board_number: str, timestamps: int = 512):
             output = data_all[pixels[0]]
         else:
             output = np.vstack((output, data_all[pixels[i]]))
+
+    return output
+
+
+def unpack_2212(filename, board_number, fw_ver, timestamps: int = 512):
+    '''
+    Function for unpacking data into a dictionary for the firmware versions 2212 "skip"
+    and "block". Uses the calibration data.
+
+    Parameters
+    ----------
+    filename : str
+        The name of the ".dat" data file.
+    board_number : str
+        The LinoSPAD2 dautherboard number.
+    fw_ver : str
+        2212 firmware version: either "skip" or "block".
+    timestamps : int, optional
+        Number of timestamps per acquisition cycle per pixel. The default is 512.
+
+    Returns
+    -------
+    TYPE
+        DESCRIPTION.
+
+    '''
+    rawFile = np.fromfile(filename, dtype=np.uint32)
+    address = ((rawFile >> 28) & 0x3).astype(np.int64)
+    data = (rawFile & 0xFFFFFFF).astype(np.longlong)
+    data[np.where(rawFile < 0x80000000)] = -1
+
+    def _pix_num(tdc_num, pix_coor):
+        if fw_ver == "block":
+            out = 4 * tdc_num + pix_coor
+        elif fw_ver == "skip":
+            out = tdc_num + 64 * pix_coor
+
+        return out
+
+    output = {}
+
+    for i in range(0, 256):
+        output["{}".format(i)] = []
+    tdc_num = 0
+
+    for i in range(0, len(data)):
+        if i != 0 and i % timestamps == 0:
+            tdc_num += 1
+        if tdc_num != 0 and tdc_num == 64:
+            continue
+        if tdc_num != 0 and tdc_num == 65:
+            tdc_num = 0
+        pix_add = _pix_num(tdc_num, address[i])
+        output["{}".format(pix_add)].append(data[i])
+
+    # Calibration
+    path_calib_data = os.path.realpath(__file__) + "/../.." + "/calibration_data"
+
+    try:
+        cal_mat = calibrate_load(path_calib_data, board_number)
+    except FileNotFoundError:
+        print(
+            "No .csv file with the calibration data was found, check the path "
+            "or run the calibration."
+        )
+        sys.exit()
+
+    for i in range(0, 256):
+        a = np.array(output["{}".format(i)])
+        if not any(a):
+            continue
+        ind = np.where(a >= 0)[0]
+        a[ind] = (a[ind] - a[ind] % 140) * 17.857 + cal_mat[i, (a[ind] % 140)]
 
     return output

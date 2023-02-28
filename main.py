@@ -34,7 +34,7 @@ path_v_585 = "D:/LinoSPAD2/Data/board_A5/V_setup/Ne_585"
 
 path_FW2212 = "D:/LinoSPAD2/Data/board_A5/FW 2212 skip"
 
-path_BNL = "D:/LinoSPAD2/Data/board_A5/BNL"
+path_BNL = "D:/LinoSPAD2/Data/board_A5/BNL/FW_2208"
 
 # =========================================================================
 # Function execution.
@@ -66,19 +66,23 @@ mask = [70, 205, 212, 95, 157, 165, 57, 123, 187, 118, 251]
 #     path_v_585, board_number="A5", timestamps=80, mask=mask, mult_files=True
 # )
 
-# delta_t.plot_grid_calib_mult_cut(
-#     path_v_585,
-#     board_number="A5",
-#     pix=(135, 136, 189, 190),
-#     range_left=-10e3,
-#     range_right=10e3,
-#     timestamps=80,
-#     same_y=False,
-#     mult_files=True,
-# )
+delta_t.plot_grid_mult(
+    path_BNL,
+    board_number="A5",
+    pix=(137, 138, 146, 147),
+    range_left=-10e3,
+    range_right=10e3,
+    timestamps=80,
+    same_y=False,
+    mult_files=True,
+)
 
 # cct(path_v_585, pix=(189, 190, 191), board_number="A5", timestamps=80)
 
-plot_valid.plot_valid(path_BNL, timestamps=512, board_number="A5", mask=[])
+# plot_valid.plot_valid_mult(
+#     path_BNL, timestamps=80, board_number="A5", mask=mask, mult_files=True
+# )
 
-# delta_t.plot_grid_calib(path_BNL, pix=(130,131,143,144), board_number="A5", timestamps=300)
+# delta_t.plot_grid_calib(
+#     path_BNL, pix=(130, 131, 143, 144), board_number="A5", timestamps=300
+# )
