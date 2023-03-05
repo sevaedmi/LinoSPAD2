@@ -14,11 +14,13 @@ functions:
 
 """
 
-import os
 import glob
-from tqdm import tqdm
+import os
+
 import numpy as np
 from matplotlib import pyplot as plt
+from tqdm import tqdm
+
 from functions import unpack as f_up
 
 

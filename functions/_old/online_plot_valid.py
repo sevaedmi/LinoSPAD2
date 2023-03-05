@@ -6,8 +6,10 @@ and saves the output figure. Then the cycle repeats.
 
 import glob
 import os
-from matplotlib import pyplot as plt
+
 import numpy as np
+from matplotlib import pyplot as plt
+
 from functions import unpack as f_up
 
 

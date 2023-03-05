@@ -24,12 +24,14 @@ functions:
 
 """
 
-import os
 import glob
+import os
+
 import numpy as np
-from tqdm import tqdm
-from scipy.optimize import curve_fit
 from matplotlib import pyplot as plt
+from scipy.optimize import curve_fit
+from tqdm import tqdm
+
 from functions import unpack as f_up
 from functions.calc_diff import calc_diff as cd
 

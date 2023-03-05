@@ -14,10 +14,12 @@ functions:
 
 """
 
-import os
 import glob
+import os
+
 import numpy as np
 from matplotlib import pyplot as plt
+
 from functions import unpack as f_up
 
 # =============================================================================

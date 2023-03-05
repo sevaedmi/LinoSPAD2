@@ -16,9 +16,11 @@ functions:
 
 import glob
 import os
+
 import numpy as np
-from functions import unpack as f_up
 from matplotlib import pyplot as plt
+
+from functions import unpack as f_up
 
 
 def plot_pixel_hist(path, pix1, pix2, lines_of_data: int = 512,

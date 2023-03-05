@@ -3,18 +3,21 @@ for the given data sets.
 
     * colect_ct - function for calculating and collecting the cross-talk data into
     a .csv file.
+
     * plot_ct - function for plotting the cross-talk data from the .csv file as the
     cross-talk vs the distance between the two pixels, for which the cross-talk is
     calculated, in pixels.
 
 """
 
-import os
 import glob
-import pandas as pd
+import os
+
 import numpy as np
+import pandas as pd
 from matplotlib import pyplot as plt
 from scipy.stats import sem
+
 from functions import unpack as f_up
 from functions.calc_diff import calc_diff as cd
 

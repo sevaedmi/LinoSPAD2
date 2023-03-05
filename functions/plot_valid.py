@@ -11,19 +11,24 @@ functions:
     The function can be used mainly for controlling the homogenity of the
     LinoSPAD2 output.
 
-    * plot_valid_df - plots the number of valid timestamps vs the pixel number;
-    works with tidy dataframes. Currently, the fastest option for plotting valid
-    timestamps.
+    * plot_valid - plots the number of valid timestamps in each pixel.
 
-    * plot_calib - plots the number of valid timestamps vs the pixel number, using
-    the calibration data. Imputing the board number is required.
+    * plot_valid_mult - plots the number of valid timestamps in each pixel.
+    Analyzes all data files in the given folder.
+
+    * plot_valid_FW2212 - plots the number of valid timestamps in each pixel.
+    Works with the firmware version 2212 (both block and skip).
 
 """
 
 import glob
 import os
-from matplotlib import pyplot as plt
+from math import ceil
+
 import numpy as np
+from matplotlib import pyplot as plt
+from tqdm import tqdm
+
 from functions import unpack as f_up
 
 
@@ -91,10 +96,10 @@ def plot_valid(
     path,
     board_number,
     timestamps: int = 512,
-    mask: list = [],
     scale: str = "linear",
     style: str = "-o",
     show_fig: bool = False,
+    app_mask: bool = True,
 ):
     """
     Function for plotting the number of valid timestamps per pixel. Uses
@@ -109,8 +114,6 @@ def plot_valid(
         calibration data.
     timestamps : int, optional
         Number of timestamps per pixel per acquisition cycle. Default is "512".
-    mask : array-like
-        Array of pixels indices to mask.
     scale : str, optional
         Scale for the y-axis of the plot. Use "log" for logarithmic.
         The default is "linear".
@@ -118,6 +121,8 @@ def plot_valid(
         Style of the plot. The default is "-o".
     show_fig : bool, optional
         Switch for showing the plot. The default is False.
+    app_mask : bool, optional
+        Switch for applying the mask on warm/hot pixels. The default is true.
 
     Returns
     -------
@@ -147,7 +152,15 @@ def plot_valid(
         for j in range(len(data_matrix)):
             valid_per_pixel[j] = len(np.where(data_matrix[j] > 0)[0])
 
-        valid_per_pixel[mask] = 0
+        # Apply mask if requested
+        if app_mask is True:
+            path_to_back = os.getcwd()
+            path_to_mask = os.path.realpath(__file__) + "/../.." + "/masks"
+            os.chdir(path_to_mask)
+            file_mask = glob.glob("*{}*".format(board_number))[0]
+            mask = np.genfromtxt(file_mask).astype(int)
+            valid_per_pixel[mask] = 0
+            os.chdir(path_to_back)
 
         peak = np.max(valid_per_pixel)
 
@@ -165,7 +178,7 @@ def plot_valid(
         plt.rcParams.update({"font.size": 20})
         plt.title("{file}\n Peak is {peak}".format(file=num, peak=peak))
         plt.xlabel("Pixel [-]")
-        plt.ylabel("Valid timestamps [-]")
+        plt.ylabel("Timestamps [-]")
         if scale == "log":
             plt.yscale("log")
         plt.plot(valid_per_pixel, style, color=chosen_color)
@@ -186,13 +199,48 @@ def plot_valid_mult(
     path,
     board_number,
     timestamps: int = 512,
-    mask: list = [],
     scale: str = "linear",
     style: str = "-o",
     show_fig: bool = False,
-    mult_files: bool = False,
+    app_mask: bool = True,
 ):
+    """
+    Function for plotting the number of valid timestamps per pixel. Uses
+    the calibration data. Has an option to analyze all data files in the
+    given folder or only the last created one.
+
+    Parameters
+    ----------
+    path : str
+        Path to the datafiles.
+    board_number : str
+        The LinoSPAD2 board number. Required for choosing the correct
+        calibration data.
+    timestamps : int, optional
+        Number of timestamps per pixel per acquisition cycle. Default is "512".
+    scale : str, optional
+        Scale for the y-axis of the plot. Use "log" for logarithmic.
+        The default is "linear".
+    style : str, optional
+        Style of the plot. The default is "-o".
+    show_fig : bool, optional
+        Switch for showing the plot. The default is False.
+    mult_files: bool, optional
+        Switch for analyzing all data files in the given folder. The default
+        is False.
+    app_mask : bool, optional
+        Switch for applying the mask on warm/hot pixels. The default is true.
+
+    Returns
+    -------
+    None.
+
+    """
     os.chdir(path)
+
+    files_all = glob.glob("*.dat*")
+
+    plot_name = files_all[0][:-4] + "-" + files_all[-1][:-4]
 
     valid_per_pixel = np.zeros(256)
 
@@ -201,33 +249,27 @@ def plot_valid_mult(
     else:
         plt.ioff()
 
-    if mult_files is True:
-        # os.chdir(path)
-        # if len(glob.glob(".dat")) > 10:
-        #     print("Too many files.")
-        #     sys.exit()
-        print(
-            "=================================================\n"
-            "Plotting valid timestamps, Working in {}\n"
-            "=================================================".format(path)
-        )
-        data, plot_name = f_up.unpack_mult(path, board_number, timestamps)
+    print(
+        "=================================================\n"
+        "Plotting valid timestamps, Working in {}\n"
+        "=================================================".format(path)
+    )
+    for i in tqdm(range(ceil(len(files_all) / 5)), desc="Collecting data"):
+        files_cut = files_all[i * 5 : (i + 1) * 5]
+        data = f_up.unpack_mult(files_cut, board_number, timestamps)
 
-    else:
-        os.chdir(path)
-        files = glob.glob("*.dat*")
-        last_file = max(files, key=os.path.getctime)
-        print(
-            "=================================================\n"
-            "Plotting valid timestamps, Working on {}\n"
-            "=================================================".format(last_file)
-        )
-        data = f_up.unpack_numpy(last_file, board_number, timestamps)
+        for j in range(len(data)):
+            valid_per_pixel[j] = valid_per_pixel[j] + len(np.where(data[j] > 0)[0])
 
-    for j in range(len(data)):
-        valid_per_pixel[j] = len(np.where(data[j] > 0)[0])
-
-    valid_per_pixel[mask] = 0
+    # Apply mask if requested
+    if app_mask is True:
+        path_to_back = os.getcwd()
+        path_to_mask = os.path.realpath(__file__) + "/../.." + "/masks"
+        os.chdir(path_to_mask)
+        file_mask = glob.glob("*{}*".format(board_number))[0]
+        mask = np.genfromtxt(file_mask).astype(int)
+        valid_per_pixel[mask] = 0
+        os.chdir(path_to_back)
 
     peak = int(np.max(valid_per_pixel))
 
@@ -241,11 +283,18 @@ def plot_valid_mult(
         chosen_color = "mediumslateblue"
     else:
         chosen_color = "salmon"
+
+    print(
+        "=================================================\n"
+        "Preparing the plot\n"
+        "================================================="
+    )
+
     plt.figure(figsize=(16, 10))
     plt.rcParams.update({"font.size": 20})
     plt.title("Peak is {peak}".format(peak=peak))
     plt.xlabel("Pixel [-]")
-    plt.ylabel("Valid timestamps [-]")
+    plt.ylabel("Timestamps [-]")
     if scale == "log":
         plt.yscale("log")
     plt.plot(valid_per_pixel, style, color=chosen_color)
@@ -255,11 +304,219 @@ def plot_valid_mult(
     except Exception:
         os.makedirs("results")
         os.chdir("results")
-    if mult_files is True:
-        plt.savefig("{name}.png".format(name=plot_name))
-    else:
-        plt.savefig("{name}.png".format(name=last_file))
+    plt.savefig("{name}.png".format(name=plot_name))
+
     plt.pause(0.1)
     if show_fig is False:
         plt.close("all")
+    os.chdir("..")
+
+
+def plot_valid_FW2212(
+    path,
+    board_number,
+    fw_ver: str,
+    timestamps: int = 512,
+    scale: str = "linear",
+    style: str = "-o",
+    show_fig: bool = False,
+    app_mask: bool = True,
+):
+    """
+    Function for plotting the number of valid timestamps per pixel. Uses
+    the calibration data. Works with the firmware version 2212.
+
+    Parameters
+    ----------
+    path : str
+        Path to the datafiles.
+    board_number : str
+        The LinoSPAD2 board number. Required for choosing the correct
+        calibration data.
+    fw_ver : str
+        2212 firmware version: 'block' or 'skip'.
+    timestamps : int, optional
+        Number of timestamps per pixel per acquisition cycle. Default is "512".
+    scale : str, optional
+        Scale for the y-axis of the plot. Use "log" for logarithmic.
+        The default is "linear".
+    style : str, optional
+        Style of the plot. The default is "-o".
+    show_fig : bool, optional
+        Switch for showing the plot. The default is False.
+    app_mask : bool, optional
+        Switch for applying the mask on warm/hot pixels. The default is true.
+
+    Returns
+    -------
+    None.
+
+    """
+    if show_fig is True:
+        plt.ion()
+    else:
+        plt.ioff()
+
+    os.chdir(path)
+
+    files = glob.glob("*.dat*")
+
+    if "Ne" and "540" in path:
+        chosen_color = "seagreen"
+    elif "Ne" and "656" in path:
+        chosen_color = "orangered"
+    elif "Ne" and "585" in path:
+        chosen_color = "goldenrod"
+    elif "Ar" in path:
+        chosen_color = "mediumslateblue"
+    else:
+        chosen_color = "salmon"
+
+    for i, file in enumerate(files):
+        print(
+            "=================================================\n"
+            "Plotting timestamps, Working on {}\n"
+            "=================================================".format(file)
+        )
+
+        data = f_up.unpack_2212(file, board_number, fw_ver, timestamps)
+
+        valid_per_pixel = np.zeros(256)
+
+        for i in range(0, 256):
+            a = np.array(data["{}".format(i)])
+            valid_per_pixel[i] = len(np.where(a > 0)[0])
+
+        # Apply mask if requested
+        if app_mask is True:
+            path_to_back = os.getcwd()
+            path_to_mask = os.path.realpath(__file__) + "/../.." + "/masks"
+            os.chdir(path_to_mask)
+            file_mask = glob.glob("*{}*".format(board_number))[0]
+            mask = np.genfromtxt(file_mask).astype(int)
+            valid_per_pixel[mask] = 0
+            os.chdir(path_to_back)
+
+        plt.rcParams.update({"font.size": 22})
+        fig = plt.figure(figsize=(16, 10))
+        plt.plot(valid_per_pixel, "-o", color=chosen_color)
+        plt.xlabel("Pixel number [-]")
+        plt.ylabel("Timestamps [-]")
+
+        try:
+            os.chdir("results")
+        except FileNotFoundError:
+            os.mkdir("results")
+            os.chdir("results")
+        fig.tight_layout()
+        plt.savefig("{}.png".format(file))
+        os.chdir("..")
+
+
+def plot_valid_FW2212_mult(
+    path,
+    board_number,
+    fw_ver: str,
+    timestamps: int = 512,
+    scale: str = "linear",
+    style: str = "-o",
+    show_fig: bool = False,
+    app_mask: bool = True,
+):
+    """
+    Function for plotting the number of valid timestamps per pixel. Uses
+    the calibration data. Works with the firmware version 2212. Analyzes
+    all data files in the given folder.
+
+    Parameters
+    ----------
+    path : str
+        Path to the datafiles.
+    board_number : str
+        The LinoSPAD2 board number. Required for choosing the correct
+        calibration data.
+    fw_ver : str
+        2212 firmware version: 'block' or 'skip'.
+    timestamps : int, optional
+        Number of timestamps per pixel per acquisition cycle. Default is "512".
+    scale : str, optional
+        Scale for the y-axis of the plot. Use "log" for logarithmic.
+        The default is "linear".
+    style : str, optional
+        Style of the plot. The default is "-o".
+    show_fig : bool, optional
+        Switch for showing the plot. The default is False.
+    app_mask : bool, optional
+        Switch for applying the mask on warm/hot pixels. The default is true.
+
+    Returns
+    -------
+    None.
+
+    """
+    if show_fig is True:
+        plt.ion()
+    else:
+        plt.ioff()
+
+    os.chdir(path)
+
+    files = glob.glob("*.dat*")
+
+    plot_name = files[0] + "-" + files[-1]
+
+    if "Ne" and "540" in path:
+        chosen_color = "seagreen"
+    elif "Ne" and "656" in path:
+        chosen_color = "orangered"
+    elif "Ne" and "585" in path:
+        chosen_color = "goldenrod"
+    elif "Ar" in path:
+        chosen_color = "mediumslateblue"
+    else:
+        chosen_color = "salmon"
+
+    valid_per_pixel = np.zeros(256)
+
+    print(
+        "=================================================\n"
+        "Collecting data, Working in {}\n"
+        "=================================================".format(path)
+    )
+
+    for i, file in enumerate(files):
+        data = f_up.unpack_2212(file, board_number, fw_ver, timestamps)
+
+        for i in range(0, 256):
+            a = np.array(data["{}".format(i)])
+            valid_per_pixel[i] = valid_per_pixel[i] + len(np.where(a > 0)[0])
+
+    print(
+        "=================================================\n"
+        "Plotting timestamps\n"
+        "=================================================".format(path)
+    )
+    # Apply mask if requested
+    if app_mask is True:
+        path_to_back = os.getcwd()
+        path_to_mask = os.path.realpath(__file__) + "/../.." + "/masks"
+        os.chdir(path_to_mask)
+        file_mask = glob.glob("*{}*".format(board_number))[0]
+        mask = np.genfromtxt(file_mask).astype(int)
+        valid_per_pixel[mask] = 0
+        os.chdir(path_to_back)
+
+    plt.rcParams.update({"font.size": 22})
+    fig = plt.figure(figsize=(16, 10))
+    plt.plot(valid_per_pixel, "-o", color=chosen_color)
+    plt.xlabel("Pixel number [-]")
+    plt.ylabel("Timestamps [-]")
+
+    try:
+        os.chdir("results")
+    except FileNotFoundError:
+        os.mkdir("results")
+        os.chdir("results")
+    fig.tight_layout()
+    plt.savefig("{}.png".format(plot_name))
     os.chdir("..")

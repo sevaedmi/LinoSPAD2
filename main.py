@@ -30,9 +30,11 @@ from tools.collect_ct import collect_ct as cct
 # Paths to where either data or the 'csv' files with the resuts are located.
 # =========================================================================
 
+path_test = "D:/LinoSPAD2/Data/board_A5/V_setup/Ne_585/for_tests"
+
 path_v_585 = "D:/LinoSPAD2/Data/board_A5/V_setup/Ne_585"
 
-path_FW2212 = "D:/LinoSPAD2/Data/board_A5/FW 2212 skip/Ne_585"
+path_FW2212 = "D:/LinoSPAD2/Data/board_A5/BNL/FW_2212_block/Ne_585"
 
 path_BNL = "D:/LinoSPAD2/Data/board_A5/BNL/FW_2208/Ne_585"
 
@@ -69,19 +71,26 @@ mask = [70, 205, 212, 95, 157, 165, 57, 123, 187, 118, 251]
 delta_t.plot_grid_mult_cut(
     path_BNL,
     board_number="A5",
-    pix=(137, 138, 146, 147),
+    pix=(137, 138, 151, 152),
     range_left=-10e3,
     range_right=10e3,
     timestamps=80,
-    same_y=False
+    same_y=False,
 )
 
-# cct(path_v_585, pix=(189, 190, 191), board_number="A5", timestamps=80)
-
-# plot_valid.plot_valid_mult(
-#     path_BNL, timestamps=80, board_number="A5", mask=mask, mult_files=True
+# delta_t.plot_grid_mult_2212(
+#     path_FW2212,
+#     board_number="A5",
+#     fw_ver = "block",
+#     pix=(137, 138, 151, 152),
+#     range_left=-10e3,
+#     range_right=10e3,
+#     timestamps=160,
+#     same_y=False,
 # )
 
-# delta_t.plot_grid_calib(
-#     path_BNL, pix=(130, 131, 143, 144), board_number="A5", timestamps=300
+# plot_valid.plot_valid_mult(path_BNL, timestamps=80, board_number="A5")
+
+# plot_valid.plot_valid_FW2212_mult(
+#     path_FW2212, board_number="A5", fw_ver="block", timestamps=160
 # )

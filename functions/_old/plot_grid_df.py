@@ -1,9 +1,11 @@
-import os
 import glob
-from tqdm import tqdm
+import os
+
 import numpy as np
 import seaborn as sns
 from matplotlib import pyplot as plt
+from tqdm import tqdm
+
 from functions import unpack as f_up
 from functions.calc_diff import calc_diff_df
 

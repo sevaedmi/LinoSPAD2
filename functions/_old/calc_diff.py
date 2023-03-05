@@ -1,5 +1,6 @@
-import pandas as pd
 from struct import unpack
+
+import pandas as pd
 
 
 def unpack_binary_df(
