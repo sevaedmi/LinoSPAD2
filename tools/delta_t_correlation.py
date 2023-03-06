@@ -2,15 +2,19 @@
 
 """
 
-import os
 import glob
-from tqdm import tqdm
+import os
+
 import numpy as np
 from matplotlib import pyplot as plt
+from tqdm import tqdm
+
 from functions import unpack as f_up
 
-path = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/Data/"\
+path = (
+    "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/Data/"
     "Ar lamp/FW 2208"
+)
 
 os.chdir(path)
 
@@ -42,7 +46,7 @@ for i in tqdm(range(minuend)):
             if k <= i:
                 continue  # to avoid repetition: 2-1, 53-45
             for p in range(timestamps):
-                n = lines_of_data*(acq-1) + p
+                n = lines_of_data * (acq - 1) + p
                 if data_pair1[k][n] == -1:
                     continue
                 elif data_pair1[i][j] - data_pair1[k][n] > 2.5e3:
@@ -50,8 +54,7 @@ for i in tqdm(range(minuend)):
                 elif data_pair1[i][j] - data_pair1[k][n] < -2.5e3:
                     continue
                 else:
-                    output1.append(data_pair1[i][j]
-                                  - data_pair1[k][n])
+                    output1.append(data_pair1[i][j] - data_pair1[k][n])
 
 for i in tqdm(range(minuend)):
     acq = 0  # number of acq cycle
@@ -64,7 +67,7 @@ for i in tqdm(range(minuend)):
             if k <= i:
                 continue  # to avoid repetition: 2-1, 53-45
             for p in range(timestamps):
-                n = lines_of_data*(acq-1) + p
+                n = lines_of_data * (acq - 1) + p
                 if data_pair2[k][n] == -1:
                     continue
                 elif data_pair2[i][j] - data_pair2[k][n] > 2.5e3:
@@ -72,32 +75,31 @@ for i in tqdm(range(minuend)):
                 elif data_pair2[i][j] - data_pair2[k][n] < -2.5e3:
                     continue
                 else:
-                    output2.append(data_pair2[i][j]
-                                  - data_pair2[k][n])
+                    output2.append(data_pair2[i][j] - data_pair2[k][n])
 
 output2 = output2[395:]
 
 # histogram of first pair
 plt.figure(figsize=(16, 10))
 plt.rcParams.update({"font.size": 22})
-plt.xlabel('\u0394t [ps]')
-plt.ylabel('Timestamps [-]')
+plt.xlabel("\u0394t [ps]")
+plt.ylabel("Timestamps [-]")
 plt.title("Pair 14-15")
 plt.hist(output1, bins=100)
 
 # histogram of second pair
 plt.figure(figsize=(16, 10))
 plt.rcParams.update({"font.size": 22})
-plt.xlabel('\u0394t [ps]')
-plt.ylabel('Timestamps [-]')
+plt.xlabel("\u0394t [ps]")
+plt.ylabel("Timestamps [-]")
 plt.title("Pair 15-16")
 plt.hist(output2, bins=100)
 
 # 2d histogram of one pair vs the other
 plt.figure(figsize=(16, 16))
 plt.rcParams.update({"font.size": 22})
-plt.xlabel('\u0394t, first pair [ps]')
-plt.ylabel('\u0394t, second pair [ps]')
+plt.xlabel("\u0394t, first pair [ps]")
+plt.ylabel("\u0394t, second pair [ps]")
 plt.hist2d(output1, output2, bins=(100, 100))
 plt.title("Pair 14-15 vs 15-16")
 plt.show()

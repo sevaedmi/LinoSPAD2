@@ -56,7 +56,6 @@ def online_plot_valid(path, pix_range, timestamps: int = 512, frame_rate: float 
     plt.rcParams.update({"font.size": 22})
 
     while True:
-
         DATA_FILES = glob.glob("*.dat*")
         try:
             last_file = max(DATA_FILES, key=os.path.getctime)
@@ -67,7 +66,6 @@ def online_plot_valid(path, pix_range, timestamps: int = 512, frame_rate: float 
         new_file_ctime = os.path.getctime(last_file)
 
         if new_file_ctime > last_file_ctime:
-
             waiting = False
 
             last_file_ctime = new_file_ctime

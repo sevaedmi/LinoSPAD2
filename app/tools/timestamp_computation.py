@@ -1,9 +1,9 @@
 import numpy as np
+
 import app.tools.unpack_data as unpk
 
 
 def get_nmr_validtimestamps(path, pix_range, timestamps: int = 512):
-
     data = unpk.unpack_numpy(path, 512)
 
     valid_per_pixel = np.zeros(256)

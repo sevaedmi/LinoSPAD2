@@ -1,13 +1,15 @@
 import glob
 import os
 
-from PyQt5.QtWidgets import QPushButton, QWidget, QVBoxLayout, QFileDialog, QLineEdit, QCheckBox, \
-    QHBoxLayout, QGridLayout, QSlider
-from PyQt5.QtCore import pyqtSlot, QTimer, Qt
-from app.tools import timestamp_computation
-from app.graphic.plot_figure import PltCanvas
-import numpy as np
 import matplotlib
+import numpy as np
+from PyQt5.QtCore import Qt, QTimer, pyqtSlot
+from PyQt5.QtWidgets import (QCheckBox, QFileDialog, QGridLayout, QHBoxLayout,
+                             QLineEdit, QPushButton, QSlider, QVBoxLayout,
+                             QWidget)
+
+from app.graphic.plot_figure import PltCanvas
+from app.tools import timestamp_computation
 
 matplotlib.use("Qt5Agg")
 
@@ -25,7 +27,7 @@ class LiveTimestamps(QWidget):
         self.xSliderLeft = QSlider(Qt.Horizontal)
         self.xSliderRight = QSlider(Qt.Horizontal)
         self.checkBoxScale = QCheckBox("Linear scale", self)
-        self.lineEditPath = QLineEdit('')
+        self.lineEditPath = QLineEdit("")
         self.refreshBtn = QPushButton("Refresh plot")
         self.pushButtonStartSync = QPushButton("Start stream")
         self.plotWidget = PltCanvas(self)
@@ -33,7 +35,7 @@ class LiveTimestamps(QWidget):
         self.timerRunning = False
         self.last_file_ctime = 0
 
-        self.pathtotimestamp = ''
+        self.pathtotimestamp = ""
         self.leftLayout.addWidget(self.pushButtonLoadPath)
         self.leftLayout.addWidget(self.lineEditPath)
         self.leftLayout.addWidget(self.pushButtonStartSync)
@@ -53,7 +55,9 @@ class LiveTimestamps(QWidget):
         for clm in range(8):
             for row in range(32):
                 self.checkBoxPixel.append(QCheckBox(str(row + clm * 32), self))
-                self.checkBoxLayoutlayout.addWidget(self.checkBoxPixel[row + clm * 32], row, clm)
+                self.checkBoxLayoutlayout.addWidget(
+                    self.checkBoxPixel[row + clm * 32], row, clm
+                )
         self.checkBoxWidget.resize(400, 500)
         self.mainLayout.addWidget(self.checkBoxWidget)
 
@@ -79,7 +83,7 @@ class LiveTimestamps(QWidget):
     def updateTimeStamp(self):
         self.getvalidtimestamps()
         os.chdir(self.pathtotimestamp)
-        DATA_FILES = glob.glob('*.dat*')
+        DATA_FILES = glob.glob("*.dat*")
         print("updateTimeStamp: timer running")
         try:
             last_file = max(DATA_FILES, key=os.path.getctime)
@@ -90,9 +94,15 @@ class LiveTimestamps(QWidget):
                 self.last_file_ctime = new_file_ctime
                 # print("updateTimeStamp:" + self.pathtotimestamp + last_file)
                 validtimestemps, peak = timestamp_computation.get_nmr_validtimestamps(
-                    self.pathtotimestamp + '/' + last_file, np.arange(145, 155, 1), 512)
+                    self.pathtotimestamp + "/" + last_file, np.arange(145, 155, 1), 512
+                )
                 validtimestemps = validtimestemps * self.maskValidPixels
-                self.plotWidget.setPlotData(np.arange(0, 256, 1), validtimestemps, peak,[self.leftPosition,self.rightPosition])
+                self.plotWidget.setPlotData(
+                    np.arange(0, 256, 1),
+                    validtimestemps,
+                    peak,
+                    [self.leftPosition, self.rightPosition],
+                )
             # else:
             # print("updateTimeStamp:  not a new file")
 
@@ -137,11 +147,10 @@ class LiveTimestamps(QWidget):
 
     def slot_updateLeftSlider(self):
         if self.xSliderLeft.value() >= self.xSliderRight.value():
-            self.xSliderLeft.setValue(self.xSliderRight.value()-1)
+            self.xSliderLeft.setValue(self.xSliderRight.value() - 1)
         self.leftPosition = self.xSliderLeft.value()
-
 
     def slot_updateRightSlider(self):
         if self.xSliderRight.value() <= self.xSliderLeft.value():
-            self.xSliderRight.setValue(self.xSliderLeft.value()+1)
+            self.xSliderRight.setValue(self.xSliderLeft.value() + 1)
         self.rightPosition = self.xSliderRight.value()

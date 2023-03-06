@@ -25,7 +25,7 @@ from functions import unpack as f_up
 
 
 def plot_grid(path, pix, lines_of_data: int = 512, show_fig: bool = False):
-    '''Plots a 4x4 grid of delta t for different pairs of pixels for 5 pixels
+    """Plots a 4x4 grid of delta t for different pairs of pixels for 5 pixels
     total in the giver range.
 
 
@@ -45,16 +45,18 @@ def plot_grid(path, pix, lines_of_data: int = 512, show_fig: bool = False):
     -------
     None.
 
-    '''
+    """
 
     os.chdir(path)
 
-    DATA_FILES = glob.glob('*.dat*')
+    DATA_FILES = glob.glob("*.dat*")
 
     for num, filename in enumerate(DATA_FILES):
-        print("================================\n"
-              "Working on {}\n"
-              "================================".format(filename))
+        print(
+            "================================\n"
+            "Working on {}\n"
+            "================================".format(filename)
+        )
         data = f_up.unpack_binary_flex(filename, lines_of_data)
 
         data_1 = data[pix[0]]  # 1st pixel
@@ -63,7 +65,7 @@ def plot_grid(path, pix, lines_of_data: int = 512, show_fig: bool = False):
         data_4 = data[pix[3]]  # 4th pixel
         data_5 = data[pix[4]]  # 5th pixel
 
-        pixel_numbers = np.arange(pix[0], pix[-1]+1, 1)
+        pixel_numbers = np.arange(pix[0], pix[-1] + 1, 1)
 
         all_data = np.vstack((data_1, data_2, data_3, data_4, data_5))
 
@@ -73,7 +75,7 @@ def plot_grid(path, pix, lines_of_data: int = 512, show_fig: bool = False):
         else:
             plt.ioff()
 
-        plt.rcParams.update({'font.size': 20})
+        plt.rcParams.update({"font.size": 20})
         fig, axs = plt.subplots(4, 4, figsize=(24, 24))
 
         y_max_all = 0
@@ -103,18 +105,15 @@ def plot_grid(path, pix, lines_of_data: int = 512, show_fig: bool = False):
                             if k <= i:
                                 continue  # to avoid repetition: 2-1, 53-45
                             for p in range(timestamps):
-                                n = lines_of_data*(acq-1) + p
+                                n = lines_of_data * (acq - 1) + p
                                 if data_pair[k][n] == -1:
                                     continue
-                                elif np.abs(data_pair[i][j]
-                                            - data_pair[k][n]) > 2.5e3:
+                                elif np.abs(data_pair[i][j] - data_pair[k][n]) > 2.5e3:
                                     continue
-                                elif np.abs(data_pair[i][j]
-                                            - data_pair[k][n]) < -2.5e3:
+                                elif np.abs(data_pair[i][j] - data_pair[k][n]) < -2.5e3:
                                     continue
                                 else:
-                                    output.append(data_pair[i][j]
-                                                  - data_pair[k][n])
+                                    output.append(data_pair[i][j] - data_pair[k][n])
 
                 if "Ne" and "540" in path:
                     chosen_color = "seagreen"
@@ -126,19 +125,16 @@ def plot_grid(path, pix, lines_of_data: int = 512, show_fig: bool = False):
                     chosen_color = "salmon"
 
                 try:
-                    bins = np.arange(np.min(output), np.max(output),
-                                     17.857*2)
+                    bins = np.arange(np.min(output), np.max(output), 17.857 * 2)
                 except Exception:
                     continue
-                axs[q][w-1].set_xlabel('\u0394t [ps]')
-                axs[q][w-1].set_ylabel('Timestamps [-]')
-                n, b, p = axs[q][w-1].hist(output, bins=bins,
-                                           color=chosen_color)
+                axs[q][w - 1].set_xlabel("\u0394t [ps]")
+                axs[q][w - 1].set_ylabel("Timestamps [-]")
+                n, b, p = axs[q][w - 1].hist(output, bins=bins, color=chosen_color)
                 # find position of the histogram peak
                 try:
                     n_max = np.argmax(n)
-                    arg_max = format((bins[n_max] + bins[n_max + 1]) / 2,
-                                     ".2f")
+                    arg_max = format((bins[n_max] + bins[n_max + 1]) / 2, ".2f")
                 except Exception:
                     arg_max = None
                     pass
@@ -147,19 +143,20 @@ def plot_grid(path, pix, lines_of_data: int = 512, show_fig: bool = False):
                 if y_max_all < y_max:
                     y_max_all = y_max
 
-                axs[q][w-1].set_ylim(0, y_max+10)
-                axs[q][w-1].set_xlim(-2.5e3, 2.5e3)
+                axs[q][w - 1].set_ylim(0, y_max + 10)
+                axs[q][w - 1].set_xlim(-2.5e3, 2.5e3)
 
-                axs[q][w-1].set_title('Pixels {p1}-{p2}\nPeak position {pp}'
-                                      .format(p1=pixel_numbers[q],
-                                              p2=pixel_numbers[w],
-                                              pp=arg_max))
+                axs[q][w - 1].set_title(
+                    "Pixels {p1}-{p2}\nPeak position {pp}".format(
+                        p1=pixel_numbers[q], p2=pixel_numbers[w], pp=arg_max
+                    )
+                )
 
         for q in range(5):
             for w in range(5):
                 if w <= q:
                     continue
-                axs[q][w-1].set_ylim(0, y_max_all+10)
+                axs[q][w - 1].set_ylim(0, y_max_all + 10)
 
         try:
             os.chdir("results/delta_t")

@@ -3,6 +3,7 @@ timestamps differences.
 
 """
 
+
 def plot_grid(
     path,
     pix,
@@ -55,7 +56,6 @@ def plot_grid(
     DATA_FILES = glob.glob("*.dat*")
 
     for num, filename in enumerate(DATA_FILES):
-
         print(
             "=====================================================\n"
             "Plotting a delta t grid, Working on {}\n"

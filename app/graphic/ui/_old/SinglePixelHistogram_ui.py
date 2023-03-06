@@ -6,8 +6,10 @@
 #
 # WARNING! All changes made in this file will be lost!
 
-from PyQt5 import QtCore, QtGui, QtWidgets
 import os
+
+from PyQt5 import QtCore, QtGui, QtWidgets
+
 from app.graphic.single_pixel_histogram import SinglePixelHistogram
 
 
@@ -75,7 +77,7 @@ class Ui_SinglePixelHistogram(object):
         self.btnRfrshPlot = QtWidgets.QPushButton(Form)
         self.btnRfrshPlot.setObjectName("pushButton_2")
         self.gridLayout.addWidget(self.btnRfrshPlot, 2, 2, 1, 2)
-        
+
         self.btnRfrshPlot.clicked.connect(self._refresh_plot)
 
         self._retranslateUi(Form)
@@ -95,14 +97,12 @@ class Ui_SinglePixelHistogram(object):
         self.path.setText(self.folder)
 
     def _pix_input(self):
-
         self.pix = int(self.pixInput.text())
         os.chdir(self.folder)
 
         self.figureWidget._plot_hist(self.pix)
 
     def _refresh_plot(self):
-        
         self.pix = int(self.pixInput.text())
         os.chdir(self.folder)
 

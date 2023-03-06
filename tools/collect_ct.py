@@ -2,16 +2,17 @@
 
 """
 
-import os
 import glob
+import os
+
 import numpy as np
 import pandas as pd
+
 from functions import unpack as f_up
 from functions.calc_diff import calc_diff as cd
 
 
 def collect_ct(path, pix, board_number: str, timestamps: int = 512):
-
     file_name_list = []
     pix1_list = []
     pix2_list = []
@@ -25,7 +26,6 @@ def collect_ct(path, pix, board_number: str, timestamps: int = 512):
     files = glob.glob("*.dat*")
 
     for i, file in enumerate(files):
-
         data = f_up.unpack_calib(file, board_number, timestamps)
         # for j, pix1 in enumerate(pix):
         pix1 = 135

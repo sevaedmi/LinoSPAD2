@@ -23,7 +23,6 @@ from functions.calc_diff import calc_diff as cd
 
 
 def collect_ct(path, pix: int, board_number: str, timestamps: int = 512):
-
     file_name_list = []
     pix1_list = []
     pix2_list = []
@@ -37,7 +36,6 @@ def collect_ct(path, pix: int, board_number: str, timestamps: int = 512):
     files = glob.glob("*.dat*")
 
     for i, file in enumerate(files):
-
         data = f_up.unpack_calib(file, board_number, timestamps)
         pix1 = pix
         for k, pix2 in enumerate(pix):
@@ -86,7 +84,6 @@ def collect_ct(path, pix: int, board_number: str, timestamps: int = 512):
 
 
 def plot_ct(path, pix1):
-
     path = "C:/Users/bruce/Documents/Quantum astrometry"
 
     os.chdir(path)

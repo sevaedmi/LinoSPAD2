@@ -1,19 +1,23 @@
-import os
 import glob
+import os
+
 import numpy as np
-from tqdm import tqdm
-from scipy.optimize import curve_fit
 from matplotlib import pyplot as plt
+from scipy.optimize import curve_fit
+from tqdm import tqdm
+
 from functions import unpack as f_up
-   
-path = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/Data/"\
+
+path = (
+    "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/Data/"
     "Ar lamp/FW 2208"
+)
 
 pix = (156, 157, 158, 159, 160)
 
 
 def gauss(x, A, x0, sigma):
-    return A * np.exp(-(x - x0) ** 2 / (2 * sigma ** 2))
+    return A * np.exp(-((x - x0) ** 2) / (2 * sigma**2))
 
 
 os.chdir(path)
@@ -22,7 +26,7 @@ lines_of_data = 512
 
 show_fig = True
 
-filename = glob.glob('*.dat*')[0]
+filename = glob.glob("*.dat*")[0]
 
 data = f_up.unpack_binary_flex(filename)
 
@@ -32,11 +36,11 @@ data_3 = data[pix[2]]  # 3d pixel
 data_4 = data[pix[3]]  # 4th pixel
 data_5 = data[pix[4]]  # 5th pixel
 
-pix_num = np.arange(pix[0], pix[-1]+1, 1)
+pix_num = np.arange(pix[0], pix[-1] + 1, 1)
 
 all_data = np.vstack((data_1, data_2, data_3, data_4, data_5))
 
-plt.rcParams.update({'font.size': 20})
+plt.rcParams.update({"font.size": 20})
 
 q = 2
 w = 3
@@ -61,7 +65,7 @@ for i in tqdm(range(minuend)):
             if k <= i:
                 continue  # to avoid repetition: 2-1, 53-45
             for p in range(timestamps):
-                n = lines_of_data*(acq-1) + p
+                n = lines_of_data * (acq - 1) + p
                 if data_pair[k][n] == -1:
                     continue
                 elif data_pair[i][j] - data_pair[k][n] > 3.5e3:
@@ -69,8 +73,7 @@ for i in tqdm(range(minuend)):
                 elif data_pair[i][j] - data_pair[k][n] < -3.5e3:
                     continue
                 else:
-                    output.append(data_pair[i][j]
-                                  - data_pair[k][n])
+                    output.append(data_pair[i][j] - data_pair[k][n])
 
 if "Ne" and "540" in path:
     chosen_color = "seagreen"
@@ -87,13 +90,12 @@ else:
     plt.ioff()
 
 try:
-    bins = np.arange(np.min(output), np.max(output),
-                     17.857*2)
+    bins = np.arange(np.min(output), np.max(output), 17.857 * 2)
 except:
     pass
 
-plt.xlabel('\u0394t [ps]')
-plt.ylabel('Timestamps [-]')
+plt.xlabel("\u0394t [ps]")
+plt.ylabel("Timestamps [-]")
 n, b, p = plt.hist(output, bins=bins, color=chosen_color)
 plt.close()
 
@@ -117,16 +119,20 @@ par, covariance = curve_fit(gauss, b_fit, n_fit, p0=[max(n), arg_max, sigma])
 fit_plot = gauss(b_fit, par[0], par[1], par[2])
 
 
-
 plt.figure(figsize=(16, 10))
 plt.xlim((-3000, -1000))
-plt.xlabel('\u0394t [ps]')
-plt.ylabel('Timestamps [-]')
-plt.hist(output, bins=bins, color=chosen_color, histtype='step', label="data")
-plt.plot(b_fit, fit_plot, '-', color="cadetblue", label="fit\n\u03BC={p1} ps\n"
-         "\u03C3={p2} ps".format(p1=format(par[1], ".2f"),
-                                p2=format(par[-1], ".2f")))
-plt.legend(loc='best')
+plt.xlabel("\u0394t [ps]")
+plt.ylabel("Timestamps [-]")
+plt.hist(output, bins=bins, color=chosen_color, histtype="step", label="data")
+plt.plot(
+    b_fit,
+    fit_plot,
+    "-",
+    color="cadetblue",
+    label="fit\n\u03BC={p1} ps\n"
+    "\u03C3={p2} ps".format(p1=format(par[1], ".2f"), p2=format(par[-1], ".2f")),
+)
+plt.legend(loc="best")
 
 
 # plt.figure(figsize=(16, 10))

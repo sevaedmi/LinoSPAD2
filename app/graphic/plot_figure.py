@@ -1,8 +1,10 @@
-from PyQt5.QtWidgets import QWidget, QVBoxLayout
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 import matplotlib.pyplot as plt
+from matplotlib.backends.backend_qt5agg import \
+    FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qt5agg import \
+    NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
+from PyQt5.QtWidgets import QVBoxLayout, QWidget
 
 
 class PltCanvas(QWidget):
@@ -51,7 +53,6 @@ class PltCanvas(QWidget):
             self.ax.spines[axis].set_linewidth(2)
 
     def setPlotData(self, xdataplot, yplotdata, peak, xLim):
-
         # self.plot.set_xdata(xdataplot)
         self.plot.set_ydata(yplotdata)
         self.ax.relim()

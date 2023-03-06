@@ -6,12 +6,14 @@
 #
 # WARNING! All changes made in this file will be lost!
 
-from PyQt5 import QtCore, QtWidgets
-from app.graphic.plot_figure import PltCanvas
 import glob
 import os
-from app.tools import timestamp_computation
+
 import numpy as np
+from PyQt5 import QtCore, QtWidgets
+
+from app.graphic.plot_figure import PltCanvas
+from app.tools import timestamp_computation
 
 
 class Ui_LiveTimestamps(object):
@@ -198,7 +200,6 @@ class Ui_LiveTimestamps(object):
             new_file_ctime = os.path.getctime(last_file)
 
             if new_file_ctime > self.last_file_ctime:
-
                 self.last_file_ctime = new_file_ctime
 
                 validtimestemps, peak = timestamp_computation.get_nmr_validtimestamps(
@@ -215,14 +216,14 @@ class Ui_LiveTimestamps(object):
             print("_update_time_stamp:  waiting for a file")
 
     def _mask_pixels(self):
-        '''
+        """
         Function for masking the chosen pixels.
 
         Returns
         -------
         None.
 
-        '''
+        """
         for i in range(256):
             if self.checkBoxPixel[i].isChecked():
                 self.maskValidPixels[i] = 0

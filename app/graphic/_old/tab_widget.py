@@ -3,10 +3,11 @@ analysis and visualization application.
 
 """
 
-from PyQt5.QtWidgets import QWidget, QTabWidget, QVBoxLayout
+import matplotlib
+from PyQt5.QtWidgets import QTabWidget, QVBoxLayout, QWidget
+
 from app.graphic.tab_livetimestamps import LiveTimestamps
 from app.graphic.tab_single_pixel_histogram import SinglePixelHistogram
-import matplotlib
 
 matplotlib.use("Qt5Agg")
 

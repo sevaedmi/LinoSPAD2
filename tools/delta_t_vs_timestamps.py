@@ -2,15 +2,19 @@
 
 """
 
-import os
 import glob
-from tqdm import tqdm
+import os
+
 import numpy as np
 from matplotlib import pyplot as plt
+from tqdm import tqdm
+
 from functions import unpack as f_up
 
-path = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/Data/"\
+path = (
+    "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/Data/"
     "Ar lamp/FW 2208"
+)
 
 os.chdir(path)
 
@@ -47,7 +51,7 @@ for i in tqdm(range(minuend)):
             if k <= i:
                 continue  # to avoid repetition: 2-1, 153-45 etc.
             for p in range(timestamps):
-                n = 512*(acq-1) + p
+                n = 512 * (acq - 1) + p
                 if data_cut[k][n] == -1:
                     continue
                 elif data_cut[i][j] - data_cut[k][n] > 3.5e3:  #
@@ -55,13 +59,12 @@ for i in tqdm(range(minuend)):
                 elif data_cut[i][j] - data_cut[k][n] < -3.5e3:
                     continue
                 else:
-                    output.append(data_cut[i][j]
-                                  - data_cut[k][n])
+                    output.append(data_cut[i][j] - data_cut[k][n])
                     data_1.append(data_cut[i][j])  # save the used timestamps
                     data_2.append(data_cut[k][n])  # for 2d histogram
 
 plt.figure(figsize=(16, 10))
-plt.rcParams.update({'font.size': 22})
+plt.rcParams.update({"font.size": 22})
 plt.xlabel("Timestamps [ps]")
 plt.ylabel("\u0394t [ps]")
 plt.hist2d(data_1, output, bins=(196, 196))

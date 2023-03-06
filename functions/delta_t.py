@@ -69,9 +69,11 @@ def compute_delta_t(pixel_0, pixel_1, timestampsnmr: int = 512, timewindow: int 
 
 def plot_delta_separate(path, pix, timestamps: int = 512):
     """
-    Plots delta t for each pair of pixels in the given range.  The plots are
-    saved in the "results/delta_t/zoom" folder. In the case the folder does
-    not exist, it is created automatically.
+    Plot delta t for each pair of pixels in the given range.
+
+    Useful for debugging the LinoSPAD2 output.The plots are saved
+    in the "results/delta_t/zoom" folder. In the case the folder
+    does not exist, it is created automatically.
 
     Parameters
     ----------
@@ -88,7 +90,6 @@ def plot_delta_separate(path, pix, timestamps: int = 512):
     None.
 
     """
-
     os.chdir(path)
 
     DATA_FILES = glob.glob("*.dat*")
@@ -173,10 +174,10 @@ def plot_grid(
     same_y: bool = True,
 ):
     """
-    Plots a grid of delta t for different pairs of pixels for the
-    pixels in the given range. The output is saved in the "results/delta_t"
-    folder. In the case the folder does not exist, it is created automatically.
+    Plot a grid of delta t for all pairs of given pixels for one datafile.
 
+    The output is saved in the "results/delta_t" folder.
+    In the case the folder does not exist, it is created automatically.
 
     Parameters
     ----------
@@ -204,7 +205,6 @@ def plot_grid(
     None.
 
     """
-
     # check if the figure should appear in a separate window or not at all
     if show_fig is True:
         plt.ion()
@@ -338,10 +338,12 @@ def plot_grid_mult(
     mult_files: bool = False,
 ):
     """
-    Plots a grid of delta t for different pairs of pixels for the
-    pixels in the given range. The output is saved in the "results/delta_t"
-    folder. In the case the folder does not exist, it is created automatically.
-    Combines all ".dat" files in the folder or analyses only the last file created.
+    Plot a grid of delta t for all pairs of given pixels for all datafiles.
+
+    Analyzes all datafiles in the given path, combining the data from each
+    and plotting a grid of timestamp differences for each pair in the given range
+    of pixels. The output is saved in the "results/delta_t" folder. In the case
+    the folder does not exist, it is created automatically.
 
     Parameters
     ----------

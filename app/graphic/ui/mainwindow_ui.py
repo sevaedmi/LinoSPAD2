@@ -7,6 +7,7 @@
 # WARNING! All changes made in this file will be lost!
 
 from PyQt5 import QtCore, QtGui, QtWidgets
+
 from app.graphic.live_timestamps_tab import LiveTimestamps
 from app.graphic.single_pix_hist_tab import SinglePixelHistogram
 

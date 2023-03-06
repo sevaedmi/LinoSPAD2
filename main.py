@@ -4,9 +4,12 @@
 
 # Scripts imports
 import numpy as np
-from functions import delta_t, plot_valid, fits as gf
-from functions.calibrate import calibrate_save, calibrate_load
+
+from functions import delta_t
 from functions import fits
+from functions import fits as gf
+from functions import plot_valid
+from functions.calibrate import calibrate_load, calibrate_save
 from tools.collect_ct import collect_ct as cct
 
 ### The app has been moved to a standalone repo ###

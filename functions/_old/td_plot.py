@@ -37,20 +37,20 @@ def plot_diff(path, show_fig: bool = False):
 
     os.chdir(path)
 
-    filename = glob.glob('*timestamp_diff*')
+    filename = glob.glob("*timestamp_diff*")
 
     if filename == []:
         print("No 'csv' file with timestamp differences was found.")
         sys.exit()
 
-    Data = np.genfromtxt(filename[0], delimiter=',', skip_header=1)
+    Data = np.genfromtxt(filename[0], delimiter=",", skip_header=1)
 
     # dimenstions for transformed data array
     dim_x = len(Data)
     dim_y = len(Data[0])
 
     # put data into a 1D array
-    data = np.reshape(Data, dim_x*dim_y)
+    data = np.reshape(Data, dim_x * dim_y)
 
     # cut the nan values that may appear due to the different column size
     # in the timestamp-differences csv file
@@ -67,7 +67,7 @@ def plot_diff(path, show_fig: bool = False):
         plt.ioff()
 
     plt.figure(figsize=(16, 10))
-    plt.rcParams.update({'font.size': 20})
+    plt.rcParams.update({"font.size": 20})
     plt.xlabel("Time [ps]")
     plt.ylabel("Hits [-]")
     plt.hist(data, bins=bins)

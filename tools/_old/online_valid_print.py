@@ -7,8 +7,10 @@ and saves the output figure. Then the cycle repeats.
 import glob
 import os
 import time
-from matplotlib import pyplot as plt
+
 import numpy as np
+from matplotlib import pyplot as plt
+
 from functions import unpack as f_up
 
 # =============================================================================
@@ -27,10 +29,11 @@ from functions import unpack as f_up
 # path_save = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/"\
 #     "Data/Ne lamp ext trig/setup 2/3.99 ms acq window/results/online"
 
-path = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/Data"\
-    "/Ar lamp"
-path_save = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/Data"\
+path = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/Data" "/Ar lamp"
+path_save = (
+    "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/Data"
     "/Ar lamp/results/online"
+)
 
 os.chdir(path)
 
@@ -38,8 +41,7 @@ last_file_ctime = 0
 plt.ion()
 
 while True:
-
-    DATA_FILES = glob.glob('*.dat*')
+    DATA_FILES = glob.glob("*.dat*")
     try:
         last_file = max(DATA_FILES, key=os.path.getctime)
     except Exception:
@@ -55,9 +57,9 @@ while True:
         time.sleep(5)
         continue
 
-# =============================================================================
-# Data analysis
-# =============================================================================
+    # =============================================================================
+    # Data analysis
+    # =============================================================================
     last_file_ctime = new_file_ctime
 
     print("Analysing the last file.")
@@ -70,15 +72,15 @@ while True:
 
     peak = np.max(valid_per_pixel[145:165])
 
-    plt.close('all')
+    plt.close("all")
     plt.pause(1)
     plt.figure(figsize=(16, 10))
     plt.rcParams.update({"font.size": 20})
     plt.title("Peak is {}".format(peak))
     plt.xlabel("Pixel [-]")
     plt.ylabel("Valid timestamps [-]")
-    plt.yscale('log')
-    plt.plot(valid_per_pixel, 'o')
+    plt.yscale("log")
+    plt.plot(valid_per_pixel, "o")
     plt.show()
 
     plt.pause(1)
@@ -89,4 +91,4 @@ while True:
         os.mkdir(path_save)
         os.chdir(path_save)
     plt.savefig("{}.png".format(last_file))
-    os.chdir('../..')
+    os.chdir("../..")

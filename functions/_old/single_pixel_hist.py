@@ -23,9 +23,8 @@ from matplotlib import pyplot as plt
 from functions import unpack as f_up
 
 
-def plot_pixel_hist(path, pix1, pix2, lines_of_data: int = 512,
-                    show_fig: bool = False):
-    '''Plots a histogram for each pixel in a preset range.
+def plot_pixel_hist(path, pix1, pix2, lines_of_data: int = 512, show_fig: bool = False):
+    """Plots a histogram for each pixel in a preset range.
 
 
     Parameters
@@ -46,11 +45,11 @@ def plot_pixel_hist(path, pix1, pix2, lines_of_data: int = 512,
     -------
     None.
 
-    '''
+    """
 
     os.chdir(path)
 
-    filename = glob.glob('*.dat*')[0]
+    filename = glob.glob("*.dat*")[0]
 
     if pix1 is None:
         pixels_peak = np.arange(145, 165, 1)
@@ -70,8 +69,8 @@ def plot_pixel_hist(path, pix1, pix2, lines_of_data: int = 512,
 
     for i, pixel in enumerate(pixels):
         plt.figure(figsize=(16, 10))
-        plt.rcParams.update({'font.size': 22})
-        bins = np.arange(0, 4e9, 17.867*1e6)  # bin size of 17.867 us
+        plt.rcParams.update({"font.size": 22})
+        bins = np.arange(0, 4e9, 17.867 * 1e6)  # bin size of 17.867 us
         plt.hist(data[pixel], bins=bins, color="teal")
         plt.xlabel("Time [ms]")
         plt.ylabel("Counts [-]")
@@ -81,6 +80,5 @@ def plot_pixel_hist(path, pix1, pix2, lines_of_data: int = 512,
         except Exception:
             os.mkdir("results/single pixel histograms")
             os.chdir("results/single pixel histograms")
-        plt.savefig("{file}, pixel {pixel}.png".format(file=filename,
-                                                       pixel=pixel))
+        plt.savefig("{file}, pixel {pixel}.png".format(file=filename, pixel=pixel))
         os.chdir("../..")

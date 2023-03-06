@@ -20,9 +20,11 @@ functions:
 
 """
 
-from struct import unpack
-import numpy as np
 import os
+from struct import unpack
+
+import numpy as np
+
 from app.tools.calibrate import calibrate_load
 
 

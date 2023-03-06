@@ -1,4 +1,5 @@
-from PyQt5.QtWidgets import QMainWindow, QApplication
+from PyQt5.QtWidgets import QApplication, QMainWindow
+
 from app.graphic.tab_widget import TableWidget
 
 

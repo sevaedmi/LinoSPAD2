@@ -1,16 +1,20 @@
-import numpy as np
-from scipy.stats import norm
-from functions import delta_t, plot_valid, fits as gf
-from functions._old import delta_t_single_plots
-import functions.delta_t
-import matplotlib as plt
-from matplotlib import pyplot as plt
-from functions import unpack as f_up
-from matplotlib.ticker import MultipleLocator, AutoMinorLocator
-from struct import unpack
-import time
 # import torch
 import socket
+import time
+from struct import unpack
+
+import matplotlib as plt
+import numpy as np
+from matplotlib import pyplot as plt
+from matplotlib.ticker import AutoMinorLocator, MultipleLocator
+from scipy.stats import norm
+
+import functions.delta_t
+from functions import delta_t
+from functions import fits as gf
+from functions import plot_valid
+from functions import unpack as f_up
+from functions._old import delta_t_single_plots
 
 # For the remote control you have to send single-line commands. Each line
 # should end with '\n' and the program responds with 'DONE' when the
@@ -29,7 +33,7 @@ import socket
 
 def tcp_test():
     print("TCP")
-    TCP_IP = '127.0.0.1'
+    TCP_IP = "127.0.0.1"
     TCP_PORT = 1029
     BUFFER_SIZE = 1024
     MESSAGE = "SAVEHISTOGRAMS testsvahistrohramda.dat\n"
@@ -43,7 +47,6 @@ def tcp_test():
 
 def main_playground():
     tcp_test()
-
 
     # filename = "C:/Users/jakub/Documents/LinoSpad2/data/SPDC_221021/acq_221021_202311_timeStamps512.dat"
     # # filename = "C:/Users/jakub/Documents/LinoSpad2/data/SPDC_221028_calibration/acq_221028_171552.dat"  # DONE OK

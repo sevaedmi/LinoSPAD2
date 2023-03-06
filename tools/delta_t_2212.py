@@ -1,9 +1,11 @@
-import os
 import glob
-from functions import unpack as f_up
+import os
+
 import numpy as np
 from matplotlib import pyplot as plt
 from tqdm import tqdm
+
+from functions import unpack as f_up
 
 path = "D:/LinoSPAD2/Data/board_A5/BNL/FW_2212_block/Ne_585"
 os.chdir(path)

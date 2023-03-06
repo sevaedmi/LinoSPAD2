@@ -2,15 +2,15 @@
 
 """
 
-from PyQt5.QtWidgets import (
-    QWidget,
-    QVBoxLayout,
-)
-from matplotlib.figure import Figure
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
-from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 import glob
+
 import numpy as np
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
+from matplotlib.backends.backend_qt5agg import \
+    NavigationToolbar2QT as NavigationToolbar
+from matplotlib.figure import Figure
+from PyQt5.QtWidgets import QVBoxLayout, QWidget
+
 import app.tools.unpack_data as unpk
 
 
@@ -34,7 +34,6 @@ class HistCanvas(QWidget):
         self.setLayout(self.layout)
 
     def _plot_hist(self, pix):
-
         file = glob.glob("*.dat*")[0]
 
         data = unpk.unpack_calib(file, board_number="A5", timestamps=512)

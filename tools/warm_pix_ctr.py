@@ -2,16 +2,19 @@
 
 """
 
-import os
 import glob
+import os
+
 import numpy as np
-from tqdm import tqdm
 from matplotlib import pyplot as plt
+from tqdm import tqdm
+
 from functions import unpack as f_up
 
-
-path = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/Data/"\
+path = (
+    "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/Data/"
     "Ar lamp/FW 2208"
+)
 
 lines_of_data = 512
 
@@ -50,7 +53,7 @@ for i in tqdm(range(minuend)):
             if k <= i:
                 continue  # to avoid repetition: 2-1, 53-45
             for p in range(timestamps):
-                n = lines_of_data*(acq-1) + p
+                n = lines_of_data * (acq - 1) + p
                 if data_trio[k][n] == -1:
                     continue
                 elif data_trio[i][j] - data_trio[k][n] > 2.5e3:
@@ -58,8 +61,7 @@ for i in tqdm(range(minuend)):
                 elif data_trio[i][j] - data_trio[k][n] < -2.5e3:
                     continue
                 else:
-                    output.append(data_trio[i][j]
-                                  - data_trio[k][n])
+                    output.append(data_trio[i][j] - data_trio[k][n])
 
 if "Ne" and "540" in path:
     chosen_color = "seagreen"
@@ -71,27 +73,26 @@ else:
     chosen_color = "salmon"
 
 try:
-    bins = np.arange(np.min(output), np.max(output),
-                     17.857)
+    bins = np.arange(np.min(output), np.max(output), 17.857)
 except Exception:
     print(1)
 plt.figure(figsize=(16, 10))
 plt.rcParams.update({"font.size": 22})
-plt.xlabel('\u0394t [ps]')
-plt.ylabel('Timestamps [-]')
+plt.xlabel("\u0394t [ps]")
+plt.ylabel("Timestamps [-]")
 n, b, p = plt.hist(output, bins=bins, color=chosen_color)
 
 # find position of the histogram peak
 try:
     n_max = np.argmax(n)
-    arg_max = format((bins[n_max] + bins[n_max + 1]) / 2,
-                     ".2f")
+    arg_max = format((bins[n_max] + bins[n_max + 1]) / 2, ".2f")
 except Exception:
     arg_max = None
     pass
 
-plt.title('Warm pixel {pix}-{p1}\nPeak position: {peak}'.format(pix=14, p1=15,
-                                                            peak=arg_max))
+plt.title(
+    "Warm pixel {pix}-{p1}\nPeak position: {peak}".format(pix=14, p1=15, peak=arg_max)
+)
 # plt.title('Warm pixel {pix}\nPeak position: {peak}'.format(pix=236,
 #                                                             peak=arg_max))
 

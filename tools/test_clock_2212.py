@@ -2,9 +2,11 @@
 version 2212.
 """
 
-import os
 import glob
+import os
+
 import numpy as np
+
 from functions import unpack as f_up
 
 path = "D:/LinoSPAD2/Data/board_A5/BNL/FW_2212_block/Ne_585"

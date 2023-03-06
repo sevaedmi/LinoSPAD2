@@ -1,9 +1,11 @@
-from PyQt5 import QtCore, QtWidgets, uic
-from app.graphic.plot_figure import PltCanvas
 import glob
 import os
-from app.tools import timestamp_computation
+
 import numpy as np
+from PyQt5 import QtCore, QtWidgets, uic
+
+from app.graphic.plot_figure import PltCanvas
+from app.tools import timestamp_computation
 
 # from app.graphic.ui.LiveTimestamps_tab_ui import Ui_LiveTimestamps
 
@@ -157,7 +159,6 @@ class LiveTimestamps(QtWidgets.QWidget):
             new_file_ctime = os.path.getctime(last_file)
 
             if new_file_ctime > self.last_file_ctime:
-
                 self.last_file_ctime = new_file_ctime
 
                 validtimestemps, peak = timestamp_computation.get_nmr_validtimestamps(
@@ -189,7 +190,6 @@ class LiveTimestamps(QtWidgets.QWidget):
                 self.maskValidPixels[i] = 1
 
     def _preset_mask_pixels(self):
-
         if os.getcwd() != self.path_to_main + "/masks":
             os.chdir(self.path_to_main + "/masks")
         file = glob.glob("*{}*".format(self.comboBox_mask.currentText()))[0]

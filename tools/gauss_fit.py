@@ -1,9 +1,11 @@
-import os
 import glob
+import os
+
 import numpy as np
-from tqdm import tqdm
-from scipy.optimize import curve_fit
 from matplotlib import pyplot as plt
+from scipy.optimize import curve_fit
+from tqdm import tqdm
+
 from functions import unpack as f_up
 
 path = (
@@ -15,7 +17,7 @@ pix = (156, 157, 158, 159, 160)
 
 
 def gauss(x, H, A, x0, sigma):
-    return H + A * np.exp(-((x - x0) ** 2) / (2 * sigma ** 2))
+    return H + A * np.exp(-((x - x0) ** 2) / (2 * sigma**2))
 
 
 os.chdir(path)

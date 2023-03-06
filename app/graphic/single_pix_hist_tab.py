@@ -1,8 +1,10 @@
 # from PyQt5.QtWidgets import QWidget
 # from app.graphic.ui.SinglePixelHistogram_ui import Ui_SinglePixelHistogram
-from PyQt5 import QtWidgets, QtCore, QtGui, uic
-from app.graphic.single_pixel_histogram import HistCanvas
 import os
+
+from PyQt5 import QtCore, QtGui, QtWidgets, uic
+
+from app.graphic.single_pixel_histogram import HistCanvas
 
 # class SinglePixelHistogram(QWidget, Ui_SinglePixelHistogram):
 #     def __init__(self, parent=None):
@@ -59,14 +61,12 @@ class SinglePixelHistogram(QtWidgets.QWidget):
         self.lineEdit_browse.setText(self.folder)
 
     def _pix_input(self):
-
         self.pix = int(self.pixInput.text())
         os.chdir(self.folder)
 
         self.figureWidget._plot_hist(self.pix)
 
     def _refresh_plot(self):
-
         self.pix = int(self.lineEdit_enterPixNumber.text())
         os.chdir(self.folder)
 

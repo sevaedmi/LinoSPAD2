@@ -1,7 +1,8 @@
-import os
 import glob
-import pandas as pd
+import os
+
 import numpy as np
+import pandas as pd
 from matplotlib import pyplot as plt
 from scipy.stats import sem
 

@@ -1,11 +1,13 @@
 import os
-from glob import glob
-import numpy as np
-from functions.calibrate import calibrate_load
-from matplotlib import pyplot as plt
 import sys
-from functions import unpack as f_up
+from glob import glob
 from struct import unpack
+
+import numpy as np
+from matplotlib import pyplot as plt
+
+from functions import unpack as f_up
+from functions.calibrate import calibrate_load
 
 # path = "D:/LinoSPAD2/Data/board_A5/FW 2212 skip"
 # path = "D:/LinoSPAD2/Data/board_A5/FW 2212 block"

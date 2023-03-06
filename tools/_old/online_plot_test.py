@@ -1,7 +1,9 @@
-import os
-import numpy as np
 import glob
+import os
+
+import numpy as np
 from matplotlib import pyplot as plt
+
 from functions import unpack as f_up
 
 timestamps = 512
@@ -15,8 +17,10 @@ pix_range = np.delete(pix_range, (np.where(pix_range == 122)[0]))
 
 pixels = np.arange(0, 256, 1)
 
-path = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/Data/"\
+path = (
+    "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/Data/"
     "Ne lamp/FW 2208/653 nm"
+)
 
 path_save = path + "/results/online"
 
@@ -26,16 +30,17 @@ last_file_ctime = 0
 
 plt.ion()
 
-print("===========================\n"
-      "Online plotting of timestamps\n"
-      "===========================")
+print(
+    "===========================\n"
+    "Online plotting of timestamps\n"
+    "==========================="
+)
 
 fig = plt.figure(figsize=(11, 7))
 plt.rcParams.update({"font.size": 22})
 
 while True:
-
-    DATA_FILES = glob.glob('*.dat*')
+    DATA_FILES = glob.glob("*.dat*")
     try:
         last_file = max(DATA_FILES, key=os.path.getctime)
     except Exception:
@@ -82,12 +87,12 @@ while True:
             plt.pause(frame_rate)
         except NameError:
             ax = fig.add_subplot(111)
-            plot, = ax.plot(pixels, valid_per_pixel, 'o', color=chosen_color)
+            (plot,) = ax.plot(pixels, valid_per_pixel, "o", color=chosen_color)
             plt.rcParams.update({"font.size": 22})
             plt.title("Peak is {}".format(peak))
             plt.xlabel("Pixel [-]")
             plt.ylabel("Valid timestamps [-]")
-            plt.yscale('log')
+            plt.yscale("log")
             plt.show()
             plt.pause(frame_rate)
     else:

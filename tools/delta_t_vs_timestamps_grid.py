@@ -3,19 +3,23 @@ pairs of pixels.
 
 """
 
-import os
 import glob
-from tqdm import tqdm
+import os
+
 import numpy as np
 from matplotlib import pyplot as plt
+from tqdm import tqdm
+
 from functions import unpack as f_up
 
-path = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/Data/"\
+path = (
+    "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/Data/"
     "Ar lamp/FW 2208"
+)
 
 os.chdir(path)
 
-filename = glob.glob('*.dat*')[0]
+filename = glob.glob("*.dat*")[0]
 
 data = f_up.unpack_binary_512(filename)
 
@@ -29,7 +33,7 @@ pixel_numbers = np.arange(156, 161, 1)
 
 all_data = np.vstack((data_1, data_2, data_3, data_4, data_5))
 
-plt.rcParams.update({'font.size': 20})
+plt.rcParams.update({"font.size": 20})
 fig, axs = plt.subplots(4, 4, figsize=(24, 24))
 plt.ioff()
 
@@ -42,7 +46,7 @@ for q in range(5):
 
         data_pair = np.vstack((all_data[q], all_data[w]))
 
-        minuend = len(data_pair)-1  # i=255
+        minuend = len(data_pair) - 1  # i=255
         lines_of_data = len(data_pair[0])
         subtrahend = len(data_pair)  # k=254
         timestamps = 512  # lines of data in the acq cycle
@@ -63,7 +67,7 @@ for q in range(5):
                     if k <= i:
                         continue  # to avoid repetition: 2-1, 153-45 etc.
                     for p in range(timestamps):
-                        n = 512*(acq-1) + p
+                        n = 512 * (acq - 1) + p
                         if data_pair[k][n] == -1:
                             continue
                         elif data_pair[i][j] - data_pair[k][n] > 3.5e3:
@@ -71,20 +75,19 @@ for q in range(5):
                         elif data_pair[i][j] - data_pair[k][n] < -3.5e3:
                             continue
                         else:
-                            output.append(data_pair[i][j]
-                                          - data_pair[k][n])
+                            output.append(data_pair[i][j] - data_pair[k][n])
                             # save the used timestamps
                             data_for_hist.append(data_pair[i][j])
 
-        axs[q][w-1].set_xlabel('Timestamp [ps]')
-        axs[q][w-1].set_ylabel('\u0394t [ps]')
-        axs[q][w-1].hist2d(data_for_hist, output, bins=(196, 196))
-        
+        axs[q][w - 1].set_xlabel("Timestamp [ps]")
+        axs[q][w - 1].set_ylabel("\u0394t [ps]")
+        axs[q][w - 1].hist2d(data_for_hist, output, bins=(196, 196))
 
-        axs[q][w-1].set_title('Pixels {p1}-{p2}'.format(p1=pixel_numbers[q],
-                                                        p2=pixel_numbers[w]))
-        axs[q][w-1].set_ylim(-3.5e3, 3.5e3)
-        
+        axs[q][w - 1].set_title(
+            "Pixels {p1}-{p2}".format(p1=pixel_numbers[q], p2=pixel_numbers[w])
+        )
+        axs[q][w - 1].set_ylim(-3.5e3, 3.5e3)
+
         try:
             os.chdir("results/delta_t vs timestamps")
         except Exception:
