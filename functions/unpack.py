@@ -1,4 +1,4 @@
-"""Unpack data from LinoSPAD2
+"""Module with scripts for unpacking data from LinoSPAD2.
 
 Functions for unpacking either 'txt' of 'dat' data files of LinoSPAD2.
 Functions for either 10, 512 or a given number of timestamps per acquisition
@@ -40,8 +40,9 @@ from functions.calibrate import calibrate_load
 
 
 def unpack_binary_flex(filename, timestamps: int = 512):
-    """Unpacks the 'dat' data files with certain timestamps per acquistion
-    cycle.
+    """Unpack binary data from the LinoSPAD2.
+
+    Unpacking a single 'dat' output of the LinoSPAD2.
 
     Parameters
     ----------
@@ -59,7 +60,6 @@ def unpack_binary_flex(filename, timestamps: int = 512):
         timestamps.
 
     """
-
     timestamp_list = []
     address_list = []
 
@@ -104,10 +104,11 @@ def unpack_binary_flex(filename, timestamps: int = 512):
 
 
 def unpack_numpy(filename, board_number: str, timestamps: int = 512):
-    """
+    """Unpack binary data from LinoSPAD2.
+
     Function for unpacking the .dat data files using the calibration
     data. The output is a matrix of '256 x timestamps*number_of_cycles'
-    timestamps in ps.
+    timestamps in ps. The fastest version that utilizes the numpy library.
 
     Parameters
     ----------
@@ -174,7 +175,6 @@ def unpack_numpy(filename, board_number: str, timestamps: int = 512):
            [15, 16, 17, 18, 19, 35, 36, 37, 38, 39, 55, 56, 57, 58, 59]])
 
     """
-
     # read data by 32 bit words
     rawFile = np.fromfile(filename, dtype=np.uint32)
     # lowest 28 bits are the timestamp; convert to longlong, int is not enough
@@ -210,10 +210,11 @@ def unpack_numpy(filename, board_number: str, timestamps: int = 512):
 
 
 def unpack_mult(files, board_number: str, timestamps: int = 512):
-    """
-    Function for unpacking multiple .dat data files using
-    the calibration data. The output is a matrix of
-    '256 x timestamps*number_of_cycles' timestamps in ps.
+    """Unpack all 'dat' LinoSPAD2 datafiles in the given folder.
+
+    Function for unpacking multiple .dat data files using the calibration
+    data. The output is a matrix of '256 x timestamps*number_of_cycles'
+    timestamps in ps.
 
     Parameters
     ----------
@@ -244,33 +245,28 @@ def unpack_mult(files, board_number: str, timestamps: int = 512):
     return data_all
 
 
-# def unpack_calib_mult_cut(path, pixels, board_number: str, timestamps: int = 512):
-#     pixels = np.sort(pixels)
-
-#     os.chdir(path)
-
-#     files = glob("*.dat*")
-
-#     files_names = files[0][:-4] + "-" + files[-1][:-4]
-
-#     data_all = []
-
-#     for i, file in enumerate(files):
-#         if not np.any(data_all):
-#             data_all = unpack_calib(file, board_number, timestamps)
-#         else:
-#             data_all = np.append(data_all, unpack_numpy(file, timestamps), axis=1)
-#     output = []
-#     for i in range(len(pixels)):
-#         if not np.any(output):
-#             output = data_all[pixels[0]]
-#         else:
-#             output = np.vstack((output, data_all[pixels[i]]))
-
-#     return output, files_names
-
-
 def unpack_mult_cut(files, pixels, board_number: str, timestamps: int = 512):
+    """Unpack binary data from LinoSPAD2 only for given pixels.
+
+    Returns timestamps only for the given pixels. Uses the calibration data.
+
+    Parameters
+    ----------
+    files : list
+        List of files' names with the binary data from LinoSPAD2.
+    pixels : array-like or list
+        Array or list of pixel numbers for which the data should be unpacked.
+    board_number : str
+        The LinoSPAD2 daughterboard number.
+    timestamps : int, optional
+        Number of timestamps per acquisition cycle per pixel. The default is 512.
+
+    Returns
+    -------
+    ndarray-like
+        A matrix of pixels X timestamps*number_of_cycles of timestamps.
+
+    """
     pixels = np.sort(pixels)
 
     data_all = []
@@ -294,85 +290,10 @@ def unpack_mult_cut(files, pixels, board_number: str, timestamps: int = 512):
     return output
 
 
-# def unpack_2212(filename, board_number, fw_ver, timestamps: int = 512):
-#     """
-#     Function for unpacking data into a dictionary for the firmware versions 2212 "skip"
-#     and "block". Uses the calibration data.
-
-#     Parameters
-#     ----------
-#     filename : str
-#         The name of the ".dat" data file.
-#     board_number : str
-#         The LinoSPAD2 dautherboard number.
-#     fw_ver : str
-#         2212 firmware version: either "skip" or "block".
-#     timestamps : int, optional
-#         Number of timestamps per acquisition cycle per pixel. The default is 512.
-
-#     Returns
-#     -------
-#     TYPE
-#         DESCRIPTION.
-
-#     """
-#     rawFile = np.fromfile(filename, dtype=np.uint32)
-#     address = ((rawFile >> 28) & 0x3).astype(np.int64)
-#     data = (rawFile & 0xFFFFFFF).astype(np.longlong)
-#     data[np.where(rawFile < 0x80000000)] = -1
-
-#     def _pix_num(tdc_num, pix_coor):
-#         if fw_ver == "block":
-#             out = 4 * tdc_num + pix_coor
-#         elif fw_ver == "skip":
-#             out = tdc_num + 64 * pix_coor
-
-#         return out
-
-#     output = {}
-
-#     for i in range(0, 256):
-#         output["{}".format(i)] = []
-#     tdc_num = 0
-
-#     for i in range(0, len(data)):
-#         if i != 0 and i % timestamps == 0:
-#             tdc_num += 1
-#         if tdc_num != 0 and tdc_num == 64:
-#             continue
-#         if tdc_num != 0 and tdc_num == 65:
-#             tdc_num = 0
-#         pix_add = _pix_num(tdc_num, address[i])
-#         output["{}".format(pix_add)].append(data[i])
-
-#     for j, row in enumerate(output):
-#         output["{}".format(j)] = np.array(output["{}".format(j)])
-
-#     # Calibration
-#     path_calib_data = os.path.realpath(__file__) + "/../.." + "/calibration_data"
-
-#     try:
-#         cal_mat = calibrate_load(path_calib_data, board_number)
-#     except FileNotFoundError:
-#         print(
-#             "No .csv file with the calibration data was found, check the path "
-#             "or run the calibration."
-#         )
-#         sys.exit()
-
-#     for i in range(0, 256):
-#         if not any(output["{}".format(i)]):
-#             continue
-#         ind = np.where(output["{}".format(i)] >= 0)[0]
-#         output["{}".format(i)][ind] = (
-#             output["{}".format(i)][ind] - output["{}".format(i)][ind] % 140
-#         ) * 17.857 + cal_mat[i, (output["{}".format(i)][ind] % 140)]
-
-#     return output
-
-
+# TODO: check after calibration, less timestamps for some reason
 def unpack_2212(filename, board_number, fw_ver, timestamps: int = 512):
-    """
+    """Unpack binary data from LinoSPAD2 2212 firmware version.
+
     Function for unpacking data into a dictionary for the firmware versions 2212 "skip"
     and "block". Uses the calibration data.
 
@@ -394,16 +315,17 @@ def unpack_2212(filename, board_number, fw_ver, timestamps: int = 512):
         of columns is different for each row.
 
     """
-
     timestamp_list = {}
 
     for i in range(0, 256):
         timestamp_list["{}".format(i)] = []
 
-    # variable
+    # Variables that follow the cycle and the TDC numbers
     cycler = 0
     tdc = 0
 
+    # Function for assigning pixel addresses bases on the type of the 2212
+    # firmware version
     def _pix_num(tdc_num, pix_coor):
         if fw_ver == "block":
             out = 4 * tdc_num + pix_coor
@@ -415,15 +337,19 @@ def unpack_2212(filename, board_number, fw_ver, timestamps: int = 512):
     with open(filename, "rb") as f:
         while True:
             rawpacket = f.read(4)
-
+            # All steps are in units of 32 bits
+            # Reaching the end of a cycle, assign a '-1' to each pixel
             if not cycler % (32 * 65 * timestamps) and cycler != 0:
                 for i in range(256):
                     timestamp_list["{}".format(i)].append(-1)
+            # Next TDC
             if not cycler % (32 * timestamps) and cycler != 0:
                 tdc += 1
             cycler += 32
+            # Cut the 64th (TDC=[0,...63]) that does not contain timestamps
             if tdc != 0 and tdc == 64:
                 continue
+            # Reset the TDC number - end of cycle
             if tdc != 0 and tdc == 65:
                 tdc = 0
             if not rawpacket:
@@ -432,8 +358,30 @@ def unpack_2212(filename, board_number, fw_ver, timestamps: int = 512):
             if (packet[0] >> 31) == 1:
                 pix_coor = (packet[0] >> 28) & 0x3
                 address = _pix_num(tdc, pix_coor)
-                timestamp_list["{}".format(address)].append(
-                    (packet[0] & 0xFFFFFFF) * 17.857
-                )
+                timestamp_list["{}".format(address)].append((packet[0] & 0xFFFFFFF))
+
+    for key in timestamp_list:
+        timestamp_list[key] = np.array(timestamp_list[key])
+
+    # path to the current script, two levels up (the script itself is in the path) and
+    # one level down to the calibration data
+    path_calib_data = os.path.realpath(__file__) + "/../.." + "/calibration_data"
+
+    try:
+        cal_mat = calibrate_load(path_calib_data, board_number)
+    except FileNotFoundError:
+        print(
+            "No .csv file with the calibration data was found, check the path "
+            "or run the calibration."
+        )
+        sys.exit()
+    for i in range(256):
+        ind = np.where(np.array(timestamp_list["{}".format(i)]) >= 0)[0]
+        if not np.any(ind):
+            continue
+        timestamp_list["{}".format(i)][ind] = (
+            timestamp_list["{}".format(i)][ind]
+            - timestamp_list["{}".format(i)][ind] % 140
+        ) * 17.857 + cal_mat[i, (timestamp_list["{}".format(i)][ind] % 140)]
 
     return timestamp_list

@@ -14,9 +14,10 @@ from functions.calibrate import calibrate_load
 path = "D:/LinoSPAD2/Data/board_A5/BNL/FW_2212_block/Ne_585"
 # path = "D:/LinoSPAD2/Data/board_A5/BNL/FW_2212_skip"
 
+
 board_number = "A5"
 
-timestamps = 80
+timestamps = 50
 
 os.chdir(path)
 
@@ -62,6 +63,29 @@ for i in range(0, len(data)):
     pix_add = pix_num(tdc_num, address[i])
     output["{}".format(pix_add)].append(data[i])
 
+for key in output:
+    output[key] = np.array(output[key])
+
+
+path_calib_data = "C:/Users/bruce/Documents/GitHub/LinoSPAD2/calibration_data"
+
+try:
+    cal_mat = calibrate_load(path_calib_data, board_number)
+except FileNotFoundError:
+    print(
+        "No .csv file with the calibration data was found, check the path "
+        "or run the calibration."
+    )
+    sys.exit()
+for i in range(256):
+    ind = np.where(np.array(output["{}".format(i)]) >= 0)[0]
+    if not np.any(ind):
+        continue
+    output["{}".format(i)][ind] = (
+        output["{}".format(i)][ind] - output["{}".format(i)][ind] % 140
+    ) * 17.857 + cal_mat[i, (output["{}".format(i)][ind] % 140)]
+
+
 valid_per_pix = np.zeros(256)
 
 for i in range(0, 256):
@@ -91,11 +115,10 @@ os.chdir("..")
 # =============================================================================
 # The BS way
 # =============================================================================
-
-timestamp_list = {}
+output = {}
 
 for i in range(0, 256):
-    timestamp_list["{}".format(i)] = []
+    output["{}".format(i)] = []
 
 cycler = 0
 tdc = 0
@@ -116,7 +139,7 @@ with open(filename, "rb") as f:
 
         if not cycler % (32 * 65 * timestamps) and cycler != 0:
             for i in range(256):
-                timestamp_list["{}".format(i)].append(-1)
+                output["{}".format(i)].append(-1)
         if not cycler % (32 * timestamps) and cycler != 0:
             tdc += 1
         cycler += 32
@@ -130,24 +153,35 @@ with open(filename, "rb") as f:
         if (packet[0] >> 31) == 1:
             pix_coor = (packet[0] >> 28) & 0x3
             address = pix_num(tdc, pix_coor)
-            timestamp_list["{}".format(address)].append(
-                (packet[0] & 0xFFFFFFF) * 17.857
-            )
+            output["{}".format(address)].append((packet[0] & 0xFFFFFFF))
 
-# for i in range(0, len(data)):
-#     if i != 0 and i % timestamps == 0:
-#         tdc_num += 1
-#     if tdc_num != 0 and tdc_num == 64:
-#         continue
-#     if tdc_num != 0 and tdc_num == 65:
-#         tdc_num = 0
-#     pix_add = pix_num(tdc_num, address_list[i])
-#     output["{}".format(pix_add)].append(timestamp_list[i])
+for key in output:
+    output[key] = np.array(output[key])
+
+
+path_calib_data = "C:/Users/bruce/Documents/GitHub/LinoSPAD2/calibration_data"
+
+try:
+    cal_mat = calibrate_load(path_calib_data, board_number)
+except FileNotFoundError:
+    print(
+        "No .csv file with the calibration data was found, check the path "
+        "or run the calibration."
+    )
+    sys.exit()
+for i in range(256):
+    ind = np.where(np.array(output["{}".format(i)]) >= 0)[0]
+    if not np.any(ind):
+        continue
+    output["{}".format(i)][ind] = (
+        output["{}".format(i)][ind] - output["{}".format(i)][ind] % 140
+    ) * 17.857 + cal_mat[i, (output["{}".format(i)][ind] % 140)]
+
 
 valid_per_pix = np.zeros(256)
 
 for i in range(0, 256):
-    a = np.array(timestamp_list["{}".format(i)])
+    a = np.array(output["{}".format(i)])
     valid_per_pix[i] = len(np.where(a > 0)[0])
 
 mask = [70, 205, 212, 95, 157, 165, 57, 123, 187, 118, 251]

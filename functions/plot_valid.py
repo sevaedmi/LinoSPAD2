@@ -1,5 +1,4 @@
-""" Module with scripts for plotting the LinoSPAD2 output, namely the number
-of timestamps in each pixel.
+"""Module with scripts for plotting the LinoSPAD2 output.
 
 This script utilizes an unpacking module used specifically for the LinoSPAD2
 data output.
@@ -33,8 +32,7 @@ from functions import unpack as f_up
 
 
 def plot_pixel_hist(path, pix1, timestamps: int = 512, show_fig: bool = False):
-    """
-    Plots a histogram for each pixel in a preset range.
+    """Plot a histogram for each pixel in the given range.
 
     Parameters
     ----------
@@ -53,7 +51,6 @@ def plot_pixel_hist(path, pix1, timestamps: int = 512, show_fig: bool = False):
     None.
 
     """
-
     os.chdir(path)
 
     DATA_FILES = glob.glob("*.dat*")
@@ -63,11 +60,7 @@ def plot_pixel_hist(path, pix1, timestamps: int = 512, show_fig: bool = False):
     else:
         plt.ioff()
     for i, num in enumerate(DATA_FILES):
-        print(
-            "=====================================================\n"
-            "Plotting pixel histograms, Working on {}\n"
-            "=====================================================".format(num)
-        )
+        print("> > > Plotting pixel histograms, Working on {} < < <\n".format(num))
 
         data = f_up.unpack_numpy(num, timestamps)
 
@@ -101,9 +94,7 @@ def plot_valid(
     show_fig: bool = False,
     app_mask: bool = True,
 ):
-    """
-    Function for plotting the number of valid timestamps per pixel. Uses
-    the calibration data.
+    """Plot number of timestamps in each pixel for single datafile.
 
     Parameters
     ----------
@@ -129,7 +120,6 @@ def plot_valid(
     None.
 
     """
-
     os.chdir(path)
 
     DATA_FILES = glob.glob("*.dat*")
@@ -141,11 +131,7 @@ def plot_valid(
     else:
         plt.ioff()
     for i, num in enumerate(DATA_FILES):
-        print(
-            "=================================================\n"
-            "Plotting timestamps, Working on {}\n"
-            "=================================================".format(num)
-        )
+        print("> > > Plotting timestamps, Working on {} < < <\n".format(num))
 
         data_matrix = f_up.unpack_numpy(num, board_number, timestamps)
 
@@ -204,10 +190,9 @@ def plot_valid_mult(
     show_fig: bool = False,
     app_mask: bool = True,
 ):
-    """
-    Function for plotting the number of valid timestamps per pixel. Uses
-    the calibration data. Has an option to analyze all data files in the
-    given folder or only the last created one.
+    """Plot number of timestamps in each pixel for all datafiles.
+
+    Analyzes all datafiles in the given folder.
 
     Parameters
     ----------
@@ -249,11 +234,7 @@ def plot_valid_mult(
     else:
         plt.ioff()
 
-    print(
-        "=================================================\n"
-        "Plotting valid timestamps, Working in {}\n"
-        "=================================================".format(path)
-    )
+    print("> > > Plotting valid timestamps, Working in {} < < <\n".format(path))
     for i in tqdm(range(ceil(len(files_all) / 5)), desc="Collecting data"):
         files_cut = files_all[i * 5 : (i + 1) * 5]
         data = f_up.unpack_mult(files_cut, board_number, timestamps)
@@ -284,11 +265,7 @@ def plot_valid_mult(
     else:
         chosen_color = "salmon"
 
-    print(
-        "=================================================\n"
-        "Preparing the plot\n"
-        "================================================="
-    )
+    print("\n> > > Preparing the plot < < <\n")
 
     plt.figure(figsize=(16, 10))
     plt.rcParams.update({"font.size": 20})
@@ -322,9 +299,10 @@ def plot_valid_FW2212(
     show_fig: bool = False,
     app_mask: bool = True,
 ):
-    """
-    Function for plotting the number of valid timestamps per pixel. Uses
-    the calibration data. Works with the firmware version 2212.
+    """Plot number of timestamps in each pixel for FW2212 and single datafile.
+
+    Works only with the LinoSPAD2 firmware version 2212, both block and
+    skip versions.
 
     Parameters
     ----------
@@ -373,11 +351,7 @@ def plot_valid_FW2212(
         chosen_color = "salmon"
 
     for i, file in enumerate(files):
-        print(
-            "=================================================\n"
-            "Plotting timestamps, Working on {}\n"
-            "=================================================".format(file)
-        )
+        print("\n> > > Plotting timestamps, Working on {} < < <\n".format(file))
 
         data = f_up.unpack_2212(file, board_number, fw_ver, timestamps)
 
@@ -423,10 +397,10 @@ def plot_valid_FW2212_mult(
     show_fig: bool = False,
     app_mask: bool = True,
 ):
-    """
-    Function for plotting the number of valid timestamps per pixel. Uses
-    the calibration data. Works with the firmware version 2212. Analyzes
-    all data files in the given folder.
+    """Plot number of timestamps in each pixel for FW2212 and all datafiles.
+
+    Works only with the LinoSPAD2 firmware version 2212, both block and
+    skip versions. Analazys all datafiles in the given folder.
 
     Parameters
     ----------
@@ -478,11 +452,7 @@ def plot_valid_FW2212_mult(
 
     valid_per_pixel = np.zeros(256)
 
-    print(
-        "=================================================\n"
-        "Collecting data, Working in {}\n"
-        "=================================================".format(path)
-    )
+    print("\n> > > Collecting data, Working in {} < < <\n".format(path))
 
     for i, file in enumerate(files):
         data = f_up.unpack_2212(file, board_number, fw_ver, timestamps)
@@ -491,11 +461,7 @@ def plot_valid_FW2212_mult(
             a = np.array(data["{}".format(i)])
             valid_per_pixel[i] = valid_per_pixel[i] + len(np.where(a > 0)[0])
 
-    print(
-        "=================================================\n"
-        "Plotting timestamps\n"
-        "=================================================".format(path)
-    )
+    print("\n> > > Plotting timestamps < < <\n")
     # Apply mask if requested
     if app_mask is True:
         path_to_back = os.getcwd()

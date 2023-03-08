@@ -1,3 +1,13 @@
+"""Module for working with the calibration data.
+
+This file can also be imported as a module and contains the following
+functions:
+
+    * calibrate_save - calculate a calibration matrix and save it as
+    a .csv table.
+
+    * calibrate_load - load the calibration matrix from a .csv table.
+"""
 import glob
 import os
 
@@ -6,7 +16,8 @@ import pandas as pd
 
 
 def calibrate_save(path, timestamps: int = 512):
-    """
+    """Calculate and save calibration data.
+
     Function for calculating the calibration matrix and saving it into a .csv
     file. The data file used for the calculation should be taken with the
     sensor uniformly illuminated by ambient light.
@@ -23,7 +34,6 @@ def calibrate_save(path, timestamps: int = 512):
     None.
 
     """
-
     os.chdir(path)
     filename = glob.glob("*.dat*")[0]
 
@@ -56,8 +66,7 @@ def calibrate_save(path, timestamps: int = 512):
 
 
 def calibrate_load(path, board_number: str):
-    """
-    Function for loading the calibration data.
+    """Load the calibration data.
 
     Parameters
     ----------
@@ -72,7 +81,6 @@ def calibrate_load(path, board_number: str):
         Matrix of 256x140 with the calibrated data.
 
     """
-
     path_to_back = os.getcwd()
     os.chdir(path)
 
