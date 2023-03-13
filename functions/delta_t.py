@@ -501,7 +501,7 @@ def plot_grid(
 #     os.chdir("../..")
 
 
-def plot_grid_mult(
+def plot_grid_mult_nc(
     path,
     pix,
     board_number: str,
@@ -560,10 +560,10 @@ def plot_grid_mult(
 
     # Collect the data for the required pixels
     print("\n> > > Collecting data for the requested pixels < < <\n")
-    for i in tqdm(range(ceil(len(files_all) / 5)), desc="Collecting data"):
-        files_cut = files_all[i * 5 : (i + 1) * 5]
+    for i in tqdm(range(ceil(len(files_all))), desc="Collecting data"):
+        files_cut = files_all[i : (i + 1)]
 
-        data_pix = f_up.unpack_mult_cut(files_cut, pix, board_number, timestamps)
+        data_pix = f_up.unpack_mult_cut_nc(files_cut, pix, board_number, timestamps)
 
         for q in range(len(pix)):
             for w in range(len(pix)):
@@ -585,7 +585,7 @@ def plot_grid_mult(
 
     plt.rcParams.update({"font.size": 22})
     if len(pix) > 2:
-        fig, axs = plt.subplots(len(pix) - 1, len(pix) - 1, figsize=(40, 40))
+        fig, axs = plt.subplots(len(pix) - 1, len(pix) - 1, figsize=(20, 20))
     else:
         fig = plt.figure(figsize=(14, 14))
     # check if the y limits of all plots should be the same
@@ -664,23 +664,205 @@ def plot_grid_mult(
             else:
                 plt.xlim(range_left - 100, range_right + 100)
                 plt.title("Pixels {p1},{p2}".format(p1=pix[q], p2=pix[w]))
-    if same_y is True:
+            if same_y is True:
+                for q in range(len(pix)):
+                    for w in range(len(pix)):
+                        if w <= q:
+                            continue
+                        if len(pix) > 2:
+                            axs[q][w - 1].set_ylim(0, y_max_all + 10)
+                        else:
+                            plt.ylim(0, y_max_all + 10)
+            try:
+                os.chdir("results/delta_t")
+            except FileNotFoundError:
+                os.makedirs("results/delta_t")
+                os.chdir("results/delta_t")
+            fig.tight_layout()  # for perfect spacing between the plots
+            plt.savefig("{name}_delta_t_grid_cal.png".format(name=plot_name))
+            os.chdir("../..")
+
+
+def plot_grid_mult(
+    path,
+    pix,
+    board_number: str,
+    timestamps: int = 512,
+    range_left: float = -2.5e3,
+    range_right: float = 2.5e3,
+    show_fig: bool = False,
+    same_y: bool = False,
+):
+    """
+    Plot a grid of delta ts for all pairs of given pixels.
+
+    Function for calculating timestamp differences and plotting them in a grid. Works
+    with multiple .dat files, keeping the data only for the required pixels and thus
+    reducing the memory occupied.
+
+    Parameters
+    ----------
+    path : str
+        Path to data files.
+    pix : array-like
+        Pixel numbers for which the timestamps differences should be calculated.
+    board_number : str
+        The LinoSPAD2 board number. Input required for using the calibration data.
+    timestamps : int, optional
+        Number of timestamps per acquisition cycle per pixel. The default is 512.
+    range_left : float, optional
+        Left border of the window in which the timestamp differences should be
+        calculated. The default is -2.5e3.
+    range_right : float, optional
+        Right border of the windot in which the timestamp differences should be
+        calculated. The default is 2.5e3.
+    show_fig : bool, optional
+        Switch for showing the plots. The default is False.
+    same_y : bool, optional
+        Switch for equalizing the y axis for all plots. The default is False.
+
+    Returns
+    -------
+    None.
+
+    """
+    # check if the figure should appear in a separate window or not at all
+    if show_fig is True:
+        plt.ion()
+    else:
+        plt.ioff()
+
+    os.chdir(path)
+
+    files_all = glob.glob("*.dat*")
+
+    plot_name = files_all[0][:-4] + "-" + files_all[-1][:-4]
+
+    data_for_plot = {}
+
+    # Collect the data for the required pixels
+    print("\n> > > Collecting data for the requested pixels < < <\n")
+    for i in tqdm(range(ceil(len(files_all))), desc="Collecting data"):
+        files_cut = files_all[i : (i + 1)]
+
+        data_pix = f_up.unpack_mult_cut(files_cut, pix, board_number, timestamps)
+
         for q in range(len(pix)):
             for w in range(len(pix)):
                 if w <= q:
                     continue
-                if len(pix) > 2:
-                    axs[q][w - 1].set_ylim(0, y_max_all + 10)
+
+                data_pair = np.vstack((data_pix[q], data_pix[w]))
+
+                delta_ts = cd(
+                    data_pair,
+                    timestamps=timestamps,
+                    range_left=range_left,
+                    range_right=range_right,
+                )
+                if "{}-{}".format(pix[q], pix[w]) not in data_for_plot:
+                    data_for_plot["{}-{}".format(pix[q], pix[w])] = list(delta_ts)
                 else:
-                    plt.ylim(0, y_max_all + 10)
-    try:
-        os.chdir("results/delta_t")
-    except FileNotFoundError:
-        os.makedirs("results/delta_t")
-        os.chdir("results/delta_t")
-    fig.tight_layout()  # for perfect spacing between the plots
-    plt.savefig("{name}_delta_t_grid_cal.png".format(name=plot_name))
-    os.chdir("../..")
+                    data_for_plot["{}-{}".format(pix[q], pix[w])].extend(delta_ts)
+
+    plt.rcParams.update({"font.size": 22})
+    if len(pix) > 2:
+        fig, axs = plt.subplots(len(pix) - 1, len(pix) - 1, figsize=(20, 20))
+    else:
+        fig = plt.figure(figsize=(14, 14))
+    # check if the y limits of all plots should be the same
+    if same_y is True:
+        y_max_all = 0
+
+    # Calculate delta ts and plot them
+    print("\n> > > Calculating the timestamp differences < < <\n")
+    for q in tqdm(range(len(pix)), desc="Minuend pixel   "):
+        for w in tqdm(range(len(pix)), desc="Subtrahend pixel"):
+            if w <= q:
+                continue
+            if "Ne" and "540" in path:
+                chosen_color = "seagreen"
+            elif "Ne" and "656" in path:
+                chosen_color = "orangered"
+            elif "Ne" and "585" in path:
+                chosen_color = "goldenrod"
+            elif "Ar" in path:
+                chosen_color = "mediumslateblue"
+            else:
+                chosen_color = "salmon"
+            try:
+                bins = np.linspace(
+                    np.min(data_for_plot["{}-{}".format(pix[q], pix[w])]),
+                    np.max(data_for_plot["{}-{}".format(pix[q], pix[w])]),
+                    100,
+                )
+            except Exception:
+                print("Couldn't calculate bins: probably not enough delta ts.")
+                continue
+            if len(pix) > 2:
+                axs[q][w - 1].set_xlabel("\u0394t [ps]")
+                axs[q][w - 1].set_ylabel("Timestamps [-]")
+                n, b, p = axs[q][w - 1].hist(
+                    data_for_plot["{}-{}".format(pix[q], pix[w])],
+                    bins=bins,
+                    color=chosen_color,
+                )
+            else:
+                plt.xlabel("\u0394t [ps]")
+                plt.ylabel("Timestamps [-]")
+                n, b, p = plt.hist(
+                    data_for_plot["{}-{}".format(pix[q], pix[w])],
+                    bins=bins,
+                    color=chosen_color,
+                )
+            # find position of the histogram peak
+            try:
+                peak_max_pos = np.argmax(n).astype(np.intc)
+                # 2 ns window around peak
+                win = int(1000 / ((range_right - range_left) / 100))
+                peak_max_1 = np.sum(n[peak_max_pos - win : peak_max_pos + win])
+            except Exception:
+                peak_max_1 = None
+            if same_y is True:
+                try:
+                    y_max = np.max(n)
+                except ValueError:
+                    y_max = 0
+                    print("\nCould not find maximum y value\n")
+                if y_max_all < y_max:
+                    y_max_all = y_max
+                if len(pix) > 2:
+                    axs[q][w - 1].set_ylim(0, y_max + 4)
+                else:
+                    plt.ylim(0, y_max + 4)
+            if len(pix) > 2:
+                axs[q][w - 1].set_xlim(range_left - 100, range_right + 100)
+
+                axs[q][w - 1].set_title(
+                    "Pixels {p1},{p2}\nPeak in 2 ns window: {pm}".format(
+                        p1=pix[q], p2=pix[w], pm=int(peak_max_1)
+                    )
+                )
+            else:
+                plt.xlim(range_left - 100, range_right + 100)
+                plt.title("Pixels {p1},{p2}".format(p1=pix[q], p2=pix[w]))
+            if same_y is True:
+                for q in range(len(pix)):
+                    for w in range(len(pix)):
+                        if w <= q:
+                            continue
+                        if len(pix) > 2:
+                            axs[q][w - 1].set_ylim(0, y_max_all + 10)
+                        else:
+                            plt.ylim(0, y_max_all + 10)
+            try:
+                os.chdir("results/delta_t")
+            except FileNotFoundError:
+                os.makedirs("results/delta_t")
+                os.chdir("results/delta_t")
+            fig.tight_layout()  # for perfect spacing between the plots
+            plt.savefig("{name}_delta_t_grid_cal.png".format(name=plot_name))
+            os.chdir("../..")
 
 
 def plot_grid_mult_2212(
@@ -746,8 +928,8 @@ def plot_grid_mult_2212(
 
         data_pix = {}
 
-        for i in range(len(pix)):
-            data_pix["{}".format(pix[i])] = np.array(data["{}".format(pix[i])])
+        for j in range(len(pix)):
+            data_pix["{}".format(pix[j])] = np.array(data["{}".format(pix[j])])
 
         del data
 
@@ -763,13 +945,13 @@ def plot_grid_mult_2212(
                 cyc2 = np.where(data_pix["{}".format(pix[w])] == -1)[0]
                 cyc2 = np.insert(cyc2, 0, -1)
 
-                for i, tmsp1 in enumerate(data_pix["{}".format(pix[q])]):
+                for ii, tmsp1 in enumerate(data_pix["{}".format(pix[q])]):
                     # '-1' indicate an end of a cycle
                     if tmsp1 == -1:
                         cycle += 1
                         continue
-                    for j in range(cyc2[cycle] + 1, cyc2[cycle + 1]):
-                        tmsp2 = data_pix["{}".format(pix[w])][j]
+                    for jj in range(cyc2[cycle] + 1, cyc2[cycle + 1]):
+                        tmsp2 = data_pix["{}".format(pix[w])][jj]
                         delta = tmsp1 - tmsp2
                         if delta < range_left:
                             continue
@@ -806,8 +988,8 @@ def plot_grid_mult_2212(
 
             try:
                 bins = np.linspace(
-                    np.min(data_for_plot["{}-{}".format(pix[q], pix[w])]),
-                    np.max(data_for_plot["{}-{}".format(pix[q], pix[w])]),
+                    np.min(data_for_plot["{},{}".format(pix[q], pix[w])]),
+                    np.max(data_for_plot["{},{}".format(pix[q], pix[w])]),
                     100,
                 )
             except Exception:
@@ -818,7 +1000,7 @@ def plot_grid_mult_2212(
                 axs[q][w - 1].set_xlabel("\u0394t [ps]")
                 axs[q][w - 1].set_ylabel("Timestamps [-]")
                 n, b, p = axs[q][w - 1].hist(
-                    data_for_plot["{}-{}".format(pix[q], pix[w])],
+                    data_for_plot["{},{}".format(pix[q], pix[w])],
                     bins=bins,
                     color=chosen_color,
                 )
@@ -826,7 +1008,7 @@ def plot_grid_mult_2212(
                 plt.xlabel("\u0394t [ps]")
                 plt.ylabel("Timestamps [-]")
                 n, b, p = plt.hist(
-                    data_for_plot["{}-{}".format(pix[q], pix[w])],
+                    data_for_plot["{},{}".format(pix[q], pix[w])],
                     bins=bins,
                     color=chosen_color,
                 )
@@ -851,7 +1033,6 @@ def plot_grid_mult_2212(
                     plt.ylim(0, y_max + 4)
             if len(pix) > 2:
                 axs[q][w - 1].set_xlim(range_left - 100, range_right + 100)
-
                 axs[q][w - 1].set_title(
                     "Pixels {p1},{p2}\nPeak position {pp}".format(
                         p1=pix[q], p2=pix[w], pp=arg_max
@@ -861,21 +1042,21 @@ def plot_grid_mult_2212(
                 plt.xlim(range_left - 100, range_right + 100)
                 plt.title("Pixels {p1},{p2}".format(p1=pix[q], p2=pix[w]))
 
-    if same_y is True:
-        for q in range(len(pix)):
-            for w in range(len(pix)):
-                if w <= q:
-                    continue
-                if len(pix) > 2:
-                    axs[q][w - 1].set_ylim(0, y_max_all + 10)
-                else:
-                    plt.ylim(0, y_max_all + 10)
+            if same_y is True:
+                for q in range(len(pix)):
+                    for w in range(len(pix)):
+                        if w <= q:
+                            continue
+                        if len(pix) > 2:
+                            axs[q][w - 1].set_ylim(0, y_max_all + 10)
+                        else:
+                            plt.ylim(0, y_max_all + 10)
 
-    try:
-        os.chdir("results/delta_t")
-    except FileNotFoundError:
-        os.makedirs("results/delta_t")
-        os.chdir("results/delta_t")
-    fig.tight_layout()  # for perfect spacing between the plots
-    plt.savefig("{name}_delta_t_grid_cal.png".format(name=plot_name))
-    os.chdir("../..")
+            try:
+                os.chdir("results/delta_t")
+            except FileNotFoundError:
+                os.makedirs("results/delta_t")
+                os.chdir("results/delta_t")
+            fig.tight_layout()  # for perfect spacing between the plots
+            plt.savefig("{name}_delta_t_grid.png".format(name=plot_name))
+            os.chdir("../..")

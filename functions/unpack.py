@@ -103,6 +103,25 @@ def unpack_binary_flex(filename, timestamps: int = 512):
     return data_matrix
 
 
+def unpack_numpy_nc(filename, board_number: str, timestamps: int = 512):
+    # read data by 32 bit words
+    rawFile = np.fromfile(filename, dtype=np.uint32)
+    # lowest 28 bits are the timestamp; convert to longlong, int is not enough
+    data = ((rawFile & 0xFFFFFFF) * 17.857).astype(np.longlong)
+    # mask nonvalid data with '-1'
+    data[np.where(rawFile < 0x80000000)] = -1
+    # number of acquisition cycles
+    cycles = int(len(data) / timestamps / 256)
+
+    data_matrix = (
+        data.reshape(cycles, 256, timestamps)
+        .transpose((1, 0, 2))
+        .reshape(256, timestamps * cycles)
+    )
+
+    return data_matrix
+
+
 def unpack_numpy(filename, board_number: str, timestamps: int = 512):
     """Unpack binary data from LinoSPAD2.
 
@@ -209,6 +228,20 @@ def unpack_numpy(filename, board_number: str, timestamps: int = 512):
     return data_matrix
 
 
+def unpack_mult_nc(files, board_number: str, timestamps: int = 512):
+    data_all = []
+
+    for i, file in enumerate(files):
+        if not np.any(data_all):
+            data_all = unpack_numpy_nc(file, board_number, timestamps)
+        else:
+            data_all = np.append(
+                data_all, unpack_numpy_nc(file, board_number, timestamps), axis=1
+            )
+
+    return data_all
+
+
 def unpack_mult(files, board_number: str, timestamps: int = 512):
     """Unpack all 'dat' LinoSPAD2 datafiles in the given folder.
 
@@ -243,6 +276,51 @@ def unpack_mult(files, board_number: str, timestamps: int = 512):
             )
 
     return data_all
+
+
+def unpack_mult_cut_nc(files, pixels, board_number: str, timestamps: int = 512):
+    """Unpack binary data from LinoSPAD2 only for given pixels.
+
+    Returns timestamps only for the given pixels. Uses the calibration data.
+
+    Parameters
+    ----------
+    files : list
+        List of files' names with the binary data from LinoSPAD2.
+    pixels : array-like or list
+        Array or list of pixel numbers for which the data should be unpacked.
+    board_number : str
+        The LinoSPAD2 daughterboard number.
+    timestamps : int, optional
+        Number of timestamps per acquisition cycle per pixel. The default is 512.
+
+    Returns
+    -------
+    ndarray-like
+        A matrix of pixels X timestamps*number_of_cycles of timestamps.
+
+    """
+    pixels = np.sort(pixels)
+
+    data_all = []
+
+    for i, file in enumerate(files):
+        if not np.any(data_all):
+            data_all = unpack_numpy_nc(file, board_number, timestamps)
+        else:
+            data_all = np.append(
+                data_all, unpack_numpy_nc(file, board_number, timestamps), axis=1
+            )
+
+    output = []
+
+    for i in range(len(pixels)):
+        if not np.any(output):
+            output = data_all[pixels[0]]
+        else:
+            output = np.vstack((output, data_all[pixels[i]]))
+
+    return output
 
 
 def unpack_mult_cut(files, pixels, board_number: str, timestamps: int = 512):
@@ -290,7 +368,6 @@ def unpack_mult_cut(files, pixels, board_number: str, timestamps: int = 512):
     return output
 
 
-# TODO: check after calibration, less timestamps for some reason
 def unpack_2212(filename, board_number, fw_ver, timestamps: int = 512):
     """Unpack binary data from LinoSPAD2 2212 firmware version.
 
@@ -361,7 +438,7 @@ def unpack_2212(filename, board_number, fw_ver, timestamps: int = 512):
                 timestamp_list["{}".format(address)].append((packet[0] & 0xFFFFFFF))
 
     for key in timestamp_list:
-        timestamp_list[key] = np.array(timestamp_list[key])
+        timestamp_list[key] = np.array(timestamp_list[key]).astype(np.longlong)
 
     # path to the current script, two levels up (the script itself is in the path) and
     # one level down to the calibration data

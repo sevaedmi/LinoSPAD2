@@ -115,6 +115,7 @@ os.chdir("..")
 # =============================================================================
 # The BS way
 # =============================================================================
+
 output = {}
 
 for i in range(0, 256):
@@ -153,7 +154,10 @@ with open(filename, "rb") as f:
         if (packet[0] >> 31) == 1:
             pix_coor = (packet[0] >> 28) & 0x3
             address = pix_num(tdc, pix_coor)
-            output["{}".format(address)].append((packet[0] & 0xFFFFFFF))
+            output["{}".format(address)].append(
+                # (packet[0] & 0xFFFFFFF)*17.857
+                (packet[0] & 0xFFFFFFF)
+            )
 
 for key in output:
     output[key] = np.array(output[key])
