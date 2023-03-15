@@ -14,15 +14,6 @@ functions:
     timestamps per acquisition cycle. Uses the calibration data. Imputing the
     LinoSPAD2 board number is required.
 
-    * unpack_mult - unpacks all 'dat' files in the given directory.
-    Takes the number of timestamps per pixel per acquisition cycle and
-    the LinoSPAD2 board number for the appropriate calibration data as
-    parameters. Utilizes the 'unpack_calib' function for unpacking the
-    files.
-
-    * unpack_mult_cut - unpacks all 'dat' files in the given directory.
-    Returns data only for the requested pixels.
-
     * unpack_2212 - function for unpacking data into a dictionary for the
     LinoSPAD2 firmware 2212 versions "skip" and "block".
 
@@ -103,26 +94,7 @@ def unpack_binary_flex(filename, timestamps: int = 512):
     return data_matrix
 
 
-def unpack_numpy_nc(filename, board_number: str, timestamps: int = 512):
-    # read data by 32 bit words
-    rawFile = np.fromfile(filename, dtype=np.uint32)
-    # lowest 28 bits are the timestamp; convert to longlong, int is not enough
-    data = ((rawFile & 0xFFFFFFF) * 17.857).astype(np.longlong)
-    # mask nonvalid data with '-1'
-    data[np.where(rawFile < 0x80000000)] = -1
-    # number of acquisition cycles
-    cycles = int(len(data) / timestamps / 256)
-
-    data_matrix = (
-        data.reshape(cycles, 256, timestamps)
-        .transpose((1, 0, 2))
-        .reshape(256, timestamps * cycles)
-    )
-
-    return data_matrix
-
-
-def unpack_numpy(filename, board_number: str, timestamps: int = 512):
+def unpack_numpy(filename, board_number: str, timestamps: int = 512, pix: list = []):
     """Unpack binary data from LinoSPAD2.
 
     Function for unpacking the .dat data files using the calibration
@@ -225,145 +197,18 @@ def unpack_numpy(filename, board_number: str, timestamps: int = 512):
         data_matrix[i, ind] = (
             data_matrix[i, ind] - data_matrix[i, ind] % 140
         ) * 17.857 + cal_mat[i, (data_matrix[i, ind] % 140)]
-    return data_matrix
 
+    output = {}
+    if not np.any(pix):
+        pix = np.arange(256)
+    for px in pix:
+        output["{}".format(px)] = data_matrix[px]
 
-def unpack_mult_nc(files, board_number: str, timestamps: int = 512):
-    data_all = []
+    ins = np.arange(timestamps, timestamps * (cycles + 1), timestamps)
 
-    for i, file in enumerate(files):
-        if not np.any(data_all):
-            data_all = unpack_numpy_nc(file, board_number, timestamps)
-        else:
-            data_all = np.append(
-                data_all, unpack_numpy_nc(file, board_number, timestamps), axis=1
-            )
-
-    return data_all
-
-
-def unpack_mult(files, board_number: str, timestamps: int = 512):
-    """Unpack all 'dat' LinoSPAD2 datafiles in the given folder.
-
-    Function for unpacking multiple .dat data files using the calibration
-    data. The output is a matrix of '256 x timestamps*number_of_cycles'
-    timestamps in ps.
-
-    Parameters
-    ----------
-    files : str
-        List of data files which should be unpacked.
-    board_number : str
-        LinoSPAD2 board number.
-    timestamps : int, optional
-        Number of timestamps per pixel per acquisition cycle.
-        The default is 512.
-
-    Returns
-    -------
-    data_all : array-like
-        Matrix of '256 x timestamps*number_of_cycles' timestamps in ps.
-
-    """
-    data_all = []
-
-    for i, file in enumerate(files):
-        if not np.any(data_all):
-            data_all = unpack_numpy(file, board_number, timestamps)
-        else:
-            data_all = np.append(
-                data_all, unpack_numpy(file, board_number, timestamps), axis=1
-            )
-
-    return data_all
-
-
-def unpack_mult_cut_nc(files, pixels, board_number: str, timestamps: int = 512):
-    """Unpack binary data from LinoSPAD2 only for given pixels.
-
-    Returns timestamps only for the given pixels. Uses the calibration data.
-
-    Parameters
-    ----------
-    files : list
-        List of files' names with the binary data from LinoSPAD2.
-    pixels : array-like or list
-        Array or list of pixel numbers for which the data should be unpacked.
-    board_number : str
-        The LinoSPAD2 daughterboard number.
-    timestamps : int, optional
-        Number of timestamps per acquisition cycle per pixel. The default is 512.
-
-    Returns
-    -------
-    ndarray-like
-        A matrix of pixels X timestamps*number_of_cycles of timestamps.
-
-    """
-    pixels = np.sort(pixels)
-
-    data_all = []
-
-    for i, file in enumerate(files):
-        if not np.any(data_all):
-            data_all = unpack_numpy_nc(file, board_number, timestamps)
-        else:
-            data_all = np.append(
-                data_all, unpack_numpy_nc(file, board_number, timestamps), axis=1
-            )
-
-    output = []
-
-    for i in range(len(pixels)):
-        if not np.any(output):
-            output = data_all[pixels[0]]
-        else:
-            output = np.vstack((output, data_all[pixels[i]]))
-
-    return output
-
-
-def unpack_mult_cut(files, pixels, board_number: str, timestamps: int = 512):
-    """Unpack binary data from LinoSPAD2 only for given pixels.
-
-    Returns timestamps only for the given pixels. Uses the calibration data.
-
-    Parameters
-    ----------
-    files : list
-        List of files' names with the binary data from LinoSPAD2.
-    pixels : array-like or list
-        Array or list of pixel numbers for which the data should be unpacked.
-    board_number : str
-        The LinoSPAD2 daughterboard number.
-    timestamps : int, optional
-        Number of timestamps per acquisition cycle per pixel. The default is 512.
-
-    Returns
-    -------
-    ndarray-like
-        A matrix of pixels X timestamps*number_of_cycles of timestamps.
-
-    """
-    pixels = np.sort(pixels)
-
-    data_all = []
-
-    for i, file in enumerate(files):
-        if not np.any(data_all):
-            data_all = unpack_numpy(file, board_number, timestamps)
-        else:
-            data_all = np.append(
-                data_all, unpack_numpy(file, board_number, timestamps), axis=1
-            )
-
-    output = []
-
-    for i in range(len(pixels)):
-        if not np.any(output):
-            output = data_all[pixels[0]]
-        else:
-            output = np.vstack((output, data_all[pixels[i]]))
+    for key in output.keys():
+        output[key] = np.insert(output[key], ins, -2)
+        output[key] = np.delete(output[key], np.where(output[key] == -1))
 
     return output
 
