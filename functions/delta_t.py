@@ -595,10 +595,10 @@ def plot_grid_mult(
 
     # Collect the data for the required pixels
     print("\n> > > Collecting data for the requested pixels < < <\n")
-    for i in tqdm(range(ceil(len(files_all))), desc="Collecting data"):
-        files_cut = files_all[i : (i + 1)]
+    for i in tqdm(range(len(files_all)), desc="Collecting data"):
+        file = files_all[i]
 
-        data_pix = f_up.unpack_mult_cut(files_cut, pix, board_number, timestamps)
+        data_pix = f_up.unpack_numpy(file, board_number, timestamps, pix)
 
         for q in range(len(pix)):
             for w in range(len(pix)):
@@ -613,10 +613,10 @@ def plot_grid_mult(
                     range_left=range_left,
                     range_right=range_right,
                 )
-                if "{}-{}".format(pix[q], pix[w]) not in data_for_plot:
-                    data_for_plot["{}-{}".format(pix[q], pix[w])] = list(delta_ts)
+                if "{},{}".format(pix[q], pix[w]) not in data_for_plot:
+                    data_for_plot["{},{}".format(pix[q], pix[w])] = list(delta_ts)
                 else:
-                    data_for_plot["{}-{}".format(pix[q], pix[w])].extend(delta_ts)
+                    data_for_plot["{},{}".format(pix[q], pix[w])].extend(delta_ts)
 
     plt.rcParams.update({"font.size": 22})
     if len(pix) > 2:
@@ -651,8 +651,8 @@ def plot_grid_mult(
                 chosen_color = "salmon"
             try:
                 bins = np.linspace(
-                    np.min(data_for_plot["{}-{}".format(pix[q], pix[w])]),
-                    np.max(data_for_plot["{}-{}".format(pix[q], pix[w])]),
+                    np.min(data_for_plot["{},{}".format(pix[q], pix[w])]),
+                    np.max(data_for_plot["{},{}".format(pix[q], pix[w])]),
                     100,
                 )
             except Exception:
@@ -662,7 +662,7 @@ def plot_grid_mult(
                 axs[q][w - 1].set_xlabel("\u0394t [ps]")
                 axs[q][w - 1].set_ylabel("Timestamps [-]")
                 n, b, p = axs[q][w - 1].hist(
-                    data_for_plot["{}-{}".format(pix[q], pix[w])],
+                    data_for_plot["{},{}".format(pix[q], pix[w])],
                     bins=bins,
                     color=chosen_color,
                 )
@@ -670,7 +670,7 @@ def plot_grid_mult(
                 plt.xlabel("\u0394t [ps]")
                 plt.ylabel("Timestamps [-]")
                 n, b, p = plt.hist(
-                    data_for_plot["{}-{}".format(pix[q], pix[w])],
+                    data_for_plot["{},{}".format(pix[q], pix[w])],
                     bins=bins,
                     color=chosen_color,
                 )
@@ -987,7 +987,7 @@ def deltas_save(
         file = files_all[i]
 
         # Unpack data for the requested pixels into dictionary
-        data = f_up.unpack_numpy(
+        data = f_up.unpack_numpy_dict(
             file, board_number="A5", timestamps=timestamps, pix=pix
         )
 
@@ -997,31 +997,31 @@ def deltas_save(
                 if w <= q:
                     continue
 
-                if len(data[q]) >= len(data[w]):
-                    # Follows the cycle number in the first array
-                    cycle = 0
-                    # Follows the cycle number in the second array
-                    cyc2 = np.argwhere(data[w] < 0)
-                    cyc2 = np.insert(cyc2, 0, -1)
-                    for i, tmsp1 in enumerate(data[q]):
-                        if tmsp1 == -1:
-                            cycle += 1
-                            continue
-                        deltas = data[w][cyc2[cycle] + 1 : cyc2[cycle + 1]] - tmsp1
-                        # Collect deltas in the requested window
-                        ind = np.where(np.abs(deltas) < delta_window)[0]
-                        deltas_all["{},{}".format(q, w)].extend(deltas[ind])
-                else:
-                    cycle = 0
-                    cyc2 = np.argwhere(data[q] < 0)
-                    cyc2 = np.insert(cyc2, 0, -1)
-                    for i, tmsp1 in enumerate(data[w]):
-                        if tmsp1 == -1:
-                            cycle += 1
-                            continue
-                        deltas = data[q][cyc2[cycle] + 1 : cyc2[cycle + 1]] - tmsp1
-                        ind = np.where(np.abs(deltas) < delta_window)[0]
-                        deltas_all["{},{}".format(q, w)].extend(deltas[ind])
+                # if len(data[q]) >= len(data[w]):
+                # Follows the cycle number in the first array
+                cycle = 0
+                # Follows the cycle number in the second array
+                cyc2 = np.argwhere(data[w] < 0)
+                cyc2 = np.insert(cyc2, 0, -1)
+                for i, tmsp1 in enumerate(data[q]):
+                    if tmsp1 == -2:
+                        cycle += 1
+                        continue
+                    deltas = data[w][cyc2[cycle] + 1 : cyc2[cycle + 1]] - tmsp1
+                    # Collect deltas in the requested window
+                    ind = np.where(np.abs(deltas) < delta_window)[0]
+                    deltas_all["{},{}".format(q, w)].extend(deltas[ind])
+                # else:
+                #     cycle = 0
+                #     cyc2 = np.argwhere(data[q] < 0)
+                #     cyc2 = np.insert(cyc2, 0, -1)
+                #     for i, tmsp1 in enumerate(data[w]):
+                #         if tmsp1 == -1:
+                #             cycle += 1
+                #             continue
+                #         deltas = data[q][cyc2[cycle] + 1 : cyc2[cycle + 1]] - tmsp1
+                #         ind = np.where(np.abs(deltas) < delta_window)[0]
+                #         deltas_all["{},{}".format(q, w)].extend(deltas[ind])
     # Save data as a .csv file
     data_for_plot_df = pd.DataFrame.from_dict(deltas_all, orient="index")
     try:
