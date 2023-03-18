@@ -349,7 +349,8 @@ def plot_valid_mult(
 
         for j in range(len(data)):
             valid_per_pixel[j] = valid_per_pixel[j] + len(
-                np.where(data["{}".format(j)] > 0)[0]
+                # np.where(data["{}".format(j)] > 0)[0]
+                np.where(data[j] > 0)[0]
             )
 
     # Apply mask if requested

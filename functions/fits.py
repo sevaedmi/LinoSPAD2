@@ -19,8 +19,10 @@ functions:
 
 import glob
 import os
+from statistics import stdev
 
 import numpy as np
+import pandas as pd
 from matplotlib import pyplot as plt
 from scipy.optimize import curve_fit
 from tqdm import tqdm
@@ -303,3 +305,108 @@ def fit_gauss_mult(
 
             plt.pause(0.1)
             os.chdir("../..")
+
+
+def fit_wg(path, pix_pair):
+    plt.ion()
+
+    def gauss(x, A, x0, sigma):
+        return A * np.exp(-((x - x0) ** 2) / (2 * sigma**2))
+
+    os.chdir(path)
+
+    files = glob.glob("*.dat*")
+    file_name = files[0][:-4] + "-" + files[-1][:-4]
+
+    try:
+        os.chdir("delta_ts_data")
+    except FileNotFoundError:
+        raise ("\nFile with data not found")
+
+    csv_file_name = glob.glob("*{}*".format(file_name))[0]
+    if csv_file_name == []:
+        raise FileNotFoundError("\nFile with data not found")
+
+    data = pd.read_csv("{}".format(csv_file_name), index_col=0).T
+    try:
+        data_to_plot = data["{},{}".format(pix_pair[0], pix_pair[1])]
+    except KeyError:
+        print("\nThe requested pixel pair is not found")
+    del data
+    # Check if there any finite values
+    if not np.any(~np.isnan(data_to_plot)):
+        raise ValueError("\nNo data for the requested pixel pair available")
+
+    data_to_plot = data_to_plot.dropna()
+    data_to_plot = np.array(data_to_plot)
+    data_to_plot = np.delete(data_to_plot, np.argwhere(data_to_plot < -20e3))
+    data_to_plot = np.delete(data_to_plot, np.argwhere(data_to_plot > 20e3))
+
+    os.chdir("..")
+    plt.rcParams.update({"font.size": 22})
+
+    bins = np.linspace(np.min(data_to_plot), np.max(data_to_plot), 100)
+
+    n, b, p = plt.hist(data_to_plot, bins=bins, color="teal")
+    plt.close("all")
+
+    try:
+        n_argmax = np.argmax(n)
+        cp_pos = (bins[n_argmax] + bins[n_argmax + 1]) / 2
+    except ValueError:
+        print("Couldn't find position of histogram max")
+
+    data_to_plot = np.delete(
+        data_to_plot, np.argwhere(data_to_plot < b[n_argmax] - 1000)
+    )
+    data_to_plot = np.delete(
+        data_to_plot, np.argwhere(data_to_plot > b[n_argmax] + 1000)
+    )
+
+    bins = np.arange(np.min(data_to_plot), np.max(data_to_plot), 10)
+
+    n, b, p = plt.hist(data_to_plot, bins=bins, color="teal")
+    plt.close("all")
+
+    sigma = 50
+
+    par, covariance = curve_fit(gauss, b[:-1], n, p0=[max(n), cp_pos, sigma])
+    fit_plot = gauss(b, par[0], par[1], par[2])
+
+    st_dev = stdev(data_to_plot)
+
+    plt.figure(figsize=(16, 10))
+    plt.xlabel("\u0394t [ps]")
+    plt.ylabel("Timestamps [-]")
+    plt.plot(b[:-1], n, "o", color="teal", label="data")
+    plt.plot(
+        b,
+        fit_plot,
+        "-",
+        color="salmon",
+        label="fit\n"
+        "\u03C3_f={p1} ps\n"
+        "\u03BC={p2} ps\n"
+        "\u03C3_s={p3} ps".format(
+            p1=format(par[-1], ".2f"),
+            p2=format(par[1], ".2f"),
+            p3=format(st_dev, ".2f"),
+        ),
+    )
+    plt.legend(loc="best")
+
+    try:
+        os.chdir("results/gauss_fit")
+    except Exception:
+        os.makedirs("results/gauss_fit")
+        os.chdir("results/gauss_fit")
+
+    plt.savefig(
+        "{file}_pixels"
+        "{pix1},{pix2}_fit.png".format(
+            file=file_name, pix1=pix_pair[0], pix2=pix_pair[1]
+        )
+    )
+
+    plt.pause(0.1)
+    os.chdir("../..")

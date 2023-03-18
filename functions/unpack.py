@@ -94,7 +94,13 @@ def unpack_binary_flex(filename, timestamps: int = 512):
     return data_matrix
 
 
-def unpack_numpy(filename, board_number: str, timestamps: int = 512, pix: list = []):
+def unpack_numpy(
+    filename,
+    board_number: str,
+    timestamps: int = 512,
+    pix: list = [],
+    app_mask: bool = True,
+):
     """Unpack binary data from LinoSPAD2.
 
     Function for unpacking the .dat data files using the calibration
@@ -206,11 +212,24 @@ def unpack_numpy(filename, board_number: str, timestamps: int = 512, pix: list =
 
     data_matrix = data_matrix[pix, :]
 
+    if app_mask is True:
+        path_to_back = os.getcwd()
+        path_to_mask = os.path.realpath(__file__) + "/../.." + "/masks"
+        os.chdir(path_to_mask)
+        file_mask = glob("*{}*".format(board_number))[0]
+        mask = np.genfromtxt(file_mask).astype(int)
+        data_matrix[mask] = -1
+        os.chdir(path_to_back)
+
     return data_matrix
 
 
 def unpack_numpy_dict(
-    filename, board_number: str, timestamps: int = 512, pix: list = []
+    filename,
+    board_number: str,
+    timestamps: int = 512,
+    pix: list = [],
+    app_mask: bool = True,
 ):
     """Unpack binary data from LinoSPAD2.
 
@@ -315,11 +334,22 @@ def unpack_numpy_dict(
             data_matrix[i, ind] - data_matrix[i, ind] % 140
         ) * 17.857 + cal_mat[i, (data_matrix[i, ind] % 140)]
 
+    if app_mask is True:
+        path_to_back = os.getcwd()
+        path_to_mask = os.path.realpath(__file__) + "/../.." + "/masks"
+        os.chdir(path_to_mask)
+        file_mask = glob("*{}*".format(board_number))[0]
+        mask = np.genfromtxt(file_mask).astype(int)
+        os.chdir(path_to_back)
+
     output = {}
     if not np.any(pix):
         pix = np.arange(256)
     for px in pix:
-        output["{}".format(px)] = data_matrix[px]
+        if px in mask:
+            output["{}".format(px)] = np.full(len(data_matrix[px]), -1)
+        else:
+            output["{}".format(px)] = data_matrix[px]
 
     ins = np.arange(timestamps, timestamps * (cycles + 1), timestamps)
 

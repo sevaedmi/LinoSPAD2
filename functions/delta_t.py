@@ -992,8 +992,8 @@ def deltas_save(
         )
 
         # Calculate and collect timestamp differences
-        for q in data.keys():
-            for w in data.keys():
+        for q in pix:
+            for w in pix:
                 if w <= q:
                     continue
 
@@ -1001,13 +1001,15 @@ def deltas_save(
                 # Follows the cycle number in the first array
                 cycle = 0
                 # Follows the cycle number in the second array
-                cyc2 = np.argwhere(data[w] < 0)
+                cyc2 = np.argwhere(data["{}".format(w)] < 0)
                 cyc2 = np.insert(cyc2, 0, -1)
-                for i, tmsp1 in enumerate(data[q]):
+                for i, tmsp1 in enumerate(data["{}".format(q)]):
                     if tmsp1 == -2:
                         cycle += 1
                         continue
-                    deltas = data[w][cyc2[cycle] + 1 : cyc2[cycle + 1]] - tmsp1
+                    deltas = (
+                        data["{}".format(w)][cyc2[cycle] + 1 : cyc2[cycle + 1]] - tmsp1
+                    )
                     # Collect deltas in the requested window
                     ind = np.where(np.abs(deltas) < delta_window)[0]
                     deltas_all["{},{}".format(q, w)].extend(deltas[ind])
@@ -1022,6 +1024,7 @@ def deltas_save(
                 #         deltas = data[q][cyc2[cycle] + 1 : cyc2[cycle + 1]] - tmsp1
                 #         ind = np.where(np.abs(deltas) < delta_window)[0]
                 #         deltas_all["{},{}".format(q, w)].extend(deltas[ind])
+
     # Save data as a .csv file
     data_for_plot_df = pd.DataFrame.from_dict(deltas_all, orient="index")
     try:
