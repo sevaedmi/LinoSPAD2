@@ -940,7 +940,12 @@ def plot_grid_mult_2212(
 
 
 def deltas_save(
-    path, pix, board_number: str, timestamps: int = 512, delta_window: float = 50e3
+    path,
+    pix,
+    board_number: str,
+    fw_ver: str,
+    timestamps: int = 512,
+    delta_window: float = 50e3,
 ):
     """Calculate and save timestamp differences into .csv file.
 
@@ -967,6 +972,9 @@ def deltas_save(
     None.
 
     """
+    # parameter type check
+    if isinstance(fw_ver, str) is not True:
+        raise TypeError("'fw_ver' should be string, '2212b' or '2208'")
     os.chdir(path)
 
     files_all = glob.glob("*.dat*")
@@ -983,56 +991,82 @@ def deltas_save(
 
     # Collect the data for the required pixels
     print("\n> > > Collecting data for the requested pixels < < <\n")
-    for i in tqdm(range(ceil(len(files_all))), desc="Collecting data"):
-        file = files_all[i]
+    if fw_ver == "2208":
+        for i in tqdm(range(ceil(len(files_all))), desc="Collecting data"):
+            file = files_all[i]
 
-        # Unpack data for the requested pixels into dictionary
-        data = f_up.unpack_numpy_dict(
-            file, board_number="A5", timestamps=timestamps, pix=pix
-        )
+            # Unpack data for the requested pixels into dictionary
+            data = f_up.unpack_numpy_dict(
+                file, board_number="A5", timestamps=timestamps, pix=pix
+            )
 
-        # Calculate and collect timestamp differences
-        for q in pix:
-            for w in pix:
-                if w <= q:
-                    continue
-
-                # if len(data[q]) >= len(data[w]):
-                # Follows the cycle number in the first array
-                cycle = 0
-                # Follows the cycle number in the second array
-                cyc2 = np.argwhere(data["{}".format(w)] < 0)
-                cyc2 = np.insert(cyc2, 0, -1)
-                for i, tmsp1 in enumerate(data["{}".format(q)]):
-                    if tmsp1 == -2:
-                        cycle += 1
+            # Calculate and collect timestamp differences
+            for q in pix:
+                for w in pix:
+                    if w <= q:
                         continue
-                    deltas = (
-                        data["{}".format(w)][cyc2[cycle] + 1 : cyc2[cycle + 1]] - tmsp1
-                    )
-                    # Collect deltas in the requested window
-                    ind = np.where(np.abs(deltas) < delta_window)[0]
-                    deltas_all["{},{}".format(q, w)].extend(deltas[ind])
-                # else:
-                #     cycle = 0
-                #     cyc2 = np.argwhere(data[q] < 0)
-                #     cyc2 = np.insert(cyc2, 0, -1)
-                #     for i, tmsp1 in enumerate(data[w]):
-                #         if tmsp1 == -1:
-                #             cycle += 1
-                #             continue
-                #         deltas = data[q][cyc2[cycle] + 1 : cyc2[cycle + 1]] - tmsp1
-                #         ind = np.where(np.abs(deltas) < delta_window)[0]
-                #         deltas_all["{},{}".format(q, w)].extend(deltas[ind])
 
+                    # Follows the cycle number in the first array
+                    cycle = 0
+                    # Follows the cycle number in the second array
+                    cyc2 = np.argwhere(data["{}".format(w)] < 0)
+                    cyc2 = np.insert(cyc2, 0, -1)
+                    for i, tmsp1 in enumerate(data["{}".format(q)]):
+                        if tmsp1 == -2:
+                            cycle += 1
+                            continue
+                        deltas = (
+                            data["{}".format(w)][cyc2[cycle] + 1 : cyc2[cycle + 1]]
+                            - tmsp1
+                        )
+                        # Collect deltas in the requested window
+                        ind = np.where(np.abs(deltas) < delta_window)[0]
+                        deltas_all["{},{}".format(q, w)].extend(deltas[ind])
+    elif fw_ver == "2212b":
+        for i in tqdm(range(ceil(len(files_all))), desc="Collecting data"):
+            file = files_all[i]
+
+            # Unpack data for the requested pixels into dictionary
+            data = f_up.unpack_2212(
+                file, board_number=board_number, fw_ver="block", timestamps=timestamps
+            )
+
+            # Calculate and collect timestamp differences
+            for q in pix:
+                for w in pix:
+                    if w <= q:
+                        continue
+
+                    # Follows the cycle number in the first array
+                    cycle = 0
+                    # Follows the cycle number in the second array
+                    cyc2 = np.argwhere(data["{}".format(w)] < 0)
+                    cyc2 = np.insert(cyc2, 0, -1)
+                    for i, tmsp1 in enumerate(data["{}".format(q)]):
+                        if tmsp1 == -2:
+                            cycle += 1
+                            continue
+                        deltas = (
+                            data["{}".format(w)][cyc2[cycle] + 1 : cyc2[cycle + 1]]
+                            - tmsp1
+                        )
+                        # Collect deltas in the requested window
+                        ind = np.where(np.abs(deltas) < delta_window)[0]
+                        deltas_all["{},{}".format(q, w)].extend(deltas[ind])
+
+    deltas_out = {
+        k: v for k, v in deltas_all.items() if len(deltas_all[k]) > 10 and v != []
+    }
+    del deltas_all
     # Save data as a .csv file
-    data_for_plot_df = pd.DataFrame.from_dict(deltas_all, orient="index")
+    data_for_plot_df = pd.DataFrame.from_dict(deltas_out, orient="index")
+    data_for_plot_df = data_for_plot_df.T
     try:
         os.chdir("delta_ts_data")
     except FileNotFoundError:
         os.mkdir("delta_ts_data")
         os.chdir("delta_ts_data")
-    data_for_plot_df.to_csv("{}_delta_t_data.csv".format(out_file_name))
+    data_for_plot_df.to_csv("{}.csv".format(out_file_name))
     os.chdir("..")
 
 
@@ -1103,10 +1137,6 @@ def delta_cp(
     except FileNotFoundError:
         pass
 
-    os.chdir("delta_ts_data")
-
-    data = pd.read_csv("{}_delta_t_data.csv".format(csv_file_name), index_col=0).T
-    os.chdir("..")
     plt.rcParams.update({"font.size": 22})
 
     if len(pix) > 2:
@@ -1128,29 +1158,14 @@ def delta_cp(
             if w <= q:
                 continue
             axs[q][w - 1].axes.set_axis_on()
-
-            if "Ne" and "540" in path:
-                chosen_color = "seagreen"
-            elif "Ne" and "656" in path:
-                chosen_color = "orangered"
-            elif "Ne" and "585" in path:
-                chosen_color = "goldenrod"
-            elif "Ar" in path:
-                chosen_color = "mediumslateblue"
-            else:
-                chosen_color = "salmon"
-
             try:
-                data_to_plot = data["{},{}".format(pix[q], pix[w])]
-            except KeyError:
-                print("\nThe requested pixel pair is not found")
+                data_to_plot = pd.read_csv(
+                    "delta_ts_data/{}.csv".format(csv_file_name),
+                    usecols=["{},{}".format(pix[q], pix[w])],
+                ).dropna()
+            except ValueError:
                 continue
 
-            # Check if there any finite values
-            if not np.any(~np.isnan(data_to_plot)):
-                continue
-
-            data_to_plot = data_to_plot.dropna()
             data_to_plot = np.array(data_to_plot)
             data_to_plot = np.delete(
                 data_to_plot, np.argwhere(data_to_plot < range_left)
@@ -1168,6 +1183,17 @@ def delta_cp(
             except ValueError:
                 print("\nCouldn't calculate bins: probably not enough delta ts.")
                 continue
+
+            if "Ne" and "540" in path:
+                chosen_color = "seagreen"
+            elif "Ne" and "656" in path:
+                chosen_color = "orangered"
+            elif "Ne" and "585" in path:
+                chosen_color = "goldenrod"
+            elif "Ar" in path:
+                chosen_color = "mediumslateblue"
+            else:
+                chosen_color = "salmon"
 
             if len(pix) > 2:
                 axs[q][w - 1].set_xlabel("\u0394t [ps]")

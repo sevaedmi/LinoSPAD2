@@ -345,7 +345,7 @@ def plot_valid_mult(
     print("> > > Plotting valid timestamps, Working in {} < < <\n".format(path))
     for i in tqdm(range(len(files_all)), desc="Collecting data"):
         file = files_all[i]
-        data = f_up.unpack_numpy(file, board_number, timestamps)
+        data = f_up.unpack_numpy(file, board_number, timestamps, app_mask=app_mask)
 
         for j in range(len(data)):
             valid_per_pixel[j] = valid_per_pixel[j] + len(
@@ -354,14 +354,14 @@ def plot_valid_mult(
             )
 
     # Apply mask if requested
-    if app_mask is True:
-        path_to_back = os.getcwd()
-        path_to_mask = os.path.realpath(__file__) + "/../.." + "/masks"
-        os.chdir(path_to_mask)
-        file_mask = glob.glob("*{}*".format(board_number))[0]
-        mask = np.genfromtxt(file_mask).astype(int)
-        valid_per_pixel[mask] = 0
-        os.chdir(path_to_back)
+    # if app_mask is True:
+    #     path_to_back = os.getcwd()
+    #     path_to_mask = os.path.realpath(__file__) + "/../.." + "/masks"
+    #     os.chdir(path_to_mask)
+    #     file_mask = glob.glob("*{}*".format(board_number))[0]
+    #     mask = np.genfromtxt(file_mask).astype(int)
+    #     valid_per_pixel[mask] = 0
+    #     os.chdir(path_to_back)
 
     peak = int(np.max(valid_per_pixel))
 
@@ -565,8 +565,8 @@ def plot_valid_FW2212_mult(
 
     print("\n> > > Collecting data, Working in {} < < <\n".format(path))
 
-    for i, file in enumerate(files):
-        data = f_up.unpack_2212(file, board_number, fw_ver, timestamps)
+    for i in tqdm(range(len(files)), desc="Collecting data"):
+        data = f_up.unpack_2212(files[i], board_number, fw_ver, timestamps)
 
         for i in range(0, 256):
             a = np.array(data["{}".format(i)])

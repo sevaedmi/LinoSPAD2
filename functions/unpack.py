@@ -455,7 +455,7 @@ def unpack_2212(filename, board_number, fw_ver, timestamps: int = 512):
             # Reaching the end of a cycle, assign a '-1' to each pixel
             if not cycler % (32 * 65 * timestamps) and cycler != 0:
                 for i in range(256):
-                    timestamp_list["{}".format(i)].append(-1)
+                    timestamp_list["{}".format(i)].append(-2)
             # Next TDC
             if not cycler % (32 * timestamps) and cycler != 0:
                 tdc += 1

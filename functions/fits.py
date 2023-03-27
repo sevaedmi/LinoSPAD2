@@ -307,11 +307,11 @@ def fit_gauss_mult(
             os.chdir("../..")
 
 
-def fit_wg(path, pix_pair):
+def fit_wg(path, pix_pair, window: float = 5e3):
     plt.ion()
 
-    def gauss(x, A, x0, sigma):
-        return A * np.exp(-((x - x0) ** 2) / (2 * sigma**2))
+    def gauss(x, A, x0, sigma, C):
+        return A * np.exp(-((x - x0) ** 2) / (2 * sigma**2)) + C
 
     os.chdir(path)
 
@@ -327,7 +327,9 @@ def fit_wg(path, pix_pair):
     if csv_file_name == []:
         raise FileNotFoundError("\nFile with data not found")
 
-    data = pd.read_csv("{}".format(csv_file_name), index_col=0).T
+    data = pd.read_csv(
+        "{}".format(csv_file_name), usecols=["{},{}".format(pix_pair[0], pix_pair[1])]
+    )
     try:
         data_to_plot = data["{},{}".format(pix_pair[0], pix_pair[1])]
     except KeyError:
@@ -357,33 +359,46 @@ def fit_wg(path, pix_pair):
         print("Couldn't find position of histogram max")
 
     data_to_plot = np.delete(
-        data_to_plot, np.argwhere(data_to_plot < b[n_argmax] - 1000)
+        data_to_plot, np.argwhere(data_to_plot < b[n_argmax] - window)
     )
     data_to_plot = np.delete(
-        data_to_plot, np.argwhere(data_to_plot > b[n_argmax] + 1000)
+        data_to_plot, np.argwhere(data_to_plot > b[n_argmax] + window)
     )
 
-    bins = np.arange(np.min(data_to_plot), np.max(data_to_plot), 10)
+    bins = np.arange(np.min(data_to_plot), np.max(data_to_plot), 50)
 
     n, b, p = plt.hist(data_to_plot, bins=bins, color="teal")
     plt.close("all")
 
-    sigma = 50
+    sigma = 150
 
-    par, covariance = curve_fit(gauss, b[:-1], n, p0=[max(n), cp_pos, sigma])
-    fit_plot = gauss(b, par[0], par[1], par[2])
+    par, covariance = curve_fit(gauss, b[:-1], n, p0=[max(n), cp_pos, sigma, 1500])
+    # par, covariance = curve_fit(gauss, b[:-1], n, p0=[500, 3000, sigma, 1500])
+    fit_plot = gauss(b, par[0], par[1], par[2], par[3])
 
     st_dev = stdev(data_to_plot)
+
+    if "Ne" and "540" in path:
+        chosen_color = "seagreen"
+    elif "Ne" and "656" in path:
+        chosen_color = "orangered"
+    elif "Ne" and "585" in path:
+        chosen_color = "goldenrod"
+    elif "Ar" in path:
+        chosen_color = "mediumslateblue"
+    else:
+        chosen_color = "salmon"
 
     plt.figure(figsize=(16, 10))
     plt.xlabel("\u0394t [ps]")
     plt.ylabel("Timestamps [-]")
-    plt.plot(b[:-1], n, "o", color="teal", label="data")
+    plt.hist(data_to_plot, bins=100, color=chosen_color, label="data")
+    # plt.plot(b[:-1], n, "o", color="teal", label="data")
     plt.plot(
         b,
         fit_plot,
         "-",
-        color="salmon",
+        color="teal",
         label="fit\n"
         "\u03C3_f={p1} ps\n"
         "\u03BC={p2} ps\n"
