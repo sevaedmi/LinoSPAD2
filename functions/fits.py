@@ -365,14 +365,18 @@ def fit_wg(path, pix_pair, window: float = 5e3):
         data_to_plot, np.argwhere(data_to_plot > b[n_argmax] + window)
     )
 
-    bins = np.arange(np.min(data_to_plot), np.max(data_to_plot), 50)
+    bins = np.arange(np.min(data_to_plot), np.max(data_to_plot), 100)
 
     n, b, p = plt.hist(data_to_plot, bins=bins, color="teal")
     plt.close("all")
 
     sigma = 150
 
-    par, covariance = curve_fit(gauss, b[:-1], n, p0=[max(n), cp_pos, sigma, 1500])
+    av_bkg = np.average(n)
+
+    par, pcov = curve_fit(gauss, b[:-1], n, p0=[max(n), cp_pos, sigma, av_bkg])
+    perr = np.sqrt(np.diag(pcov))
+    vis_er = par[0] / par[3] ** 2 * 100 * perr[-1]
     # par, covariance = curve_fit(gauss, b[:-1], n, p0=[500, 3000, sigma, 1500])
     fit_plot = gauss(b, par[0], par[1], par[2], par[3])
 
@@ -390,22 +394,36 @@ def fit_wg(path, pix_pair, window: float = 5e3):
         chosen_color = "salmon"
 
     plt.figure(figsize=(16, 10))
-    plt.xlabel("\u0394t [ps]")
+    plt.xlabel(r"$\Delta$ [ps]")
     plt.ylabel("Timestamps [-]")
-    plt.hist(data_to_plot, bins=100, color=chosen_color, label="data")
-    # plt.plot(b[:-1], n, "o", color="teal", label="data")
+    # plt.hist(data_to_plot, bins=100, color=chosen_color, label="data")
+    # plt.plot(b[:-1], n, "o", color=chosen_color, label="data")
+    plt.step(
+        b[:-1],
+        n,
+        color=chosen_color,
+        label="data",
+    )
     plt.plot(
         b,
         fit_plot,
         "-",
         color="teal",
         label="fit\n"
-        "\u03C3_f={p1} ps\n"
-        "\u03BC={p2} ps\n"
-        "\u03C3_s={p3} ps".format(
-            p1=format(par[-1], ".2f"),
-            p2=format(par[1], ".2f"),
-            p3=format(st_dev, ".2f"),
+        "\u03C3={p1}\u00B1{pe1} ps\n"
+        "\u03BC={p2}\u00B1{pe2} ps\n"
+        "vis={vis}\u00B1{vis_er} %\n"
+        "bkg={bkg}\u00B1{bkg_er}".format(
+            # "\u03C3_s={p3} ps".format(
+            p1=format(par[2], ".1f"),
+            p2=format(par[1], ".1f"),
+            pe1=format(perr[2], ".1f"),
+            pe2=format(perr[1], ".1f"),
+            bkg=format(par[3], ".1f"),
+            bkg_er=format(perr[3], ".1f"),
+            vis=format(par[0] / par[3] * 100, ".1f"),
+            vis_er=format(vis_er, ".1f")
+            # p3=format(st_dev, ".2f"),
         ),
     )
     plt.legend(loc="best")

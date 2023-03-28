@@ -34,6 +34,10 @@ path_694_12_temp = "D:/LinoSPAD2/Data/board_A5/BNL/FW_2212_block/Ne_694/temp"
 
 path_700_12 = "D:/LinoSPAD2/Data/board_A5/BNL/FW_2212_block/Ne_700"
 
+path_700_12_temp = "D:/LinoSPAD2/Data/board_A5/BNL/FW_2212_block/Ne_700/temp"
+
+path_700_12_temp1 = "D:/LinoSPAD2/Data/board_A5/BNL/FW_2212_block/Ne_700/temp1"
+
 path_SPDC_12 = "D:/LinoSPAD2/Data/board_A5/BNL/FW_2212_block/SPDC"
 
 # =========================================================================
@@ -42,20 +46,20 @@ path_SPDC_12 = "D:/LinoSPAD2/Data/board_A5/BNL/FW_2212_block/SPDC"
 
 # mask = [70, 205, 212, 95, 157, 165, 57, 123, 187, 118, 251]
 
-delta_t.deltas_save(
-    path_700_12, pix=(3, 45), board_number="A5", timestamps=1000, fw_ver="2212b"
-)
+# delta_t.deltas_save(
+#     path_700_12, pix=(3, 45), board_number="A5", timestamps=1000, fw_ver="2212b"
+# )
 
-delta_t.delta_cp(
-    path_700_12,
-    pix=(3, 45, 100),
-    rewrite=True,
-    range_left=-10e3,
-    range_right=10e3,
-)
+# delta_t.delta_cp(
+#     path_700_12,
+#     pix=(3, 45, 100),
+#     rewrite=True,
+#     range_left=-20e3,
+#     range_right=20e3,
+# )
 
-# gf.fit_wg(path_700, pix_pair=(3, 51), window=10e3)
+gf.fit_wg(path_700_12, pix_pair=(3, 45), window=4e3)
 
-plot_valid.plot_valid_FW2212_mult(
-    path_700_12, board_number="A5", fw_ver="block", timestamps=1000, show_fig=True
-)
+# plot_valid.plot_valid_FW2212_mult(
+#     path_700_12, board_number="A5", fw_ver="block", timestamps=1000, show_fig=True
+# )
