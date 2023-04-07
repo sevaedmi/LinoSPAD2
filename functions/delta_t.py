@@ -32,6 +32,7 @@ functions:
 import glob
 import os
 import sys
+import time
 from math import ceil
 
 import numpy as np
@@ -818,7 +819,7 @@ def plot_grid_mult_2212(
 
                 for ii, tmsp1 in enumerate(data_pix["{}".format(pix[q])]):
                     # '-1' indicate an end of a cycle
-                    if tmsp1 == -1:
+                    if tmsp1 == -2:
                         cycle += 1
                         continue
                     for jj in range(cyc2[cycle] + 1, cyc2[cycle + 1]):
@@ -942,6 +943,7 @@ def plot_grid_mult_2212(
 def deltas_save(
     path,
     pix,
+    rewrite,
     board_number: str,
     fw_ver: str,
     timestamps: int = 512,
@@ -959,6 +961,8 @@ def deltas_save(
     pix : list
         List of pixel numbers for which the timestamp differences should be calculated
         and saved.
+    rewrite : bool
+        Switch for rewriting the csv file if it already exists.
     board_number : str
         The LinoSPAD2 daughterboard number.
     timestamps : int, optional
@@ -975,25 +979,47 @@ def deltas_save(
     # parameter type check
     if isinstance(fw_ver, str) is not True:
         raise TypeError("'fw_ver' should be string, '2212b' or '2208'")
+    if isinstance(rewrite, bool) is not True:
+        raise TypeError("'rewrite' should be boolean")
     os.chdir(path)
 
     files_all = glob.glob("*.dat*")
 
     out_file_name = files_all[0][:-4] + "-" + files_all[-1][:-4]
 
-    # Prepare a dictionary for output
-    deltas_all = {}
-    for q in pix:
-        for w in pix:
-            if w <= q:
-                continue
-            deltas_all["{},{}".format(q, w)] = []
+    # check if plot exists and if it should be rewrited
+    try:
+        os.chdir("delta_ts_data")
+        if os.path.isfile("{name}.csv".format(name=out_file_name)):
+            if rewrite is True:
+                print("\n! ! ! csv file already exists and will be rewritten. ! ! !\n")
+                for i in range(5):
+                    print("\n! ! ! Deleting the file in {} ! ! !\n".format(i))
+                    time.sleep(1)
+                os.remove("{}.csv".format(out_file_name))
+            else:
+                # print("\n> > > Plot already exists. < < <\n")
+                sys.exit(
+                    "\n csv file already exists, 'rewrite' set to 'False', exiting."
+                )
+        os.chdir("..")
+
+    except FileNotFoundError:
+        pass
 
     # Collect the data for the required pixels
     print("\n> > > Collecting data for the requested pixels < < <\n")
     if fw_ver == "2208":
         for i in tqdm(range(ceil(len(files_all))), desc="Collecting data"):
             file = files_all[i]
+
+            # Prepare a dictionary for output
+            deltas_all = {}
+            for q in pix:
+                for w in pix:
+                    if w <= q:
+                        continue
+                    deltas_all["{},{}".format(q, w)] = []
 
             # Unpack data for the requested pixels into dictionary
             data = f_up.unpack_numpy_dict(
@@ -1022,9 +1048,39 @@ def deltas_save(
                         # Collect deltas in the requested window
                         ind = np.where(np.abs(deltas) < delta_window)[0]
                         deltas_all["{},{}".format(q, w)].extend(deltas[ind])
+            deltas_out = {
+                k: v
+                for k, v in deltas_all.items()
+                if len(deltas_all[k]) > 10 and v != []
+            }
+            del deltas_all
+            # Save data as a .csv file
+            data_for_plot_df = pd.DataFrame.from_dict(deltas_out, orient="index")
+            data_for_plot_df = data_for_plot_df.T
+            try:
+                os.chdir("delta_ts_data")
+            except FileNotFoundError:
+                os.mkdir("delta_ts_data")
+                os.chdir("delta_ts_data")
+            csv_file = glob.glob("*{}*".format(out_file_name))
+            if csv_file != []:
+                data_for_plot_df.to_csv(
+                    "{}.csv".format(out_file_name), mode="a", header=False
+                )
+            else:
+                data_for_plot_df.to_csv("{}.csv".format(out_file_name))
+            os.chdir("..")
     elif fw_ver == "2212b":
         for i in tqdm(range(ceil(len(files_all))), desc="Collecting data"):
             file = files_all[i]
+
+            # Prepare a dictionary for output
+            deltas_all = {}
+            for q in pix:
+                for w in pix:
+                    if w <= q:
+                        continue
+                    deltas_all["{},{}".format(q, w)] = []
 
             # Unpack data for the requested pixels into dictionary
             data = f_up.unpack_2212(
@@ -1054,20 +1110,28 @@ def deltas_save(
                         ind = np.where(np.abs(deltas) < delta_window)[0]
                         deltas_all["{},{}".format(q, w)].extend(deltas[ind])
 
-    deltas_out = {
-        k: v for k, v in deltas_all.items() if len(deltas_all[k]) > 10 and v != []
-    }
-    del deltas_all
-    # Save data as a .csv file
-    data_for_plot_df = pd.DataFrame.from_dict(deltas_out, orient="index")
-    data_for_plot_df = data_for_plot_df.T
-    try:
-        os.chdir("delta_ts_data")
-    except FileNotFoundError:
-        os.mkdir("delta_ts_data")
-        os.chdir("delta_ts_data")
-    data_for_plot_df.to_csv("{}.csv".format(out_file_name))
-    os.chdir("..")
+            deltas_out = {
+                k: v
+                for k, v in deltas_all.items()
+                if len(deltas_all[k]) > 10 and v != []
+            }
+            del deltas_all
+            # Save data as a .csv file
+            data_for_plot_df = pd.DataFrame.from_dict(deltas_out, orient="index")
+            data_for_plot_df = data_for_plot_df.T
+            try:
+                os.chdir("delta_ts_data")
+            except FileNotFoundError:
+                os.mkdir("delta_ts_data")
+                os.chdir("delta_ts_data")
+            csv_file = glob.glob("*{}*".format(out_file_name))
+            if csv_file != []:
+                data_for_plot_df.to_csv(
+                    "{}.csv".format(out_file_name), mode="a", header=False
+                )
+            else:
+                data_for_plot_df.to_csv("{}.csv".format(out_file_name))
+            os.chdir("..")
 
 
 def delta_cp(
@@ -1127,10 +1191,10 @@ def delta_cp(
         os.chdir("results/delta_t")
         if os.path.isfile("{name}_delta_t_grid.png".format(name=csv_file_name)):
             if rewrite is True:
-                print("\n> > > Plot already exists and will be rewritten. < < <\n")
+                print("\n! ! ! Plot already exists and will be rewritten. ! ! !\n")
             else:
                 # print("\n> > > Plot already exists. < < <\n")
-                sys.exit("\nPlot already exists, 'rewrite' set to 'False'.")
+                sys.exit("\nPlot already exists, 'rewrite' set to 'False', exiting.")
         os.chdir("../..")
         # else:
         #     raise TypeError
