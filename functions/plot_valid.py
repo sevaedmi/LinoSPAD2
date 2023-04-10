@@ -31,7 +31,14 @@ from tqdm import tqdm
 from functions import unpack as f_up
 
 
-def plot_pixel_hist(path, pix1, timestamps: int = 512, show_fig: bool = False):
+def plot_pixel_hist(
+    path,
+    pix1,
+    fw_ver: str,
+    board_number: str,
+    timestamps: int = 512,
+    show_fig: bool = False,
+):
     """Plot a histogram for each pixel in the given range.
 
     Parameters
@@ -51,6 +58,9 @@ def plot_pixel_hist(path, pix1, timestamps: int = 512, show_fig: bool = False):
     None.
 
     """
+    # parameter type check
+    if isinstance(fw_ver, str) is not True:
+        raise TypeError("'fw_ver' should be string")
     os.chdir(path)
 
     DATA_FILES = glob.glob("*.dat*")
@@ -62,7 +72,12 @@ def plot_pixel_hist(path, pix1, timestamps: int = 512, show_fig: bool = False):
     for i, num in enumerate(DATA_FILES):
         print("> > > Plotting pixel histograms, Working on {} < < <\n".format(num))
 
-        data = f_up.unpack_numpy(num, timestamps)
+        if fw_ver == "2208":
+            data = f_up.unpack_numpy(num, timestamps)
+        elif fw_ver == "2212b":
+            data = f_up.unpack_2212(
+                num, board_number, fw_ver="block", timestamps=timestamps
+            )
 
         if pix1 is None:
             pixels = np.arange(145, 165, 1)
@@ -71,8 +86,12 @@ def plot_pixel_hist(path, pix1, timestamps: int = 512, show_fig: bool = False):
         for i, pixel in enumerate(pixels):
             plt.figure(figsize=(16, 10))
             plt.rcParams.update({"font.size": 22})
-            bins = np.arange(0, 4e9, 17.867 * 1e6)  # bin size of 17.867 us
-            plt.hist(data[pixel], bins=bins, color="teal")
+            # bins = np.arange(0, 4e9, 17.867 * 1e6)  # bin size of 17.867 us
+            bins = np.arange(0, 4e9, 200)
+            if fw_ver == "2208":
+                plt.hist(data[pixel], bins=bins, color="teal")
+            if fw_ver == "2212b":
+                plt.hist(data["{}".format(pixel)], bins=bins, color="teal")
             plt.xlabel("Time [ms]")
             plt.ylabel("Counts [-]")
             plt.title("Pixel {}".format(pixel))
