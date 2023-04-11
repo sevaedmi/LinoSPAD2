@@ -987,7 +987,7 @@ def deltas_save(
 
     out_file_name = files_all[0][:-4] + "-" + files_all[-1][:-4]
 
-    # check if plot exists and if it should be rewrited
+    # check if csv file exists and if it should be rewrited
     try:
         os.chdir("delta_ts_data")
         if os.path.isfile("{name}.csv".format(name=out_file_name)):
@@ -1003,7 +1003,6 @@ def deltas_save(
                     "\n csv file already exists, 'rewrite' set to 'False', exiting."
                 )
         os.chdir("..")
-
     except FileNotFoundError:
         pass
 
@@ -1023,7 +1022,7 @@ def deltas_save(
 
             # Unpack data for the requested pixels into dictionary
             data = f_up.unpack_numpy_dict(
-                file, board_number="A5", timestamps=timestamps, pix=pix
+                file, board_number=board_number, timestamps=timestamps, pix=pix
             )
 
             # Calculate and collect timestamp differences
@@ -1127,7 +1126,7 @@ def deltas_save(
             csv_file = glob.glob("*{}*".format(out_file_name))
             if csv_file != []:
                 data_for_plot_df.to_csv(
-                    "{}.csv".format(out_file_name), mode="a", header=False
+                    "{}.csv".format(out_file_name), mode="a", index=False
                 )
             else:
                 data_for_plot_df.to_csv("{}.csv".format(out_file_name))

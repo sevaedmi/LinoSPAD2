@@ -16,7 +16,7 @@ files = glob.glob("*.dat*")
 valid_per_pixel = np.zeros(256)
 
 for i, file in enumerate(files):
-    data = unpack.unpack_2212(file, board_number="A5", fw_ver="block", timestamps=160)
+    data = unpack.unpack_2212(file, board_number="A5", fw_ver="block", timestamps=200)
 
     for i in range(0, 256):
         a = np.array(data["{}".format(i)])

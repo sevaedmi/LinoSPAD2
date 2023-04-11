@@ -73,7 +73,7 @@ def plot_pixel_hist(
         print("> > > Plotting pixel histograms, Working on {} < < <\n".format(num))
 
         if fw_ver == "2208":
-            data = f_up.unpack_numpy(num, timestamps)
+            data = f_up.unpack_numpy(num, board_number, timestamps)
         elif fw_ver == "2212b":
             data = f_up.unpack_2212(
                 num, board_number, fw_ver="block", timestamps=timestamps
@@ -87,7 +87,7 @@ def plot_pixel_hist(
             plt.figure(figsize=(16, 10))
             plt.rcParams.update({"font.size": 22})
             # bins = np.arange(0, 4e9, 17.867 * 1e6)  # bin size of 17.867 us
-            bins = np.arange(0, 4e9, 200)
+            bins = np.linspace(0, 4e9, 200)
             if fw_ver == "2208":
                 plt.hist(data[pixel], bins=bins, color="teal")
             if fw_ver == "2212b":
