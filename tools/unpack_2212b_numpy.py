@@ -146,3 +146,35 @@ path = "D:/LinoSPAD2/Data/board_A5/BNL/FW_2212_block/Ne_703"
 deltas_save_2212_numpy(
     path, board_number="A5", pixels=[3, 45], rewrite=True, timestamps=1000
 )
+
+
+# =============================================================================
+#
+# =============================================================================
+
+
+import os
+
+import numpy as np
+import pandas as pd
+from matplotlib import pyplot as plt
+
+file = "D:/LinoSPAD2/Data/board_A5/BNL/FW_2212_block/Ne_703/delta_ts_data/0000014157-0000014256.csv"
+data = pd.read_csv(file)
+
+for column in data.columns:
+    a = data[data[column].str.contains(",")].index
+    data = pd.DataFrame(data[column].drop(labels=np.array(a), axis=0))
+
+data_to_plot = np.array(data["3,45"]).astype(float)
+data_to_plot = np.delete(data_to_plot, np.argwhere(data_to_plot < -20e3))
+data_to_plot = np.delete(data_to_plot, np.argwhere(data_to_plot > 20e3))
+bins = np.linspace(
+    np.min(data_to_plot),
+    np.max(data_to_plot),
+    100,
+)
+
+plt.figure()
+plt.hist(data_to_plot, bins=bins)
+plt.show()

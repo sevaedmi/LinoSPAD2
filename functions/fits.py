@@ -380,8 +380,6 @@ def fit_wg(path, pix_pair, window: float = 5e3):
     # par, covariance = curve_fit(gauss, b[:-1], n, p0=[500, 3000, sigma, 1500])
     fit_plot = gauss(b, par[0], par[1], par[2], par[3])
 
-    st_dev = stdev(data_to_plot)
-
     if "Ne" and "540" in path:
         chosen_color = "seagreen"
     elif "Ne" and "656" in path:
