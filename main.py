@@ -16,6 +16,8 @@ from functions import plot_valid
 
 path_test = "D:/LinoSPAD2/Data/board_A5/FW 2212 block/Ne/asdf"
 
+path_123 = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/release_2212/release_2212/shared/data"
+
 path_NL11_noise_check = "D:/LinoSPAD2/Data/board_NL11/BNL/FW_2212b/noise_check"
 
 path_NL11_703_12 = "D:/LinoSPAD2/Data/board_NL11/BNL/FW_2212b/Ne_703"
@@ -46,40 +48,24 @@ path_A5_693_12 = "D:/LinoSPAD2/Data/board_A5/BNL/FW_2212_block/Ne_693"
 # )
 
 delta_t.deltas_save_numpy(
-    path_A5_703_12,
-    pix=(3, 45, 50),
+    path_NL11_703_12,
+    pix=(9, 220),
     rewrite=True,
-    board_number="A5",
-    timestamps=1000,
+    board_number="NL11",
+    timestamps=140,
     fw_ver="2212b",
 )
 
-# delta_t.delta_cp(
-#     path_A5_703_12,
-#     pix=(3, 45),
-#     rewrite=True,
-#     range_left=-10e3,
-#     range_right=10e3,
-# )
+delta_t.delta_cp(
+    path_NL11_703_12,
+    pix=(9, 220),
+    rewrite=True,
+    range_left=-20e3,
+    range_right=20e3,
+)
 
-# gf.fit_wg(path_NL11_703, pix_pair=(10, 55), window=4e3)
+gf.fit_wg(path_NL11_703_12, pix_pair=(9, 220), window=4e3)
 
 # plot_valid.plot_valid_FW2212_mult(
-#     path_NL11_703,
-#     board_number="NL11",
-#     fw_ver="block",
-#     timestamps=140,
-#     show_fig=False,
-#     app_mask=True
-# )
-
-# plot_valid.plot_valid(path_NL11_703, board_number="NL11", timestamps=140, show_fig=True)
-
-# plot_valid.plot_pixel_hist(
-#     path_NL11_703_12,
-#     pix1=[9, 10, 54, 55, 56],
-#     fw_ver="2208",
-#     board_number="NL11",
-#     timestamps=140,
-#     show_fig=True
+#     path_NL11_703_12, board_number="NL11", fw_ver="block", timestamps=140, show_fig=True
 # )

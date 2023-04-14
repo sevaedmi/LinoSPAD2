@@ -519,7 +519,7 @@ def plot_valid_mult(
 
 def plot_valid_FW2212_mult(
     path,
-    board_number,
+    board_number: str,
     fw_ver: str,
     timestamps: int = 512,
     scale: str = "linear",
@@ -540,7 +540,7 @@ def plot_valid_FW2212_mult(
         The LinoSPAD2 board number. Required for choosing the correct
         calibration data.
     fw_ver : str
-        2212 firmware version: 'block' or 'skip'.
+        2212 firmware version: '2212b' or '2212s'.
     timestamps : int, optional
         Number of timestamps per pixel per acquisition cycle. Default is "512".
     scale : str, optional
@@ -558,6 +558,11 @@ def plot_valid_FW2212_mult(
     None.
 
     """
+    # parameter type check
+    if isinstance(fw_ver, str) is not True:
+        raise TypeError("'fw_ver' should be string, '2212b' or '2212s'")
+    if isinstance(board_number, str) is not True:
+        raise TypeError("'board_number' should be string, 'NL11' or 'A5'")
     if show_fig is True:
         plt.ion()
     else:
@@ -585,11 +590,20 @@ def plot_valid_FW2212_mult(
     print("\n> > > Collecting data, Working in {} < < <\n".format(path))
 
     for i in tqdm(range(len(files)), desc="Collecting data"):
-        data = f_up.unpack_2212(files[i], board_number, fw_ver, timestamps)
+        if fw_ver == "2212s":
+            data = f_up.unpack_2212(files[i], board_number, fw_ver, timestamps)
+            for i in range(0, 256):
+                a = np.array(data["{}".format(i)])
+                valid_per_pixel[i] = valid_per_pixel[i] + len(np.where(a > 0)[0])
+        elif fw_ver == "2212b":
+            data = f_up.unpack_2212_numpy(files[i], board_number, timestamps)
 
-        for i in range(0, 256):
-            a = np.array(data["{}".format(i)])
-            valid_per_pixel[i] = valid_per_pixel[i] + len(np.where(a > 0)[0])
+            pix_coor = np.arange(256).reshape(64, 4)
+            for i in range(256):
+                tdc, pix = np.argwhere(pix_coor == i)[0]
+                ind = np.where(data[tdc].T[0] == pix)[0]
+                ind1 = np.where(data[tdc].T[1][ind] > 0)[0]
+                valid_per_pixel[i] += len(data[tdc].T[1][ind[ind1]])
 
     print("\n> > > Plotting timestamps < < <\n")
     # Apply mask if requested

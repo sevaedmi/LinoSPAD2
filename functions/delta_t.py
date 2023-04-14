@@ -1330,13 +1330,13 @@ def deltas_save_numpy(
             except FileNotFoundError:
                 os.mkdir("delta_ts_data")
                 os.chdir("delta_ts_data")
-            csv_file = glob.glob("*{}*".format(out_file_name))
+            csv_file = glob.glob("*{}.csv*".format(out_file_name))
             if csv_file != []:
                 data_for_plot_df.to_csv(
                     "{}.csv".format(out_file_name), mode="a", index=False, header=False
                 )
             else:
-                data_for_plot_df.to_csv("{}.csv".format(out_file_name))
+                data_for_plot_df.to_csv("{}.csv".format(out_file_name), index=False)
             os.chdir("..")
 
 

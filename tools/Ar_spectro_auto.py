@@ -5,6 +5,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from scipy import signal as sg
 from scipy.optimize import curve_fit
+from tqdm import tqdm
 
 from functions import unpack
 
@@ -15,8 +16,10 @@ files = glob.glob("*.dat*")
 
 valid_per_pixel = np.zeros(256)
 
-for i, file in enumerate(files):
-    data = unpack.unpack_2212(file, board_number="A5", fw_ver="block", timestamps=200)
+for i in tqdm(range(len(files)), desc="Going through files"):
+    data = unpack.unpack_2212(
+        files[i], board_number="A5", fw_ver="2212b", timestamps=200
+    )
 
     for i in range(0, 256):
         a = np.array(data["{}".format(i)])
@@ -33,10 +36,12 @@ peak_pos = sg.find_peaks(valid_per_pixel, threshold=v_max / 10)[0]
 
 pixels = np.arange(0, 256, 1)
 print(peak_pos[-1] - peak_pos[-2])
-nm_per_pix = (811.5311 - 810.3692) / 11
-x_nm = nm_per_pix * pixels + 811.5311 - nm_per_pix * peak_pos[-1]
+nm_per_pix = (811.5311 / 1.0003 - 810.3692 / 1.0003) / 11
+x_nm = nm_per_pix * pixels + 811.5311 / 1.0003 - nm_per_pix * peak_pos[-1]
 
-peak_pos_nm = np.array(peak_pos) * nm_per_pix + 811.5311 - nm_per_pix * peak_pos[-1]
+peak_pos_nm = (
+    np.array(peak_pos) * nm_per_pix + 811.5311 / 1.0003 - nm_per_pix * peak_pos[-1]
+)
 
 
 def gauss(x, A, x0, sigma, C):
@@ -74,12 +79,13 @@ for i in range(len(peak_pos)):
     fit_plot[i] = gauss(x_nm, par[i][0], par[i][1], par[i][2], par[i][3])
 
 colors = ["#008080", "#009480", "#00a880", "#00bc80", "#00d080", "#00e480"]
+colors1 = ["#cd9bd8", "#da91c5", "#e189ae", "#e48397", "#e08080", "#ffda9e"]
 
 plt.ion()
 plt.figure(figsize=(16, 10))
 plt.rcParams.update({"font.size": 16})
 plt.xlabel("Wavelength [nm]")
-plt.ylabel("Intensity [-]")
+plt.ylabel("Counts [-]")
 plt.plot(x_nm, valid_per_pixel, "o-", color="salmon", label="Data")
 for i in range(len(peak_pos)):
     plt.plot(
@@ -96,3 +102,27 @@ for i in range(len(peak_pos)):
         ),
     )
 plt.legend(loc="best", fontsize=12)
+
+
+plt.figure(figsize=(16, 10))
+plt.rcParams.update({"font.size": 16})
+plt.xlabel("Wavelength [nm]")
+plt.ylabel("Counts [-]")
+plt.minorticks_on()
+plt.plot(x_nm, valid_per_pixel, "o-", color="steelblue", label="Data")
+for i in range(len(peak_pos)):
+    plt.plot(
+        x_nm[peak_pos[i] - 10 : peak_pos[i] + 10],
+        fit_plot[i][peak_pos[i] - 10 : peak_pos[i] + 10],
+        color=colors1[i],
+        linewidth=2,
+        label="\n"
+        "\u03C3={p1} nm\n"
+        "\u03BC={p2} nm".format(
+            p1=format(par[i][2], ".3f"), p2=format(par[i][1], ".3f")
+        ),
+    )
+plt.legend(loc="best", fontsize=14)
+os.chdir("results")
+plt.savefig("Ar_spec_for_paper.pdf")
+os.chdir("..")

@@ -405,7 +405,7 @@ def unpack_numpy_dict(
 #     return output
 
 
-def unpack_2212(filename, board_number, fw_ver, timestamps: int = 512):
+def unpack_2212(filename, board_number: str, fw_ver: str, timestamps: int = 512):
     """Unpack binary data from LinoSPAD2 2212 firmware version.
 
     Function for unpacking data into a dictionary for the firmware versions 2212 "skip"
@@ -429,6 +429,11 @@ def unpack_2212(filename, board_number, fw_ver, timestamps: int = 512):
         of columns is different for each row.
 
     """
+    # parameter type check
+    if isinstance(fw_ver, str) is not True:
+        raise TypeError("'fw_ver' should be string, '2212b' or '2212s'")
+    if isinstance(board_number, str) is not True:
+        raise TypeError("'board_number' should be string, 'NL11' or 'A5'")
     timestamp_list = {}
 
     for i in range(0, 256):
@@ -441,9 +446,9 @@ def unpack_2212(filename, board_number, fw_ver, timestamps: int = 512):
     # Function for assigning pixel addresses bases on the type of the 2212
     # firmware version
     def _pix_num(tdc_num, pix_coor):
-        if fw_ver == "block":
+        if fw_ver == "2212b":
             out = 4 * tdc_num + pix_coor
-        elif fw_ver == "skip":
+        elif fw_ver == "2212s":
             out = tdc_num + 64 * pix_coor
 
         return out
@@ -502,6 +507,36 @@ def unpack_2212(filename, board_number, fw_ver, timestamps: int = 512):
 
 
 def unpack_2212_numpy(file, board_number: str, timestamps: int = 512):
+    """Unpack data from firmware version 2212.
+
+    Unpacks binary-encoded data from LinoSPAD2 firmware version 2212 block.
+    Uses numpy to achieve best speed for unpacking. Data is returned as a 3d array
+    where rows are TDC numbers, columns are the data, each cell contains pixel
+    number in the TDC (from 0 to 3) and the timestamp recorded by that pixel.
+
+    Parameters
+    ----------
+    file : str
+        '.dat' data file.
+    board_number : str
+        LinoSPAD2 daughterboard number. Either 'A5' or 'NL11' are recognized.
+    timestamps : int, optional
+        Number of timestamps per TDC per acquisition cycle. The default is 512.
+
+    Raises
+    ------
+    TypeError
+        Controller for the type of 'board_number' parameter which should be string.
+    FileNotFoundError
+        Controller for stopping the script in the case no calibration data
+        were found.
+
+    Returns
+    -------
+    data_all : array-like
+        3d array of pixel coordinates in the TDC and the timestamps.
+
+    """
     # parameter type check
     if isinstance(board_number, str) is not True:
         raise TypeError("'board_number' should be string, 'NL11' or 'A5'")
