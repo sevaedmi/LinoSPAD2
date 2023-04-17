@@ -13,16 +13,16 @@ functions:
     * plot_valid - plots the number of valid timestamps in each pixel.
 
     * plot_valid_mult - plots the number of valid timestamps in each pixel.
-    Analyzes all data files in the given folder.
+    Analyzes all datafiles in the given folder.
 
     * plot_valid_FW2212 - plots the number of valid timestamps in each pixel.
-    Works with the firmware version 2212 (both block and skip).
+    Works with the firmware version 2212 (both block and skip). Analyzes all datafiles
+    in the given folder.
 
 """
 
 import glob
 import os
-from math import ceil
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -149,6 +149,7 @@ def plot_valid(
         plt.ion()
     else:
         plt.ioff()
+
     for i, num in enumerate(DATA_FILES):
         print("> > > Plotting timestamps, Working on {} < < <\n".format(num))
 
@@ -198,114 +199,6 @@ def plot_valid(
         if show_fig is False:
             plt.close("all")
         os.chdir("..")
-
-
-def plot_valid_mult_nc(
-    path,
-    board_number,
-    timestamps: int = 512,
-    scale: str = "linear",
-    style: str = "-o",
-    show_fig: bool = False,
-    app_mask: bool = True,
-):
-    """Plot number of timestamps in each pixel for all datafiles.
-
-    Analyzes all datafiles in the given folder.
-
-    Parameters
-    ----------
-    path : str
-        Path to the datafiles.
-    board_number : str
-        The LinoSPAD2 board number. Required for choosing the correct
-        calibration data.
-    timestamps : int, optional
-        Number of timestamps per pixel per acquisition cycle. Default is "512".
-    scale : str, optional
-        Scale for the y-axis of the plot. Use "log" for logarithmic.
-        The default is "linear".
-    style : str, optional
-        Style of the plot. The default is "-o".
-    show_fig : bool, optional
-        Switch for showing the plot. The default is False.
-    mult_files: bool, optional
-        Switch for analyzing all data files in the given folder. The default
-        is False.
-    app_mask : bool, optional
-        Switch for applying the mask on warm/hot pixels. The default is true.
-
-    Returns
-    -------
-    None.
-
-    """
-    os.chdir(path)
-
-    files_all = glob.glob("*.dat*")
-
-    plot_name = files_all[0][:-4] + "-" + files_all[-1][:-4]
-
-    valid_per_pixel = np.zeros(256)
-
-    if show_fig is True:
-        plt.ion()
-    else:
-        plt.ioff()
-
-    print("> > > Plotting valid timestamps, Working in {} < < <\n".format(path))
-    for i in tqdm(range(ceil(len(files_all) / 5)), desc="Collecting data"):
-        files_cut = files_all[i * 5 : (i + 1) * 5]
-        data = f_up.unpack_mult_nc(files_cut, board_number, timestamps)
-
-        for j in range(len(data)):
-            valid_per_pixel[j] = valid_per_pixel[j] + len(np.where(data[j] > 0)[0])
-
-    # Apply mask if requested
-    if app_mask is True:
-        path_to_back = os.getcwd()
-        path_to_mask = os.path.realpath(__file__) + "/../.." + "/masks"
-        os.chdir(path_to_mask)
-        file_mask = glob.glob("*{}*".format(board_number))[0]
-        mask = np.genfromtxt(file_mask).astype(int)
-        valid_per_pixel[mask] = 0
-        os.chdir(path_to_back)
-
-    peak = int(np.max(valid_per_pixel))
-
-    if "Ne" and "540" in path:
-        chosen_color = "seagreen"
-    elif "Ne" and "656" in path:
-        chosen_color = "orangered"
-    elif "Ne" and "585" in path:
-        chosen_color = "goldenrod"
-    elif "Ar" in path:
-        chosen_color = "mediumslateblue"
-    else:
-        chosen_color = "salmon"
-
-    print("\n> > > Preparing the plot < < <\n")
-
-    plt.figure(figsize=(16, 10))
-    plt.rcParams.update({"font.size": 20})
-    plt.title("Peak is {peak}".format(peak=peak))
-    plt.xlabel("Pixel [-]")
-    plt.ylabel("Timestamps [-]")
-    if scale == "log":
-        plt.yscale("log")
-    plt.plot(valid_per_pixel, style, color=chosen_color)
-
-    try:
-        os.chdir("results")
-    except Exception:
-        os.makedirs("results")
-        os.chdir("results")
-    plt.savefig("{name}.png".format(name=plot_name))
-
-    plt.pause(0.1)
-    if show_fig is False:
-        plt.close("all")
-    os.chdir("..")
 
 
 def plot_valid_mult(
@@ -517,7 +410,7 @@ def plot_valid_mult(
 #         os.chdir("..")
 
 
-def plot_valid_FW2212_mult(
+def plot_valid_FW2212(
     path,
     board_number: str,
     fw_ver: str,

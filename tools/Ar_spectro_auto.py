@@ -16,14 +16,15 @@ files = glob.glob("*.dat*")
 
 valid_per_pixel = np.zeros(256)
 
+pix_coor = np.arange(256).reshape(64, 4)
+
 for i in tqdm(range(len(files)), desc="Going through files"):
-    data = unpack.unpack_2212(
-        files[i], board_number="A5", fw_ver="2212b", timestamps=200
-    )
+    data = unpack.unpack_2212_numpy(files[i], board_number="A5", timestamps=200)
 
     for i in range(0, 256):
-        a = np.array(data["{}".format(i)])
-        valid_per_pixel[i] = valid_per_pixel[i] + len(np.where(a > 0)[0])
+        tdc, pix = np.argwhere(pix_coor == i)[0]
+        ind = np.where(data[tdc].T[0] == pix)[0]
+        valid_per_pixel[i] += len(np.where(data[tdc].T[1][ind] > 0)[0])
 
 mask = [70, 205, 212, 95, 157, 165, 57, 123, 187, 118, 251]
 
@@ -101,11 +102,16 @@ for i in range(len(peak_pos)):
             pe2=format(perr[i][1], ".3f"),
         ),
     )
-plt.legend(loc="best", fontsize=12)
 
 
+# plt.legend(loc="best", fontsize=12)
+
+# =============================================================================
+# Plot for a paper
+# =============================================================================
+# plt.ioff()
 plt.figure(figsize=(16, 10))
-plt.rcParams.update({"font.size": 16})
+plt.rcParams.update({"font.size": 28})
 plt.xlabel("Wavelength [nm]")
 plt.ylabel("Counts [-]")
 plt.minorticks_on()
@@ -122,7 +128,11 @@ for i in range(len(peak_pos)):
             p1=format(par[i][2], ".3f"), p2=format(par[i][1], ".3f")
         ),
     )
-plt.legend(loc="best", fontsize=14)
-os.chdir("results")
-plt.savefig("Ar_spec_for_paper.pdf")
-os.chdir("..")
+plt.legend(loc="best", fontsize=22)
+plt.tight_layout()
+# try:
+#     os.chdir("results")
+# except:
+#     pass
+# plt.savefig("Ar_spec_for_paper.pdf")
+# os.chdir("..")

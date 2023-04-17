@@ -14,8 +14,16 @@ functions:
     timestamps per acquisition cycle. Uses the calibration data. Imputing the
     LinoSPAD2 board number is required.
 
+    * unpack_numpy_dict - unpacks the 'dat' data files with a given number of
+    timestamps per acquisition cycle. Uses the calibration data. Imputing the
+    LinoSPAD2 board number is required. Returns a dictionary of timestamps
+    from the requested pixels.
+
     * unpack_2212 - function for unpacking data into a dictionary for the
     LinoSPAD2 firmware 2212 versions "skip" and "block".
+
+    * unpack_2212_numpy - function for unpacking data from LinoSPAD2, firmware
+    version '2212b'. Utilizes the numpy library to speed up the process.
 
 
 """
@@ -106,6 +114,7 @@ def unpack_numpy(
     Function for unpacking the .dat data files using the calibration
     data. The output is a matrix of '256 x timestamps*number_of_cycles'
     timestamps in ps. The fastest version that utilizes the numpy library.
+    Unpacks data only from firmware version 2208.
 
     Parameters
     ----------
@@ -236,6 +245,7 @@ def unpack_numpy_dict(
     Function for unpacking the .dat data files using the calibration
     data. The output is a matrix of '256 x timestamps*number_of_cycles'
     timestamps in ps. The fastest version that utilizes the numpy library.
+    Unpacks data only from firmware version 2208.
 
     Parameters
     ----------
@@ -406,10 +416,10 @@ def unpack_numpy_dict(
 
 
 def unpack_2212(filename, board_number: str, fw_ver: str, timestamps: int = 512):
-    """Unpack binary data from LinoSPAD2 2212 firmware version.
+    """Unpack binary data from LinoSPAD2, firmware version 2212.
 
     Function for unpacking data into a dictionary for the firmware versions 2212 "skip"
-    and "block". Uses the calibration data.
+    or "block". Uses the calibration data.
 
     Parameters
     ----------
@@ -434,6 +444,7 @@ def unpack_2212(filename, board_number: str, fw_ver: str, timestamps: int = 512)
         raise TypeError("'fw_ver' should be string, '2212b' or '2212s'")
     if isinstance(board_number, str) is not True:
         raise TypeError("'board_number' should be string, 'NL11' or 'A5'")
+
     timestamp_list = {}
 
     for i in range(0, 256):
@@ -548,6 +559,7 @@ def unpack_2212_numpy(file, board_number: str, timestamps: int = 512):
     # pix adress in the given TDC is 2 bits above timestamp
     data_p = ((rawFile >> 28) & 0x3).astype(np.longlong)
     data_t[np.where(rawFile < 0x80000000)] = -1
+    # number of acquisition cycle in each datafile
     cycles = int(len(data_t) / timestamps / 65)
     # transofrm into matrix 65 by cycles*timestamps
     data_matrix_p = (
@@ -594,14 +606,18 @@ def unpack_2212_numpy(file, board_number: str, timestamps: int = 512):
             "No .csv file with the calibration data was found, check the path "
             "or run the calibration."
         )
-        # sys.exit()
 
     for i in range(256):
+        # transform pixel number to TDC number and pixel coordinates in that TDC
+        # (from 0 to 3)
         tdc, pix = np.argwhere(pix_coor == i)[0]
+        # find data from that pixel
         ind = np.where(data_all[tdc].T[0] == pix)[0]
+        # cut non-valid timestamps ('-1's)
         ind = ind[np.where(data_all[tdc].T[1][ind] >= 0)[0]]
         if not np.any(ind):
             continue
+        # apply calibration
         data_all[tdc].T[1][ind] = (
             data_all[tdc].T[1][ind] - data_all[tdc].T[1][ind] % 140
         ) * 17.857 + cal_mat[i, (data_all[tdc].T[1][ind] % 140)]

@@ -9,19 +9,17 @@ import numpy as np
 
 from functions import unpack as f_up
 
-# path = "D:/LinoSPAD2/Data/board_A5/BNL/FW_2212_block/Ne_703"
-path = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/release_2212/release_2212/shared/data"
+path = "D:/LinoSPAD2/Data/board_NL11/BNL/FW_2212b/Ne_703"
 
-# path = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/release_2208/release_2208/mainstream/data"
 
 os.chdir(path)
 
 file = glob.glob("*.dat*")[-1]
 
-data = f_up.unpack_2212(file, board_number="A5", fw_ver="block", timestamps=1000)
+data = f_up.unpack_2212(file, board_number="NL11", fw_ver="2212b", timestamps=140)
 # data = f_up.unpack_numpy(file, board_number="NL11", timestamps=140)
 
-timestamps = 1000
+timestamps = 140
 
 for i in range(len(data)):
     check = 0

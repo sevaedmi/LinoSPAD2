@@ -6,13 +6,6 @@ binary data output.
 This file can also be imported as a module and contains the following
 functions:
 
-    * plot_delta_separate - function for plotting separate figures of
-    timestamp differences for each pair of pixels in the given range
-
-    * plot_grid - function for plotting a grid of NxN plots (N+1 for number of
-    pixels) of timestamp differences. Uses the calibration data. Imputing the LinoSPAD2
-    board number is required.
-
     * plot_grid_mult - function for plotting a grid of NxN plots (N+1 for
     number of pixels) of timestamp differences. Uses the calibration data. Imputing
     the LinoSPAD2 board number is required.
@@ -25,8 +18,10 @@ functions:
     * deltas_save - unpacks the binary data, calculates timestamp differences
     and saves into a .csv file.
 
-    * delta_cp - collect timestamps from the .csv file and plot them in a grid
-    and separately
+    * deltas_save_numpy - unpacks the binary data, calculates timestamp differences
+    and saves into a .csv file. Works with firmware versions '2208' and '2212b'.
+
+    * delta_cp - collect timestamps from the .csv file and plot them in a grid.
 
 """
 import glob
@@ -42,473 +37,6 @@ from tqdm import tqdm
 
 from functions import unpack as f_up
 from functions.calc_diff import calc_diff as cd
-
-# def compute_delta_t(pixel_0, pixel_1, timestampsnmr: int = 512, timewindow: int = 5000):
-#     nmr_of_cycles = int(len(pixel_0) / timestampsnmr)
-#     output = []
-
-#     # start = time.time()
-#     for cycle in range(nmr_of_cycles):
-#         for timestamp_pix0 in range(timestampsnmr):
-#             if (
-#                 pixel_0[cycle * timestampsnmr + timestamp_pix0] == -1
-#                 or pixel_0[cycle * timestampsnmr + timestamp_pix0] <= 1e-9
-#             ):
-#                 break
-#             for timestamp_pix1 in range(timestampsnmr):
-#                 if (
-#                     pixel_1[cycle * timestampsnmr + timestamp_pix1] == -1
-#                     or pixel_1[cycle * timestampsnmr + timestamp_pix1] == 0
-#                 ):
-#                     break
-#                 if (
-#                     np.abs(
-#                         pixel_0[cycle * timestampsnmr + timestamp_pix0]
-#                         - pixel_1[cycle * timestampsnmr + timestamp_pix1]
-#                     )
-#                     < timewindow
-#                 ):
-#                     output.append(
-#                         pixel_0[cycle * timestampsnmr + timestamp_pix0]
-#                         - pixel_1[cycle * timestampsnmr + timestamp_pix1]
-#                     )
-#                 else:
-#                     continue
-#     return output
-
-
-def plot_delta_separate(path, pix, timestamps: int = 512):
-    """
-    Plot delta t for each pair of pixels in the given range.
-
-    Useful for debugging the LinoSPAD2 output.The plots are saved
-    in the "results/delta_t/zoom" folder. In the case the folder
-    does not exist, it is created automatically.
-
-    Parameters
-    ----------
-    path : str
-        Path to data file.
-    pix : array-like
-        Array of indices of 5 pixels for analysis.
-    timestamps : int
-        Number of timestamps per acq cycle per pixel in the file. The default
-        is 512.
-
-    Returns
-    -------
-    None.
-
-    """
-    os.chdir(path)
-
-    DATA_FILES = glob.glob("*.dat*")
-
-    for num, filename in enumerate(DATA_FILES):
-        print(
-            "\n> > > Plotting timestamp differences, Working on {} < < <\n".format(
-                filename
-            )
-        )
-
-        data = f_up.unpack_numpy(filename, timestamps)
-
-        data_pix = np.zeros((len(pix), len(data[0])))
-
-        for i, num in enumerate(pix):
-            data_pix[i] = data[num]
-        plt.rcParams.update({"font.size": 22})
-
-        print("\n> > > Calculating the timestamp differences < < <\n")
-        for q in tqdm(range(len(pix)), desc="Minuend pixel   "):
-            for w in tqdm(range(len(pix)), desc="Subtrahend pixel"):
-                if w <= q:
-                    continue
-                data_pair = np.vstack((data_pix[q], data_pix[w]))
-
-                delta_ts = cd(data_pair, timestamps=timestamps)
-
-                if "Ne" and "540" in path:
-                    chosen_color = "seagreen"
-                elif "Ne" and "656" in path:
-                    chosen_color = "orangered"
-                elif "Ar" in path:
-                    chosen_color = "mediumslateblue"
-                else:
-                    chosen_color = "salmon"
-                try:
-                    # bins = np.arange(np.min(delta_ts), np.max(delta_ts), 17.857 * 2)
-                    bins = 120
-                except Exception:
-                    continue
-                plt.figure(figsize=(11, 7))
-                plt.xlabel("\u0394t [ps]")
-                plt.ylabel("Timestamps [-]")
-                n = plt.hist(delta_ts, bins=bins, color=chosen_color)[0]
-
-                # find position of the histogram peak
-                try:
-                    n_max = np.argmax(n)
-                    arg_max = format((bins[n_max] + bins[n_max + 1]) / 2, ".2f")
-                except Exception:
-                    arg_max = None
-                plt.title(
-                    "{filename}\nPeak position: {peak}\nPixels {p1},{p2}".format(
-                        filename=filename, peak=arg_max, p1=pix[q], p2=pix[w]
-                    )
-                )
-
-                try:
-                    os.chdir("results/delta_t/zoom")
-                except Exception:
-                    os.makedirs("results/delta_t/zoom")
-                    os.chdir("results/delta_t/zoom")
-                plt.savefig(
-                    "{name}_pixels {p1},{p2}.png".format(
-                        name=filename, p1=pix[q], p2=pix[w]
-                    )
-                )
-                plt.pause(0.1)
-                plt.close()
-                os.chdir("../../..")
-
-
-def plot_grid(
-    path,
-    pix,
-    board_number: str,
-    timestamps: int = 512,
-    range_left: float = -2.5e3,
-    range_right: float = 2.5e3,
-    show_fig: bool = False,
-    same_y: bool = False,
-):
-    """
-    Plot a grid of delta t for all pairs of given pixels for one datafile.
-
-    The output is saved in the "results/delta_t" folder.
-    In the case the folder does not exist, it is created automatically.
-
-    Parameters
-    ----------
-    path : str
-        Path to the data file.
-    pix : array-like
-        Array of indices of pixels for analysis.
-    timestamps : int, optional
-        Number of timestamps per pixel per acquisition cycle. The default is
-        512.
-    range_left : float, optional
-        Left limit of the range for which the timestamps differences should be
-        calculated. Default is -2.5e3.
-    range_right : float, optional
-        Right limit of the range for which the timestamps differences should be
-        calculated. Default is 2.5e3.
-    show_fig : bool, optional
-        Switch for showing the output figure. The default is False.
-    same_y : bool, optional
-        Switch for setting the same ylim for all plots in the grid. The
-        default is True.
-
-    Returns
-    -------
-    None.
-
-    """
-    # check if the figure should appear in a separate window or not at all
-    if show_fig is True:
-        plt.ion()
-    else:
-        plt.ioff()
-    os.chdir(path)
-
-    DATA_FILES = glob.glob("*.dat*")
-
-    for num, filename in enumerate(DATA_FILES):
-        print("\n> > > Plotting a delta t grid, Working on {} < < <\n".format(filename))
-
-        data = f_up.unpack_calib(filename, board_number, timestamps)
-
-        data_pix = np.zeros((len(pix), len(data[0])))
-
-        for i, num in enumerate(pix):
-            data_pix[i] = data[num]
-        plt.rcParams.update({"font.size": 22})
-        if len(pix) > 2:
-            fig, axs = plt.subplots(
-                len(pix) - 1, len(pix) - 1, figsize=(5.5 * len(pix), 5.5 * len(pix))
-            )
-        else:
-            fig = plt.figure(figsize=(14, 14))
-        # check if the y limits of all plots should be the same
-        if same_y is True:
-            y_max_all = 0
-        print("\n> > > Calculating the timestamp differences < < <\n")
-        for q in tqdm(range(len(pix)), desc="Minuend pixel   "):
-            for w in tqdm(range(len(pix)), desc="Subtrahend pixel"):
-                if w <= q:
-                    continue
-                data_pair = np.vstack((data_pix[q], data_pix[w]))
-
-                delta_ts = cd(
-                    data_pair,
-                    timestamps=timestamps,
-                    range_left=range_left,
-                    range_right=range_right,
-                )
-
-                if "Ne" and "540" in path:
-                    chosen_color = "seagreen"
-                elif "Ne" and "656" in path:
-                    chosen_color = "orangered"
-                elif "Ne" and "585" in path:
-                    chosen_color = "goldenrod"
-                elif "Ar" in path:
-                    chosen_color = "mediumslateblue"
-                else:
-                    chosen_color = "salmon"
-                try:
-                    bins = np.linspace(np.min(delta_ts), np.max(delta_ts), 100)
-                except Exception:
-                    print("Couldn't calculate bins: probably not enough delta ts.")
-                    continue
-                if len(pix) > 2:
-                    axs[q][w - 1].set_xlabel("\u0394t [ps]")
-                    axs[q][w - 1].set_ylabel("Timestamps [-]")
-                    n, b, p = axs[q][w - 1].hist(
-                        delta_ts, bins=bins, color=chosen_color
-                    )
-                else:
-                    plt.xlabel("\u0394t [ps]")
-                    plt.ylabel("Timestamps [-]")
-                    n, b, p = plt.hist(delta_ts, bins=bins, color=chosen_color)
-                # find position of the histogram peak
-                try:
-                    n_max = np.argmax(n)
-                    arg_max = format((bins[n_max] + bins[n_max + 1]) / 2, ".2f")
-                except Exception:
-                    arg_max = None
-                if same_y is True:
-                    try:
-                        y_max = np.max(n)
-                    except ValueError:
-                        y_max = 0
-                        print("\nCould not find maximum y value\n")
-                    if y_max_all < y_max:
-                        y_max_all = y_max
-                    if len(pix) > 2:
-                        axs[q][w - 1].set_ylim(0, y_max + 4)
-                    else:
-                        plt.ylim(0, y_max + 4)
-                if len(pix) > 2:
-                    axs[q][w - 1].set_xlim(range_left - 100, range_right + 100)
-
-                    axs[q][w - 1].set_title(
-                        "Pixels {p1},{p2}\nPeak position {pp}".format(
-                            p1=pix[q], p2=pix[w], pp=arg_max
-                        )
-                    )
-                else:
-                    plt.xlim(range_left - 100, range_right + 100)
-                    plt.title(
-                        "Pixels {p1},{p2}\nPeak position {pp}".format(
-                            p1=pix[q], p2=pix[w], pp=arg_max
-                        )
-                    )
-                if same_y is True:
-                    for q in range(len(pix)):
-                        for w in range(len(pix)):
-                            if w <= q:
-                                continue
-                            if len(pix) > 2:
-                                axs[q][w - 1].set_ylim(0, y_max_all + 10)
-                            else:
-                                plt.ylim(0, y_max_all + 10)
-                try:
-                    os.chdir("results/delta_t")
-                except FileNotFoundError:
-                    os.makedirs("results/delta_t")
-                    os.chdir("results/delta_t")
-                fig.tight_layout()  # for perfect spacing between the plots
-                plt.savefig("{name}_delta_t_grid_cal.png".format(name=filename))
-                os.chdir("../..")
-
-
-# def plot_grid_mult(
-#     path,
-#     pix,
-#     board_number: str,
-#     timestamps: int = 512,
-#     range_left: float = -2.5e3,
-#     range_right: float = 2.5e3,
-#     show_fig: bool = False,
-#     same_y: bool = False,
-#     mult_files: bool = False,
-# ):
-#     """
-#     Plot a grid of delta t for all pairs of given pixels for all datafiles.
-
-#     Analyzes all datafiles in the given path, combining the data from each
-#     and plotting a grid of timestamp differences for each pair in the given range
-#     of pixels. The output is saved in the "results/delta_t" folder. In the case
-#     the folder does not exist, it is created automatically.
-
-#     Parameters
-#     ----------
-#     path : str
-#         Path to the data file.
-#     pix : array-like
-#         Array of indices of pixels for analysis.
-#     timestamps : int, optional
-#         Number of timestamps per pixel per acquisition cycle. The default is
-#         512.
-#     range_left : float, optional
-#         Left limit of the range for which the timestamps differences should be
-#         calculated. Default is -2.5e3.
-#     range_right : float, optional
-#         Right limit of the range for which the timestamps differences should be
-#         calculated. Default is 2.5e3.
-#     show_fig : bool, optional
-#         Switch for showing the output figure. The default is False.
-#     same_y : bool, optional
-#         Switch for setting the same ylim for all plots in the grid. The
-#         default is True.
-#     mult_file: bool, optional
-#         Switch for processing either all data files in the directory or only
-#         the last created. The default is False.
-
-#     Returns
-#     -------
-#     None.
-
-#     """
-
-#     # check if the figure should appear in a separate window or not at all
-#     if show_fig is True:
-#         plt.ion()
-#     else:
-#         plt.ioff()
-
-#     if mult_files is True:
-#         # os.chdir(path)
-#         # if len(glob.glob(".dat")) > 10:
-#         #     print("Too many files.")
-#         #     sys.exit()
-#         print(
-#             "=================================================\n"
-#             "Plotting timestamp differences, Working in {}\n"
-#             "=================================================".format(path)
-#         )
-#         data, plot_name = f_up.unpack_mult(path, board_number, timestamps)
-#     else:
-#         os.chdir(path)
-#         files = glob.glob("*.dat*")
-#         last_file = max(files, key=os.path.getctime)
-#         print(
-#             "=================================================\n"
-#             "Plotting timestamp differences, Working on {}\n"
-#             "=================================================".format(last_file)
-#         )
-#         data = f_up.unpack_numpy(last_file, board_number, timestamps)
-
-#     data_pix = np.zeros((len(pix), len(data[0])))
-
-#     for i, num in enumerate(pix):
-#         data_pix[i] = data[num]
-#     plt.rcParams.update({"font.size": 22})
-#     if len(pix) > 2:
-#         fig, axs = plt.subplots(len(pix) - 1, len(pix) - 1, figsize=(20, 20))
-#     else:
-#         fig = plt.figure(figsize=(14, 14))
-#     # check if the y limits of all plots should be the same
-#     if same_y is True:
-#         y_max_all = 0
-#     print("\n> > > Calculating the timestamp differences < < <\n")
-#     for q in tqdm(range(len(pix)), desc="Minuend pixel   "):
-#         for w in tqdm(range(len(pix)), desc="Subtrahend pixel"):
-#             if w <= q:
-#                 continue
-#             data_pair = np.vstack((data_pix[q], data_pix[w]))
-
-#             delta_ts = cd(
-#                 data_pair,
-#                 timestamps=timestamps,
-#                 range_left=range_left,
-#                 range_right=range_right,
-#             )
-
-#             if "Ne" and "540" in path:
-#                 chosen_color = "seagreen"
-#             elif "Ne" and "656" in path:
-#                 chosen_color = "orangered"
-#             elif "Ne" and "585" in path:
-#                 chosen_color = "goldenrod"
-#             elif "Ar" in path:
-#                 chosen_color = "mediumslateblue"
-#             else:
-#                 chosen_color = "salmon"
-#             try:
-#                 bins = np.linspace(np.min(delta_ts), np.max(delta_ts), 100)
-#             except Exception:
-#                 print("Couldn't calculate bins: probably not enough delta ts.")
-#                 continue
-#             if len(pix) > 2:
-#                 axs[q][w - 1].set_xlabel("\u0394t [ps]")
-#                 axs[q][w - 1].set_ylabel("Timestamps [-]")
-#                 n, b, p = axs[q][w - 1].hist(delta_ts, bins=bins, color=chosen_color)
-#             else:
-#                 plt.xlabel("\u0394t [ps]")
-#                 plt.ylabel("Timestamps [-]")
-#                 n, b, p = plt.hist(delta_ts, bins=bins, color=chosen_color)
-#             # find position of the histogram peak
-#             try:
-#                 n_max = np.argmax(n)
-#                 arg_max = format((bins[n_max] + bins[n_max + 1]) / 2, ".2f")
-#             except Exception:
-#                 arg_max = None
-#             if same_y is True:
-#                 try:
-#                     y_max = np.max(n)
-#                 except ValueError:
-#                     y_max = 0
-#                     print("\nCould not find maximum y value\n")
-#                 if y_max_all < y_max:
-#                     y_max_all = y_max
-#                 if len(pix) > 2:
-#                     axs[q][w - 1].set_ylim(0, y_max + 4)
-#                 else:
-#                     plt.ylim(0, y_max + 4)
-#             if len(pix) > 2:
-#                 axs[q][w - 1].set_xlim(range_left - 100, range_right + 100)
-
-#                 axs[q][w - 1].set_title(
-#                     "Pixels {p1},{p2}\nPeak position {pp}".format(
-#                         p1=pix[q], p2=pix[w], pp=arg_max
-#                     )
-#                 )
-#             else:
-#                 plt.xlim(range_left - 100, range_right + 100)
-#                 plt.title("Pixels {p1},{p2}".format(p1=pix[q], p2=pix[w]))
-#     if same_y is True:
-#         for q in range(len(pix)):
-#             for w in range(len(pix)):
-#                 if w <= q:
-#                     continue
-#                 if len(pix) > 2:
-#                     axs[q][w - 1].set_ylim(0, y_max_all + 10)
-#                 else:
-#                     plt.ylim(0, y_max_all + 10)
-#     try:
-#         os.chdir("results/delta_t")
-#     except FileNotFoundError:
-#         os.makedirs("results/delta_t")
-#         os.chdir("results/delta_t")
-#     fig.tight_layout()  # for perfect spacing between the plots
-#     if mult_files is True:
-#         plt.savefig("{name}_delta_t_grid_cal.png".format(name=plot_name))
-#     else:
-#         plt.savefig("{name}_delta_t_grid_cal.png".format(name=last_file))
-#     os.chdir("../..")
 
 
 def plot_grid_mult(
@@ -527,7 +55,7 @@ def plot_grid_mult(
 
     Function for calculating timestamp differences and plotting them in a grid. Works
     with multiple .dat files, keeping the data only for the required pixels and thus
-    reducing the memory occupied.
+    reducing the memory occupied. Works with fimware version 2208.
 
     Parameters
     ----------
@@ -564,6 +92,8 @@ def plot_grid_mult(
     # parameter type check
     if isinstance(rewrite, bool) is not True:
         raise TypeError("'rewrite' should be boolean")
+    if isinstance(board_number, str) is not True:
+        raise TypeError("'board_number' should be string, either 'NL11' or 'A5'")
 
     # check if the figure should appear in a separate window or not at all
     if show_fig is True:
@@ -586,12 +116,11 @@ def plot_grid_mult(
             else:
                 print("\n> > > Plot already exists. < < <\n")
                 sys.exit("Plot already exists, 'rewrite' set to 'False'.")
-        # else:
-        #     raise TypeError
     except FileNotFoundError:
         pass
     os.chdir("../..")
 
+    # prepare dictionary for delta ts to plot
     data_for_plot = {}
 
     # Collect the data for the required pixels
@@ -620,6 +149,7 @@ def plot_grid_mult(
                     data_for_plot["{},{}".format(pix[q], pix[w])].extend(delta_ts)
 
     plt.rcParams.update({"font.size": 22})
+    # figure manipulations based on number of plots in the resulting grid
     if len(pix) > 2:
         fig, axs = plt.subplots(
             len(pix) - 1, len(pix) - 1, figsize=(5.5 * len(pix), 5.5 * len(pix))
@@ -750,7 +280,7 @@ def plot_grid_mult_2212(
     board_number : str
         The LinoSPAD2 daughterboard nubmer.
     fw_ver : str
-        The version of the 2212 firmware: 'block' or 'skip'.
+        The version of the 2212 firmware: '2212b' or '2212s'.
     rewrite : bool
         Switch for rewriting the plot if it already exists.
     timestamps : int, optional
@@ -778,6 +308,9 @@ def plot_grid_mult_2212(
     # parameter type check
     if isinstance(rewrite, bool) is not True:
         raise TypeError("'rewrite' should be boolean")
+    if isinstance(board_number, str) is not True:
+        raise TypeError("'board_number' should be string, either 'NL11' or 'A5'")
+
     os.chdir(path)
 
     files = glob.glob("*.dat*")
@@ -943,7 +476,7 @@ def plot_grid_mult_2212(
 def deltas_save(
     path,
     pix,
-    rewrite,
+    rewrite: bool,
     board_number: str,
     fw_ver: str,
     timestamps: int = 512,
@@ -968,7 +501,7 @@ def deltas_save(
     timestamps : int, optional
         Number of timestamps per acquisition cycle per pixel. The default is 512.
     delta_window : float, optional
-        Size of a window to which timestamp differences are compared. Differences
+        Size of a window against which timestamp differences are compared. Differences
         in that window are saved. The default is 50e3 (50 ns).
 
     Returns
@@ -981,6 +514,8 @@ def deltas_save(
         raise TypeError("'fw_ver' should be string, '2212b' or '2208'")
     if isinstance(rewrite, bool) is not True:
         raise TypeError("'rewrite' should be boolean")
+    if isinstance(board_number, str) is not True:
+        raise TypeError("'board_number' should be string, either 'NL11' or 'A5'")
     os.chdir(path)
 
     files_all = glob.glob("*.dat*")
@@ -1084,7 +619,7 @@ def deltas_save(
 
             # Unpack data for the requested pixels into dictionary
             data = f_up.unpack_2212(
-                file, board_number=board_number, fw_ver="block", timestamps=timestamps
+                file, board_number=board_number, fw_ver="2212b", timestamps=timestamps
             )
 
             # Calculate and collect timestamp differences
@@ -1138,7 +673,7 @@ def deltas_save(
 def deltas_save_numpy(
     path,
     pix,
-    rewrite,
+    rewrite: bool,
     board_number: str,
     fw_ver: str,
     timestamps: int = 512,
@@ -1160,11 +695,19 @@ def deltas_save_numpy(
         Switch for rewriting the csv file if it already exists.
     board_number : str
         The LinoSPAD2 daughterboard number.
+    fw_ver: str
+        LinoSPAD2 firmware version. Versions "2208" and "2212b (block)" are recognized.
     timestamps : int, optional
         Number of timestamps per acquisition cycle per pixel. The default is 512.
     delta_window : float, optional
         Size of a window to which timestamp differences are compared. Differences
         in that window are saved. The default is 50e3 (50 ns).
+
+    Raises
+    ------
+    TypeError
+        Only boolean values of 'rewrite' and string values of 'fw_ver' are accepted.
+        First error is raised so that the plot does not accidentally gets rewritten.
 
     Returns
     -------
@@ -1176,18 +719,13 @@ def deltas_save_numpy(
         raise TypeError("'fw_ver' should be string, '2212b' or '2208'")
     if isinstance(rewrite, bool) is not True:
         raise TypeError("'rewrite' should be boolean")
+    if isinstance(board_number, str) is not True:
+        raise TypeError("'board_number' should be string, either 'NL11' or 'A5'")
     os.chdir(path)
 
     files_all = glob.glob("*.dat*")
 
     out_file_name = files_all[0][:-4] + "-" + files_all[-1][:-4]
-
-    # columns = []
-    # for q in pix:
-    #     for w in pix:
-    #         if w <= q:
-    #             continue
-    #         columns.append("{},{}".format(q, w))
 
     # check if csv file exists and if it should be rewrited
     try:
@@ -1200,7 +738,6 @@ def deltas_save_numpy(
                     time.sleep(1)
                 os.remove("{}.csv".format(out_file_name))
             else:
-                # print("\n> > > Plot already exists. < < <\n")
                 sys.exit(
                     "\n csv file already exists, 'rewrite' set to 'False', exiting."
                 )
@@ -1249,11 +786,6 @@ def deltas_save_numpy(
                         # Collect deltas in the requested window
                         ind = np.where(np.abs(deltas) < delta_window)[0]
                         deltas_all["{},{}".format(q, w)].extend(deltas[ind])
-            # deltas_all = {
-            #     k: v
-            #     for k, v in deltas_all.items()
-            #     if len(deltas_all[k]) > 10 and v != []
-            # }
 
             # Save data as a .csv file
             data_for_plot_df = pd.DataFrame.from_dict(deltas_all, orient="index")
@@ -1265,6 +797,7 @@ def deltas_save_numpy(
                 os.mkdir("delta_ts_data")
                 os.chdir("delta_ts_data")
             csv_file = glob.glob("*{}*".format(out_file_name))
+            # create for first file, append for all next ones
             if csv_file != []:
                 data_for_plot_df.to_csv(
                     "{}.csv".format(out_file_name), mode="a", header=False
@@ -1314,8 +847,12 @@ def deltas_save_numpy(
                         if not np.any(pix2_):
                             continue
                         # calculate delta t
-                        tmsp1 = data_all[tdc1].T[1][pix1_]
-                        tmsp2 = data_all[tdc2].T[1][pix2_]
+                        tmsp1 = data_all[tdc1].T[1][
+                            pix1_[np.where(data_all[tdc1].T[1][pix1_] > 0)[0]]
+                        ]
+                        tmsp2 = data_all[tdc2].T[1][
+                            pix2_[np.where(data_all[tdc2].T[1][pix2_] > 0)[0]]
+                        ]
                         for t1 in tmsp1:
                             deltas = tmsp2 - t1
                             ind = np.where(np.abs(deltas) < delta_window)[0]
@@ -1399,11 +936,8 @@ def delta_cp(
             if rewrite is True:
                 print("\n! ! ! Plot already exists and will be rewritten. ! ! !\n")
             else:
-                # print("\n> > > Plot already exists. < < <\n")
                 sys.exit("\nPlot already exists, 'rewrite' set to 'False', exiting.")
         os.chdir("../..")
-        # else:
-        #     raise TypeError
     except FileNotFoundError:
         pass
 
@@ -1430,6 +964,7 @@ def delta_cp(
             if len(pix) > 2:
                 axs[q][w - 1].axes.set_axis_on()
             try:
+                # keep only the required column in memory
                 data_to_plot = pd.read_csv(
                     "delta_ts_data/{}.csv".format(csv_file_name),
                     usecols=["{},{}".format(pix[q], pix[w])],
@@ -1437,6 +972,7 @@ def delta_cp(
             except ValueError:
                 continue
 
+            # prepare the data for plot
             data_to_plot = np.array(data_to_plot)
             data_to_plot = np.delete(
                 data_to_plot, np.argwhere(data_to_plot < range_left)
@@ -1468,7 +1004,7 @@ def delta_cp(
 
             if len(pix) > 2:
                 axs[q][w - 1].set_xlabel("\u0394t [ps]")
-                axs[q][w - 1].set_ylabel("Timestamps [-]")
+                axs[q][w - 1].set_ylabel("Pair count [-]")
                 n, b, p = axs[q][w - 1].hist(
                     data_to_plot,
                     bins=bins,
@@ -1476,7 +1012,7 @@ def delta_cp(
                 )
             else:
                 plt.xlabel("\u0394t [ps]")
-                plt.ylabel("Timestamps [-]")
+                plt.ylabel("Pair count [-]")
                 n, b, p = plt.hist(
                     data_to_plot,
                     bins=bins,
