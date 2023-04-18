@@ -120,14 +120,16 @@ def fit_wg(path, pix_pair: list, window: float = 5e3, step: int = 1):
     n, b, p = plt.hist(data_to_plot, bins=bins, color="teal")
     plt.close("all")
 
+    b1 = (b - (b[-1] - b[-2]) / 2)[1:]
+
     sigma = 150
 
     av_bkg = np.average(n)
 
-    par, pcov = curve_fit(gauss, b[:-1], n, p0=[max(n), cp_pos, sigma, av_bkg])
+    par, pcov = curve_fit(gauss, b1, n, p0=[max(n), cp_pos, sigma, av_bkg])
 
     # interpolate for smoother fit plot
-    to_fit_b = np.linspace(np.min(b), np.max(b), len(b) * 100)
+    to_fit_b = np.linspace(np.min(b1), np.max(b1), len(b1) * 100)
     to_fit_n = gauss(to_fit_b, par[0], par[1], par[2], par[3])
 
     perr = np.sqrt(np.diag(pcov))
@@ -149,7 +151,7 @@ def fit_wg(path, pix_pair: list, window: float = 5e3, step: int = 1):
     plt.xlabel(r"$\Delta$ [ps]")
     plt.ylabel("Timestamps [-]")
     plt.step(
-        b[:-1],
+        b[1:],
         n,
         color=chosen_color,
         label="data",

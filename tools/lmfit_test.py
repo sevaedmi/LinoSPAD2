@@ -15,7 +15,11 @@ to_del = np.where(np.logical_or(y < -10e3, y > 10e3))[0]
 
 y1 = np.delete(y, to_del)
 
-n, b, p = plt.hist(y1, bins=200)
+step = 5
+
+bins = np.arange(np.min(y1), np.max(y1), 17.857 * step)
+
+n, b, p = plt.hist(y1, bins=bins)
 
 mod_peak = GaussianModel()
 mod_bckg = ConstantModel()
