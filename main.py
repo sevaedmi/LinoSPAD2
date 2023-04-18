@@ -32,14 +32,14 @@ path_A5_SPDC = "D:/LinoSPAD2/Data/board_A5/BNL/FW_2212_block/SPDC"
 # Function execution.
 # =========================================================================
 
-delta_t.deltas_save_numpy(
-    path_A5_SPDC,
-    pix=(138, 156),
-    rewrite=True,
-    board_number="A5",
-    timestamps=200,
-    fw_ver="2212b",
-)
+# delta_t.deltas_save_numpy(
+#     path_A5_SPDC,
+#     pix=(138, 156),
+#     rewrite=True,
+#     board_number="A5",
+#     timestamps=200,
+#     fw_ver="2212b",
+# )
 
 # delta_t.delta_cp(
 #     path_NL11_703_12,
@@ -49,7 +49,7 @@ delta_t.deltas_save_numpy(
 #     range_right=15e3,
 # )
 
-gf.fit_wg(path_A5_SPDC, pix_pair=(138, 156), window=4e3, step=2)
+# gf.fit_wg(path_A5_SPDC, pix_pair=(138, 156), window=4e3, step=2)
 
 # plot_valid.plot_valid_FW2212_mult(
 #     path_NL11_703_12, board_number="NL11", fw_ver="2212b", timestamps=140, show_fig=True
@@ -60,10 +60,10 @@ gf.fit_wg(path_A5_SPDC, pix_pair=(138, 156), window=4e3, step=2)
 #     path_A5_Ar_spec, board_number="A5", tmrp=[810.3692, 811.5366], timestamps=200
 # )
 
-# spectro_stuff.spdc_ac(
-#     path_A5_SPDC_spec,
-#     board_number="A5",
-#     pix_left=[95, 96],
-#     pix_right=[220, 221],
-#     timestamps=20,
-# )
+spectro_stuff.spdc_ac(
+    path_A5_SPDC_spec,
+    board_number="A5",
+    pix_left=[95, 96],
+    pix_right=[220, 221],
+    timestamps=20,
+)

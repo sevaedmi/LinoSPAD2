@@ -222,8 +222,8 @@ def spdc_ac(
 
     mat = np.zeros((256, 256))
 
-    for i, file in enumerate(files):
-        data_all = f_up.unpack_2212_numpy(file, board_number="A5", timestamps=20)
+    for i in tqdm(range(len(files)), desc="Going through files"):
+        data_all = f_up.unpack_2212_numpy(files[i], board_number="A5", timestamps=20)
 
         # For plotting counts
         for i in np.arange(0, 256):
