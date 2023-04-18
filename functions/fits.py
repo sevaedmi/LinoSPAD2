@@ -20,7 +20,7 @@ from matplotlib import pyplot as plt
 from scipy.optimize import curve_fit
 
 
-def fit_wg(path, pix_pair: list, window: float = 5e3, fit_bins: int = 100):
+def fit_wg(path, pix_pair: list, window: float = 5e3, step: int = 1):
     """Fit with gaussian function and plot it.
 
     Fits timestamp differences of a pair of pixels with gaussian function and
@@ -34,8 +34,9 @@ def fit_wg(path, pix_pair: list, window: float = 5e3, fit_bins: int = 100):
         Two pixel numbers for which fit is done.
     window : float, optional
         Time range in which timestamp differences are fitted. The default is 5e3.
-    fit_bins : int, optional
-        Number of bins to use in calculating histograms. The default is 100.
+    step : int, optional
+        Bins of delta t histogram should be in units of 17.857 (average LinoSPAD2
+        TDC bin width). Default is 1.
 
     Raises
     ------
@@ -91,7 +92,8 @@ def fit_wg(path, pix_pair: list, window: float = 5e3, fit_bins: int = 100):
     os.chdir("..")
     plt.rcParams.update({"font.size": 22})
 
-    bins = np.linspace(np.min(data_to_plot), np.max(data_to_plot), fit_bins)
+    # bins must be in units of 17.857 ps
+    bins = np.arange(np.min(data_to_plot), np.max(data_to_plot), 17.857 * step)
 
     # Calculate histogram of timestamp differences for primary guess
     # of fit parameters and selecting a narrower window for the fit
@@ -112,7 +114,8 @@ def fit_wg(path, pix_pair: list, window: float = 5e3, fit_bins: int = 100):
         data_to_plot, np.argwhere(data_to_plot > b[n_argmax] + window)
     )
 
-    bins = np.linspace(np.min(data_to_plot), np.max(data_to_plot), fit_bins)
+    # bins must be in units of 17.857 ps
+    bins = np.arange(np.min(data_to_plot), np.max(data_to_plot), 17.857 * step)
 
     n, b, p = plt.hist(data_to_plot, bins=bins, color="teal")
     plt.close("all")

@@ -109,30 +109,36 @@ for i in range(len(peak_pos)):
 # =============================================================================
 # Plot for a paper
 # =============================================================================
-# plt.ioff()
-plt.figure(figsize=(16, 10))
+
+plt.ioff()
+fig, ax = plt.subplots(figsize=(16, 10))
 plt.rcParams.update({"font.size": 28})
-plt.xlabel("Wavelength [nm]")
-plt.ylabel("Counts [-]")
-plt.minorticks_on()
-plt.plot(x_nm, valid_per_pixel, "o-", color="steelblue", label="Data")
+ax.set_xlabel("Wavelength [nm]")
+ax.set_ylabel("Counts [-]")
+ax.minorticks_on()
+ax.tick_params(axis="both", width=1.5)
+ax.tick_params(which="major", length=8)
+ax.tick_params(which="minor", length=6)
+ax.set_xlim(790, 820)
+ax.set_ylim(-0.15e6, np.max(valid_per_pixel) + 0.5e6)
+ax.plot(x_nm, valid_per_pixel, "o-", color="steelblue", label="Data")
 for i in range(len(peak_pos)):
-    plt.plot(
+    ax.plot(
         x_nm[peak_pos[i] - 10 : peak_pos[i] + 10],
         fit_plot[i][peak_pos[i] - 10 : peak_pos[i] + 10],
         color=colors1[i],
         linewidth=2,
         label="\n"
         "\u03C3={p1} nm\n"
-        "\u03BC={p2} nm".format(
+        "\u03bb={p2} nm".format(
             p1=format(par[i][2], ".3f"), p2=format(par[i][1], ".3f")
         ),
     )
-plt.legend(loc="best", fontsize=22)
+ax.legend(loc="best", fontsize=22)
 plt.tight_layout()
-# try:
-#     os.chdir("results")
-# except:
-#     pass
-# plt.savefig("Ar_spec_for_paper.pdf")
+try:
+    os.chdir("results")
+except:
+    pass
+plt.savefig("Ar_spec_for_paper.pdf", bbox_inches="tight")
 # os.chdir("..")
