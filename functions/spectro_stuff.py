@@ -25,12 +25,10 @@ from tqdm import tqdm
 from functions import unpack as f_up
 
 
-# TODO: works only for 794, 800, 801, 810, and 811 nm lines
-# TODO: save plots
-def ar_spec(path, board_number: str, timestamps: int = 512):
-    """Plot and fit Ar spectrum.
+def ar_spec(path, board_number: str, tnl: list, timestamps: int = 512):
+    """Plot and fit a spectrum.
 
-    Unpacks Ar spectrum data, plots the number of counts vs wavelength and fits
+    Unpacks spectrum data, plots the number of counts vs wavelength and fits
     with gaussian function each of the peaks. Peaks are looked for automatically using
     a threshold of 10% of max of all counts. Works only with LinoSPAD2 firmware version
     2212b.
@@ -41,6 +39,8 @@ def ar_spec(path, board_number: str, timestamps: int = 512):
         Path to datafiles.
     board_number : str
         LinoSPAD2 daughterboard number. Either 'A5' or 'NL11' are recognized.
+    tnl: list
+        NIST values for two neighboring lines.
     timestamps : int, optional
         Number of timestamps per acqusition cycle per TDC. The default is 512.
 
@@ -52,7 +52,10 @@ def ar_spec(path, board_number: str, timestamps: int = 512):
     # parameter type check
     if isinstance(board_number, str) is not True:
         raise TypeError("'board_number' should be string, either 'NL11' or 'A5'")
-
+    if len(tnl) != 2:
+        raise ValueError(
+            "'tmrp' should include exactly two most right lines expected in" "the plot"
+        )
     os.chdir(path)
 
     files = glob.glob("*.dat*")
@@ -88,14 +91,13 @@ def ar_spec(path, board_number: str, timestamps: int = 512):
     peak_pos = sg.find_peaks(valid_per_pixel, threshold=v_max / 10)[0]
 
     # Convert pixels to wavelengths; NIST values are used, accounting for air refractive
-    # index
+    # index of 1.0003
     pixels = np.arange(0, 256, 1)
-    print(peak_pos[-1] - peak_pos[-2])
-    nm_per_pix = (811.5311 / 1.0003 - 810.3692 / 1.0003) / 11
-    x_nm = nm_per_pix * pixels + 811.5311 / 1.0003 - nm_per_pix * peak_pos[-1]
+    nm_per_pix = (tnl[1] / 1.0003 - tnl[0] / 1.0003) / (peak_pos[-1] - peak_pos[-2])
+    x_nm = nm_per_pix * pixels + tnl[1] / 1.0003 - nm_per_pix * peak_pos[-1]
 
     peak_pos_nm = (
-        np.array(peak_pos) * nm_per_pix + 811.5311 / 1.0003 - nm_per_pix * peak_pos[-1]
+        np.array(peak_pos) * nm_per_pix + tnl[1] / 1.0003 - nm_per_pix * peak_pos[-1]
     )
 
     def gauss(x, A, x0, sigma, C):
@@ -157,9 +159,17 @@ def ar_spec(path, board_number: str, timestamps: int = 512):
     plt.legend(loc="best", fontsize=16)
     plt.tight_layout()
 
+    try:
+        os.chdir("results")
+    except Exception:
+        os.makedirs("results")
+        os.chdir("results")
+    plt.savefig("{p1}-{p2} nm.png".format(p1=peak_pos[0], p2=peak_pos[-1]))
+    plt.pause(0.1)
+    os.chdir("..")
+
 
 # TODO: convert pix numbers to nm
-# TODO: save plots
 def spdc_ac(
     path,
     board_number: str,
@@ -306,6 +316,15 @@ def spdc_ac(
     plt.plot(valid_per_pixel - valid_per_pixel_bckg, "o-", color="teal")
     plt.show()
 
+    try:
+        os.chdir("results")
+    except Exception:
+        os.makedirs("results")
+        os.chdir("results")
+    plt.savefig("SPDC counts.png")
+    plt.pause(0.1)
+    os.chdir("..")
+
     if interpolation is True:
         interpolation = "bessel"
     else:
@@ -318,3 +337,12 @@ def spdc_ac(
     plt.title("SPDC anti-correlation plot")
     pos = ax.imshow(mat.T, cmap="cividis", interpolation=interpolation, origin="lower")
     fig.colorbar(pos, ax=ax)
+
+    try:
+        os.chdir("results")
+    except Exception:
+        os.makedirs("results")
+        os.chdir("results")
+    plt.savefig("SPDC anti-correlation plot.png")
+    plt.pause(0.1)
+    os.chdir("..")

@@ -20,6 +20,7 @@ step = 5
 bins = np.arange(np.min(y1), np.max(y1), 17.857 * step)
 
 n, b, p = plt.hist(y1, bins=bins)
+plt.close()
 
 mod_peak = GaussianModel()
 mod_bckg = ConstantModel()
@@ -37,3 +38,7 @@ pars += mod_bckg.guess(n, x=b[:-1])
 res = mod_res.fit(n, pars, x=b[:-1])
 
 print(res.fit_report(min_correl=0.25))
+
+plt.figure(figsize=(16, 10))
+# plt.step(b[:-1], n)
+res.plot_fit()
