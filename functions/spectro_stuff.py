@@ -21,6 +21,7 @@ import time
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 from scipy import signal as sg
 from scipy.optimize import curve_fit
 from tqdm import tqdm
@@ -411,21 +412,33 @@ def spdc_ac_cp(
     # Find where the data in the matrix is for setting limits for plot
     positives = np.where(mat > 0)
 
-    plt.rcParams({"font.size": 22})
-    fig, ax = plt.subplots(figsize=(10, 10))
+    deg = (
+        np.arctan(
+            (positives[1][-1] - positives[1][0]) / (positives[0][-1] - positives[0][0])
+        )
+        * 180
+        / np.pi
+    )
+
+    plt.rcParams.update({"font.size": 22})
+    fig, ax = plt.subplots(figsize=(10, 7))
     plt.xlabel("Pixel [-]")
     plt.ylabel("Pixel [-]")
     plt.xlim(positives[0][0] - 5, positives[0][-1] + 5)
     plt.ylim(positives[1][0] - 5, positives[1][-1] + 5)
-    plt.title("SPDC anti-correlation plot")
+    plt.title(
+        "SPDC anti-correlation plot\nAngle is {deg} \u00b0".format(
+            deg=format(deg, ".2f")
+        )
+    )
     pos = ax.imshow(mat.T, cmap="cividis", interpolation=interpolation, origin="lower")
-    fig.colorbar(pos, ax=ax, label="# of coincidences [-]")
-
+    divider = make_axes_locatable(ax)
+    cax = divider.append_axes("right", size="5%", pad=0.05)
+    plt.colorbar(pos, cax=cax, label="# of coincidences [-]")
+    plt.tight_layout()
     try:
         os.chdir("results")
     except Exception:
         os.makedirs("results")
         os.chdir("results")
     plt.savefig("SPDC anti-correlation plot.png")
-    plt.pause(0.1)
-    os.chdir("..")
