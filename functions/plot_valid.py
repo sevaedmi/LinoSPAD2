@@ -523,3 +523,94 @@ def plot_valid_FW2212(
     fig.tight_layout()
     plt.savefig("{}.png".format(plot_name))
     os.chdir("..")
+
+
+# TODO: docstring
+def plot_spdc(path, board_number: str, timestamps: int = 512, show_fig: bool = False):
+    # parameter type check
+    if isinstance(board_number, str) is not True:
+        raise TypeError("'board_number' should be string, either 'NL11' or 'A5'")
+
+    if show_fig is True:
+        plt.ion()
+    else:
+        plt.ioff()
+
+    os.chdir(path)
+
+    files = glob.glob("*.dat*")
+
+    # background data for subtracting
+    path_bckg = path + "/bckg"
+    os.chdir(path_bckg)
+    files_bckg = glob.glob("*.dat*")
+    os.chdir("..")
+
+    if len(files) != len(files_bckg):
+        raise ValueError(
+            "Number of files with background data is different from the"
+            "number of actual data, exiting."
+        )
+
+    plot_name = files[0][:-4] + "-" + files[-1][:-4]
+
+    valid_per_pixel = np.zeros(256)
+    valid_per_pixel_bckg = np.zeros(256)
+
+    pix_coor = np.arange(256).reshape(64, 4)
+
+    for i in tqdm(range(len(files)), desc="Going through datafiles"):
+        data_all = f_up.unpack_2212_numpy(
+            files[i], board_number="A5", timestamps=timestamps
+        )
+
+        for i in np.arange(0, 256):
+            tdc, pix = np.argwhere(pix_coor == i)[0]
+            ind = np.where(data_all[tdc].T[0] == pix)[0]
+            ind1 = ind[np.where(data_all[tdc].T[1][ind] > 0)[0]]
+            valid_per_pixel[i] += len(data_all[tdc].T[1][ind1])
+
+    os.chdir(path_bckg)
+
+    for i in tqdm(range(len(files_bckg)), desc="Going through background datafiles"):
+        data_all_bckg = f_up.unpack_2212_numpy(
+            files_bckg[i], board_number="A5", timestamps=timestamps
+        )
+
+        # Fot plotting counts
+        for i in np.arange(0, 256):
+            tdc, pix = np.argwhere(pix_coor == i)[0]
+            ind = np.where(data_all_bckg[tdc].T[0] == pix)[0]
+            ind1 = ind[np.where(data_all_bckg[tdc].T[1][ind] > 0)[0]]
+            valid_per_pixel_bckg[i] += len(data_all_bckg[tdc].T[1][ind1])
+
+    os.chdir("..")
+
+    # Mask the hot/warm pixels
+    path_to_back = os.getcwd()
+    path_to_mask = os.path.realpath(__file__) + "/../.." + "/masks"
+    os.chdir(path_to_mask)
+    file_mask = glob.glob("*{}*".format(board_number))[0]
+    mask = np.genfromtxt(file_mask).astype(int)
+    os.chdir(path_to_back)
+
+    for i in mask:
+        valid_per_pixel[i] = 0
+        valid_per_pixel_bckg[i] = 0
+
+    plt.rcParams.update({"font.size": 22})
+    plt.figure(figsize=(16, 10))
+    plt.xlabel("Pixel [-]")
+    plt.ylabel("Counts [-]")
+    plt.title("SPDC data, background subtracted")
+    plt.plot(valid_per_pixel - valid_per_pixel_bckg, "o-", color="teal")
+    plt.tight_layout()
+
+    try:
+        os.chdir("results")
+    except Exception:
+        os.makedirs("results")
+        os.chdir("results")
+    plt.savefig("{}_SPDC_counts.png".format(plot_name))
+    plt.pause(0.1)
+    os.chdir("..")

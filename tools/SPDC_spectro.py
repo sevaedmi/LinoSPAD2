@@ -19,7 +19,7 @@ valid_per_pixel = np.zeros(256)
 pix_coor = np.arange(256).reshape(64, 4)
 
 for i, file in enumerate(files):
-    data_all = unpack.unpack_2212_numpy(file, board_number="A5", timestamps=20)
+    data_all = unpack.unpack_2212_numpy(file, board_number="A5", timestamps=10)
 
     for i in np.arange(0, 256):
         tdc, pix = np.argwhere(pix_coor == i)[0]
@@ -34,7 +34,7 @@ files = glob.glob("*.dat*")
 valid_per_pixel_bckg = np.zeros(256)
 
 for i, file in enumerate(files):
-    data_all_bckg = unpack.unpack_2212_numpy(file, board_number="A5", timestamps=20)
+    data_all_bckg = unpack.unpack_2212_numpy(file, board_number="A5", timestamps=10)
 
     for i in np.arange(0, 256):
         tdc, pix = np.argwhere(pix_coor == i)[0]

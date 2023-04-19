@@ -60,10 +60,15 @@ path_A5_SPDC = "D:/LinoSPAD2/Data/board_A5/BNL/FW_2212_block/SPDC"
 #     path_A5_Ar_spec, board_number="A5", tmrp=[810.3692, 811.5366], timestamps=200
 # )
 
-spectro_stuff.spdc_ac(
-    path_A5_SPDC_spec,
-    board_number="A5",
-    pix_left=[95, 96],
-    pix_right=[220, 221],
-    timestamps=20,
-)
+# spectro_stuff.spdc_ac_save(
+#     path_A5_SPDC_spec,
+#     board_number="A5",
+#     pix_left=np.arange(70, 142, 1),
+#     pix_right=np.arange(175, 229, 1),
+#     timestamps=10,
+#     rewrite=True
+# )
+
+# spectro_stuff.spdc_ac_cp(path_A5_SPDC_spec, rewrite=True)
+
+plot_valid.plot_spdc(path_A5_SPDC_spec, board_number="A5", timestamps=10)

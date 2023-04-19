@@ -97,8 +97,9 @@ def fit_wg(path, pix_pair: list, window: float = 5e3, step: int = 1):
 
     # Calculate histogram of timestamp differences for primary guess
     # of fit parameters and selecting a narrower window for the fit
-    n, b, p = plt.hist(data_to_plot, bins=bins, color="teal")
-    plt.close("all")
+    # n, b, p = plt.hist(data_to_plot, bins=bins, color="teal")
+    # plt.close("all")
+    n, b = np.histogram(data_to_plot, bins)
 
     #
     try:
@@ -117,8 +118,10 @@ def fit_wg(path, pix_pair: list, window: float = 5e3, step: int = 1):
     # bins must be in units of 17.857 ps
     bins = np.arange(np.min(data_to_plot), np.max(data_to_plot), 17.857 * step)
 
-    n, b, p = plt.hist(data_to_plot, bins=bins, color="teal")
-    plt.close("all")
+    # n, b, p = plt.hist(data_to_plot, bins=bins, color="teal")
+    # plt.close("all")
+
+    n, b = np.histogram(data_to_plot, bins)
 
     b1 = (b - (b[-1] - b[-2]) / 2)[1:]
 
@@ -149,7 +152,7 @@ def fit_wg(path, pix_pair: list, window: float = 5e3, step: int = 1):
 
     plt.figure(figsize=(16, 10))
     plt.xlabel(r"$\Delta$ [ps]")
-    plt.ylabel("Timestamps [-]")
+    plt.ylabel("# of coincidences [-]")
     plt.step(
         b[1:],
         n,

@@ -15,8 +15,11 @@ functions:
 """
 import glob
 import os
+import sys
+import time
 
 import numpy as np
+import pandas as pd
 from matplotlib import pyplot as plt
 from scipy import signal as sg
 from scipy.optimize import curve_fit
@@ -25,7 +28,7 @@ from tqdm import tqdm
 from functions import unpack as f_up
 
 
-def ar_spec(path, board_number: str, tnl: list, timestamps: int = 512):
+def ar_spec(path, board_number: str, tmrl: list, timestamps: int = 512):
     """Plot and fit a spectrum.
 
     Unpacks spectrum data, plots the number of counts vs wavelength and fits
@@ -39,8 +42,8 @@ def ar_spec(path, board_number: str, tnl: list, timestamps: int = 512):
         Path to datafiles.
     board_number : str
         LinoSPAD2 daughterboard number. Either 'A5' or 'NL11' are recognized.
-    tnl: list
-        NIST values for two neighboring lines.
+    tmrl: list
+        NIST values for the two most right lines.
     timestamps : int, optional
         Number of timestamps per acqusition cycle per TDC. The default is 512.
 
@@ -52,7 +55,7 @@ def ar_spec(path, board_number: str, tnl: list, timestamps: int = 512):
     # parameter type check
     if isinstance(board_number, str) is not True:
         raise TypeError("'board_number' should be string, either 'NL11' or 'A5'")
-    if len(tnl) != 2:
+    if len(tmrl) != 2:
         raise ValueError(
             "'tmrp' should include exactly two most right lines expected in" "the plot"
         )
@@ -93,11 +96,11 @@ def ar_spec(path, board_number: str, tnl: list, timestamps: int = 512):
     # Convert pixels to wavelengths; NIST values are used, accounting for air refractive
     # index of 1.0003
     pixels = np.arange(0, 256, 1)
-    nm_per_pix = (tnl[1] / 1.0003 - tnl[0] / 1.0003) / (peak_pos[-1] - peak_pos[-2])
-    x_nm = nm_per_pix * pixels + tnl[1] / 1.0003 - nm_per_pix * peak_pos[-1]
+    nm_per_pix = (tmrl[1] / 1.0003 - tmrl[0] / 1.0003) / (peak_pos[-1] - peak_pos[-2])
+    x_nm = nm_per_pix * pixels + tmrl[1] / 1.0003 - nm_per_pix * peak_pos[-1]
 
     peak_pos_nm = (
-        np.array(peak_pos) * nm_per_pix + tnl[1] / 1.0003 - nm_per_pix * peak_pos[-1]
+        np.array(peak_pos) * nm_per_pix + tmrl[1] / 1.0003 - nm_per_pix * peak_pos[-1]
     )
 
     def gauss(x, A, x0, sigma, C):
@@ -169,20 +172,20 @@ def ar_spec(path, board_number: str, tnl: list, timestamps: int = 512):
     os.chdir("..")
 
 
-# TODO: convert pix numbers to nm
-def spdc_ac(
+def spdc_ac_save(
     path,
     board_number: str,
     pix_left: list,
     pix_right: list,
-    interpolation: bool = False,
+    rewrite: bool,
     timestamps: int = 512,
     delta_window: float = 10e3,
 ):
-    """Plot counts and anti-correlation plot for SPDC data.
+    """Calculate and save to csv timestamps differences from SPDC data.
 
-    Unpack SPDC data and plot counts vs pixel number and an anti-correlation plot.
-    Works only with LinoSPAD2 firmware version 2212b.
+    Unpack SPDC data, calculates timestamp differences between the two given lists
+    of pixels' numbers, and saves it to a .csv file. Works only with LinoSPAD2
+    firmware version 2212b.
 
     Parameters
     ----------
@@ -194,8 +197,8 @@ def spdc_ac(
         List of pixel numbers covering signal/idler.
     pix_right : list
         List of pixel numbers covering idler/signal.
-    interpolation: bool, optional
-        Switch for interpolating the anti-correlation plot. Default is False.
+    rewrite : bool
+        Switch for rewriting the .csv file with timestamp differences.
     timestamps : int, optional
         Number of timestamps per pixel number per TDC. The default is 512.
     delta_window : float, optional
@@ -209,28 +212,69 @@ def spdc_ac(
     # parameter type check
     if isinstance(board_number, str) is not True:
         raise TypeError("'board_number' should be string, either 'NL11' or 'A5'")
-    if isinstance(interpolation, bool) is not True:
-        raise TypeError("'interpolation' should be boolean.")
+    if isinstance(rewrite, bool) is not True:
+        raise TypeError("'rewrite' should be boolean, 'True' for rewriting the .csv")
 
     os.chdir(path)
 
     files = glob.glob("*.dat*")
 
-    valid_per_pixel = np.zeros(256)
+    out_file_name = files[0][:-4] + "-" + files[-1][:-4]
 
+    # check if csv file exists and if it should be rewrited
+    try:
+        os.chdir("delta_ts_data")
+        if os.path.isfile("{}.csv".format(out_file_name)):
+            if rewrite is True:
+                print("\n! ! ! csv file already exists and will be rewritten. ! ! !\n")
+                for i in range(5):
+                    print("\n! ! ! Deleting the file in {} ! ! !\n".format(5 - i))
+                    time.sleep(1)
+                os.remove("{}.csv".format(out_file_name))
+            else:
+                sys.exit(
+                    "\n csv file already exists, 'rewrite' set to 'False', exiting."
+                )
+        os.chdir("..")
+    except FileNotFoundError:
+        pass
+
+    # If .csv file does not exist or it set to be rewritten, prepare header with all
+    # pixels' pair combinations
+    new_csv = {}
+
+    for q in pix_left:
+        for w in pix_right:
+            new_csv["{},{}".format(q, w)] = []
+
+    try:
+        os.chdir("delta_ts_data")
+    except FileNotFoundError:
+        os.mkdir("delta_ts_data")
+        os.chdir("delta_ts_data")
+
+    new_csv_df = pd.DataFrame.from_dict(new_csv)
+    new_csv_df.to_csv("{}.csv".format(out_file_name), index=False)
+
+    os.chdir("..")
+
+    # Prepare arrays for the for loop: first for pixel addresses for converting to
+    # TDC number and pix number in that TDC (0, 1, 2, 3); second for number of timestamp
+    # differences in each pixel pair
     pix_coor = np.arange(256).reshape(64, 4)
 
-    mat = np.zeros((256, 256))
+    # Mask the hot/warm pixels
+    path_to_back = os.getcwd()
+    path_to_mask = os.path.realpath(__file__) + "/../.." + "/masks"
+    os.chdir(path_to_mask)
+    file_mask = glob.glob("*{}*".format(board_number))[0]
+    mask = np.genfromtxt(file_mask).astype(int)
+    os.chdir(path_to_back)
 
     for i in tqdm(range(len(files)), desc="Going through files"):
-        data_all = f_up.unpack_2212_numpy(files[i], board_number="A5", timestamps=20)
-
-        # For plotting counts
-        for i in np.arange(0, 256):
-            tdc, pix = np.argwhere(pix_coor == i)[0]
-            ind = np.where(data_all[tdc].T[0] == pix)[0]
-            ind1 = ind[np.where(data_all[tdc].T[1][ind] > 0)[0]]
-            valid_per_pixel[i] += len(data_all[tdc].T[1][ind1])
+        data_all = f_up.unpack_2212_numpy(
+            files[i], board_number="A5", timestamps=timestamps
+        )
 
         # For anti-correlation plot
         deltas_all = {}
@@ -238,19 +282,21 @@ def spdc_ac(
         # Calculate and collect timestamp differences
         for q in pix_left:
             for w in pix_right:
-                deltas_all["{},{}".format(q, w)] = []
-
-                # find end of cycles
+                if "{},{}".format(q, w) not in list(deltas_all.keys()):
+                    deltas_all["{},{}".format(q, w)] = []
+                if q in mask or w in mask:
+                    continue
+                # Find ends of cycles
                 cycler = np.argwhere(data_all[0].T[0] == -2)
                 # TODO: most probably losing first delta t due to cycling
                 cycler = np.insert(cycler, 0, 0)
-                # first pixel in the pair
+                # First pixel in the pair
                 tdc1, pix_c1 = np.argwhere(pix_coor == q)[0]
                 pix1 = np.where(data_all[tdc1].T[0] == pix_c1)[0]
-                # second pixel in the pair
+                # Second pixel in the pair
                 tdc2, pix_c2 = np.argwhere(pix_coor == w)[0]
                 pix2 = np.where(data_all[tdc2].T[0] == pix_c2)[0]
-                # get timestamp for both pixels in the given cycle
+                # Get timestamp for both pixels in the given cycle
                 for cyc in np.arange(len(cycler) - 1):
                     pix1_ = pix1[
                         np.logical_and(pix1 > cycler[cyc], pix1 < cycler[cyc + 1])
@@ -262,7 +308,7 @@ def spdc_ac(
                     ]
                     if not np.any(pix2_):
                         continue
-                    # calculate delta t
+                    # Calculate delta t
                     tmsp1 = data_all[tdc1].T[1][
                         pix1_[np.where(data_all[tdc1].T[1][pix1_] > 0)[0]]
                     ]
@@ -273,70 +319,107 @@ def spdc_ac(
                         deltas = tmsp2 - t1
                         ind = np.where(np.abs(deltas) < delta_window)[0]
                         deltas_all["{},{}".format(q, w)].extend(deltas[ind])
-                        mat[q][w] += len(ind)
 
-    # background data for subtracting
-    path_bckg = path + "/bckg"
-    os.chdir(path_bckg)
+        # Save data as a .csv file
+        data_for_plot_df = pd.DataFrame.from_dict(deltas_all, orient="index")
+        del deltas_all
+        data_for_plot_df = data_for_plot_df.T
+        try:
+            os.chdir("delta_ts_data")
+        except FileNotFoundError:
+            os.mkdir("delta_ts_data")
+            os.chdir("delta_ts_data")
+        data_for_plot_df.to_csv(
+            "{}.csv".format(out_file_name), mode="a", header=False, index=False
+        )
+        os.chdir("..")
 
-    files = glob.glob("*.dat*")
 
-    valid_per_pixel_bckg = np.zeros(256)
+def spdc_ac_cp(
+    path,
+    rewrite: bool,
+    interpolation: bool = False,
+    show_fig: bool = False,
+):
+    """Plot anti-correlation plot from SPDC data.
 
-    for i, file in enumerate(files):
-        data_all_bckg = f_up.unpack_2212_numpy(file, board_number="A5", timestamps=20)
+    Using timestamp differences from .csv file, plot an anti-correlation plot.
 
-        # Fot plotting counts
-        for i in np.arange(0, 256):
-            tdc, pix = np.argwhere(pix_coor == i)[0]
-            ind = np.where(data_all_bckg[tdc].T[0] == pix)[0]
-            ind1 = ind[np.where(data_all_bckg[tdc].T[1][ind] > 0)[0]]
-            valid_per_pixel_bckg[i] += len(data_all_bckg[tdc].T[1][ind1])
 
-    os.chdir("..")
+    Parameters
+    ----------
+    path : str
+        Path to datafiles.
+    rewrite : bool
+        Switch for overwriting the plot if it exists.
+    interpolation : bool, optional
+        Switch for applying bessel interpolation on the plot. The default is False.
+    show_fig : bool, optional
+        Switch for showing the plot. The default is False.
 
-    # Mask the hot/warm pixels
-    path_to_back = os.getcwd()
-    path_to_mask = os.path.realpath(__file__) + "/../.." + "/masks"
-    os.chdir(path_to_mask)
-    file_mask = glob.glob("*{}*".format(board_number))[0]
-    mask = np.genfromtxt(file_mask).astype(int)
-    os.chdir(path_to_back)
+    Raises
+    ------
+    TypeError
+        Raised if 'rewrite' is not boolean.
 
-    for i in mask:
-        valid_per_pixel[i] = 0
-        valid_per_pixel_bckg[i] = 0
+    Returns
+    -------
+    None.
 
-    plt.ion()
-    plt.rcParams.update({"font.size": 22})
-    plt.figure(figsize=(10, 7))
-    plt.xlabel("Pixel [-]")
-    plt.ylabel("Counts [-]")
-    plt.title("SPDC data, background subtracted")
-    plt.plot(valid_per_pixel - valid_per_pixel_bckg, "o-", color="teal")
-    plt.show()
+    """
+    if isinstance(rewrite, bool) is not True:
+        raise TypeError("'rewrite' should be boolean, 'True' for rewriting the plot")
 
+    os.chdir(path)
+    files_all = glob.glob("*.dat*")
+    csv_file_name = files_all[0][:-4] + "-" + files_all[-1][:-4]
+
+    # Check if plot exists and if it should be rewrited
     try:
-        os.chdir("results")
-    except Exception:
-        os.makedirs("results")
-        os.chdir("results")
-    plt.savefig("SPDC counts.png")
-    plt.pause(0.1)
-    os.chdir("..")
+        os.chdir("results/delta_t")
+        if os.path.isfile("{name}_delta_t_grid.png".format(name=csv_file_name)):
+            if rewrite is True:
+                print("\n! ! ! Plot already exists and will be rewritten. ! ! !\n")
+            else:
+                sys.exit("\nPlot already exists, 'rewrite' set to 'False', exiting.")
+        os.chdir("../..")
+    except FileNotFoundError:
+        pass
+
+    # Go through plot settings
+    if show_fig is True:
+        plt.ion()
+    else:
+        plt.ioff()
 
     if interpolation is True:
         interpolation = "bessel"
     else:
         interpolation = "None"
 
-    plt.ion()
+    # Matrix of 256 by 256 pixels with number of timestamp differences per pair of
+    # pixels.
+    mat = np.zeros((256, 256))
+
+    data = pd.read_csv("delta_ts_data/{}.csv".format(csv_file_name))
+
+    # Fill the matrix
+    for i in range(len(data.columns)):
+        pixs = data.columns[i].split(",")
+        mat[int(pixs[0])][int(pixs[1])] = len(data[data.columns[i]].dropna())
+
+    # Find where the data in the matrix is for setting limits for plot
+    positives = np.where(mat > 0)
+
+    plt.rcParams({"font.size": 22})
     fig, ax = plt.subplots(figsize=(10, 10))
     plt.xlabel("Pixel [-]")
     plt.ylabel("Pixel [-]")
+    plt.xlim(positives[0][0] - 5, positives[0][-1] + 5)
+    plt.ylim(positives[1][0] - 5, positives[1][-1] + 5)
     plt.title("SPDC anti-correlation plot")
     pos = ax.imshow(mat.T, cmap="cividis", interpolation=interpolation, origin="lower")
-    fig.colorbar(pos, ax=ax)
+    fig.colorbar(pos, ax=ax, label="# of coincidences [-]")
 
     try:
         os.chdir("results")

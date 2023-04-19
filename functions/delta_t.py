@@ -734,7 +734,7 @@ def deltas_save_numpy(
             if rewrite is True:
                 print("\n! ! ! csv file already exists and will be rewritten. ! ! !\n")
                 for i in range(5):
-                    print("\n! ! ! Deleting the file in {} ! ! !\n".format(i))
+                    print("\n! ! ! Deleting the file in {} ! ! !\n".format(5 - i))
                     time.sleep(1)
                 os.remove("{}.csv".format(out_file_name))
             else:
@@ -824,7 +824,6 @@ def deltas_save_numpy(
                     if w <= q:
                         continue
                     deltas_all["{},{}".format(q, w)] = []
-
                     # find end of cycles
                     cycler = np.argwhere(data_all[0].T[0] == -2)
                     cycler = np.insert(cycler, 0, 0)
@@ -1004,7 +1003,7 @@ def delta_cp(
 
             if len(pix) > 2:
                 axs[q][w - 1].set_xlabel("\u0394t [ps]")
-                axs[q][w - 1].set_ylabel("Pair count [-]")
+                axs[q][w - 1].set_ylabel("# of coincidences [-]")
                 n, b, p = axs[q][w - 1].hist(
                     data_to_plot,
                     bins=bins,
@@ -1012,7 +1011,7 @@ def delta_cp(
                 )
             else:
                 plt.xlabel("\u0394t [ps]")
-                plt.ylabel("Pair count [-]")
+                plt.ylabel("# of coincidences [-]")
                 n, b, p = plt.hist(
                     data_to_plot,
                     bins=bins,
