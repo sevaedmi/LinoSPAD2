@@ -97,6 +97,10 @@ def ar_spec(path, board_number: str, tmrl: list, timestamps: int = 512):
     # Convert pixels to wavelengths; NIST values are used, accounting for air refractive
     # index of 1.0003
     pixels = np.arange(0, 256, 1)
+    # To convert pix to nm, use linear equation y = ax + b
+    # a = (y_2 - y_1) / (p-2 - p_1), where y_1, y_2 are pix position in pixels,
+    # p_1, p_2 - in nm.
+    # b = y_2 - (y_2 - y_1) / (p_2 - p_1) * p_1 = y_2 - a * p_1
     nm_per_pix = (tmrl[1] / 1.0003 - tmrl[0] / 1.0003) / (peak_pos[-1] - peak_pos[-2])
     x_nm = nm_per_pix * pixels + tmrl[1] / 1.0003 - nm_per_pix * peak_pos[-1]
 
@@ -168,7 +172,11 @@ def ar_spec(path, board_number: str, tmrl: list, timestamps: int = 512):
     except Exception:
         os.makedirs("results")
         os.chdir("results")
-    plt.savefig("{p1}-{p2} nm.png".format(p1=peak_pos[0], p2=peak_pos[-1]))
+    plt.savefig(
+        "{p1}-{p2} nm.png".format(
+            p1=format(peak_pos_nm[0], ".0f"), p2=format(peak_pos_nm[-1], ".0f")
+        )
+    )
     plt.pause(0.1)
     os.chdir("..")
 
@@ -180,7 +188,7 @@ def spdc_ac_save(
     pix_right: list,
     rewrite: bool,
     timestamps: int = 512,
-    delta_window: float = 10e3,
+    delta_window: float = 50e3,
 ):
     """Calculate and save to csv timestamps differences from SPDC data.
 
@@ -341,6 +349,7 @@ def spdc_ac_cp(
     rewrite: bool,
     interpolation: bool = False,
     show_fig: bool = False,
+    delta_window: int = 10e3,
 ):
     """Plot anti-correlation plot from SPDC data.
 
@@ -407,7 +416,10 @@ def spdc_ac_cp(
     # Fill the matrix
     for i in range(len(data.columns)):
         pixs = data.columns[i].split(",")
-        mat[int(pixs[0])][int(pixs[1])] = len(data[data.columns[i]].dropna())
+        ind = np.where(np.abs(np.array(data[data.columns[i]])) < delta_window)[0]
+        if not np.any(ind):
+            continue
+        mat[int(pixs[0])][int(pixs[1])] = len(data[data.columns[i]][ind].dropna())
 
     # Find where the data in the matrix is for setting limits for plot
     positives = np.where(mat > 0)

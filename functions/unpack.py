@@ -41,7 +41,8 @@ from functions.calibrate import calibrate_load
 def unpack_binary_flex(filename, timestamps: int = 512):
     """Unpack binary data from the LinoSPAD2.
 
-    Unpacking a single 'dat' output of the LinoSPAD2.
+    Unpacking a single 'dat' output of the LinoSPAD2. Due to the straightforward
+    approach used mainly for debugging, otherwise is pretty slow.
 
     Parameters
     ----------
@@ -114,7 +115,7 @@ def unpack_numpy(
     Function for unpacking the .dat data files using the calibration
     data. The output is a matrix of '256 x timestamps*number_of_cycles'
     timestamps in ps. The fastest version that utilizes the numpy library.
-    Unpacks data only from firmware version 2208.
+    Works only with firmware version 2208.
 
     Parameters
     ----------
@@ -216,11 +217,6 @@ def unpack_numpy(
             data_matrix[i, ind] - data_matrix[i, ind] % 140
         ) * 17.857 + cal_mat[i, (data_matrix[i, ind] % 140)]
 
-    if not np.any(pix):
-        pix = np.arange(256)
-
-    data_matrix = data_matrix[pix, :]
-
     if app_mask is True:
         path_to_back = os.getcwd()
         path_to_mask = os.path.realpath(__file__) + "/../.." + "/masks"
@@ -229,6 +225,11 @@ def unpack_numpy(
         mask = np.genfromtxt(file_mask).astype(int)
         data_matrix[mask] = -1
         os.chdir(path_to_back)
+
+    if not np.any(pix):
+        pix = np.arange(256)
+
+    data_matrix = data_matrix[pix, :]
 
     return data_matrix
 
@@ -476,7 +477,7 @@ def unpack_2212(filename, board_number: str, fw_ver: str, timestamps: int = 512)
             if not cycler % (32 * timestamps) and cycler != 0:
                 tdc += 1
             cycler += 32
-            # Cut the 64th (TDC=[0,...63]) that does not contain timestamps
+            # Cut the 64th TDC (TDC=[0,...63]) that does not contain timestamps
             if tdc != 0 and tdc == 64:
                 continue
             # Reset the TDC number - end of cycle

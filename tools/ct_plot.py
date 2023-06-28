@@ -6,11 +6,15 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from scipy.stats import sem
 
-path = "C:/Users/bruce/Documents/Quantum astrometry"
+path = "C:/Users/bruce/Documents/Quantum astrometry/CT"
 
 os.chdir(path)
 
-file = glob.glob("*CT_data.csv*")[0]
+# file = glob.glob("*CT_data.csv*")[0]
+file_name = "CT_data_Ne_585_134,140.csv"
+# file_name = "CT_data_Ne_585_138.csv"
+# file_name = "CT_data_SPDC_130.csv"
+file = glob.glob("*{}*".format(file_name))[0]
 
 data = pd.read_csv(file)
 
@@ -21,7 +25,7 @@ yerr1 = []
 yerr2 = []
 
 
-pix1 = 135
+pix1 = 134
 
 data_cut = data.loc[data["Pixel 1"] == pix1]
 

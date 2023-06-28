@@ -17,94 +17,164 @@ functions:
 
 import glob
 import os
+import pickle
 
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
 from scipy.stats import sem
 
+from functions import calc_diff as cd
 from functions import unpack as f_up
-from functions.calc_diff import calc_diff as cd
 
 
-def collect_ct(path, pix: int, board_number: str, timestamps: int = 512):
-    """Calculate cross-talk and save it into a .csv file.
+def collect_ct(
+    path,
+    pixels: int,
+    board_number: str,
+    fw_ver: str,
+    timestamps: int = 512,
+    delta_window: float = 10e3,
+):
+    """Calculate cross-talk and save it to a .csv file.
+
+    Calculate timestamp differences for all pixels in the given range, where all timestamp
+    differences are calculated for the first pixel in the range. Works with firmware versions
+    "2208" and "2212b".
 
     Parameters
     ----------
     path : str
-        Path to data files.
-    pix : array-like, list
-        Pixel numbers for which the cross-talk should be calculated.
+        Path to datafiles.
+    pixels : array-like
+        Array of pixel numbers.
     board_number : str
-        The LinoSPAD2 daughterboard number.
+        The LinoSPAD2 daughterboard number. Only "NL11" and "A5" values are accepted.
+    fw_ver : str
+        Firmware version installed on the LinoSPAD2 motherboard. Only "2208" and "2212b" values
+        are accepted.
     timestamps : int, optional
-        Number of timestamps per acquisition cycle per pixel. The default is 512.
+        Number of timestamps per pixel per cycle. The default is 512.
+    delta_window : float, optional
+        A width of a window in which the number of timestamp differences are counted. The default
+        value is 10 ns. The default is 10e3.
 
     Returns
     -------
     None.
 
     """
+    # parameter type check
+    if isinstance(board_number, str) is not True:
+        raise TypeError("'board_number' should be string, either 'NL11' or 'A5'")
+    if isinstance(fw_ver, str) is not True:
+        raise TypeError("'fw_ver' should be string, either '2208' or '2212b'")
+
     print("\n> > > Collecting data for cross-talk analysis < < <\n")
     file_name_list = []
     pix1_list = []
     pix2_list = []
-    timestamps_list = []
+    timestamps_list1 = []
+    timestamps_list2 = []
     deltas_list = []
-    weight_list = []
     ct_list = []
 
     os.chdir(path)
 
     files = glob.glob("*.dat*")
+    if fw_ver == "2208":
+        for i, file in enumerate(files):
+            data = f_up.unpack_numpy(file, board_number, timestamps)
+            pix1 = pixels[0]
+            for k, pix2 in enumerate(pixels[1:]):
+                if pix2 <= pix1:
+                    continue
 
-    for i, file in enumerate(files):
-        data = f_up.unpack_numpy(file, board_number, timestamps)
-        pix1 = pix[0]
-        for k, pix2 in enumerate(pix):
-            if pix2 <= pix1:
-                continue
+                data_pair = np.vstack((data[pix1], data[pix2]))
 
-            data_pair = np.vstack((data[pix1], data[pix2]))
+                deltas = cd.calc_diff_2208(data_pair, timestamps, delta_window)
 
-            deltas = cd(data_pair, timestamps, -10e3, 10e3)
+                timestamps_pix1 = len(np.where(data[pix1] > 0)[0])
+                if timestamps_pix1 == 0:
+                    continue
+                timestamps_pix2 = len(np.where(data[pix2] > 0)[0])
 
-            timestamps_pix1 = len(np.where(data[pix1] > 0)[0])
-            if timestamps_pix1 == 0:
-                continue
-            timestamps_pix2 = len(np.where(data[pix2] > 0)[0])
+                ct = len(deltas) * 100 / (timestamps_pix1 + timestamps_pix2)
 
-            weight = timestamps_pix1 / (timestamps_pix1 + timestamps_pix2)
-            ct = len(deltas) * weight * 100 / timestamps_pix1
+                file_name_list.append(file)
+                pix1_list.append(pix1)
+                pix2_list.append(pix2)
+                timestamps_list1.append(timestamps_pix1)
+                timestamps_list2.append(timestamps_pix2)
+                deltas_list.append(len(deltas))
+                ct_list.append(ct)
 
-            file_name_list.append(file)
-            pix1_list.append(pix1)
-            pix2_list.append(pix2)
-            timestamps_list.append(timestamps_pix1)
-            deltas_list.append(len(deltas))
-            weight_list.append(weight)
-            ct_list.append(ct)
+    elif fw_ver == "2212b":
+        pix_coor = np.arange(256).reshape(64, 4)
+        for i, file in enumerate(files):
+            data_all = f_up.unpack_2212_numpy(file, board_number, timestamps)
+
+            tdc1, pix_c1 = np.argwhere(pix_coor == pixels[0])[0]
+            pix1 = np.where(data_all[tdc1].T[0] == pix_c1)[0]
+            data1 = data_all[tdc1].T[1][pix1]
+
+            cycle_ends = np.argwhere(data_all[0].T[0] == -2)
+            cycle_ends = np.insert(cycle_ends, 0, 0)
+            for j in range(1, len(pixels)):
+                if pixels[j] <= pixels[0]:
+                    continue
+
+                tdc2, pix_c2 = np.argwhere(pix_coor == pixels[j])[0]
+                pix2 = np.where(data_all[tdc2].T[0] == pix_c2)[0]
+
+                data2 = data_all[tdc2].T[1][pix2]
+
+                deltas = cd.calc_diff_2212(data1, data2, cycle_ends, delta_window)
+
+                timestamps_pix1 = len(np.where(data1 > 0)[0])
+                if timestamps_pix1 == 0:
+                    continue
+                timestamps_pix2 = len(np.where(data2 > 0)[0])
+
+                ct = len(deltas) * 100 / (timestamps_pix1 + timestamps_pix2)
+
+                file_name_list.append(file)
+                pix1_list.append(pixels[0])
+                pix2_list.append(pixels[j])
+                timestamps_list1.append(timestamps_pix1)
+                timestamps_list2.append(timestamps_pix2)
+                deltas_list.append(len(deltas))
+                ct_list.append(ct)
+
+    print("\n> > > Saving data to a .csv file in folder {} < < <\n".format(path))
 
     dic = {
         "File": file_name_list,
         "Pixel 1": pix1_list,
         "Pixel 2": pix2_list,
-        "Timestamps": timestamps_list,
+        "Timestamps 1": timestamps_list1,
+        "Timestamps 2": timestamps_list2,
         "Deltas": deltas_list,
-        "Weight": weight_list,
         "CT": ct_list,
     }
 
     ct_data = pd.DataFrame(dic)
 
-    path_to_save = "C:/Users/bruce/Documents/Quantum astrometry"
+    path_to_save = "C:/Users/bruce/Documents/Quantum astrometry/CT"
     os.chdir(path_to_save)
 
-    if glob.glob("*CT_data.csv*") == []:
-        ct_data.to_csv("CT_data.csv", index=False)
+    if glob.glob("*CT_data_{}-{}.csv*".format(files[0], files[-1])) == []:
+        ct_data.to_csv(
+            "CT_data_{}-{}.csv".format(files[0], files[-1]),
+            index=False,
+        )
     else:
-        ct_data.to_csv("CT_data.csv", mode="a", index=False, header=False)
+        ct_data.to_csv(
+            "CT_data_{}-{}.csv".format(files[0], files[-1]),
+            mode="a",
+            index=False,
+            header=False,
+        )
 
 
 def plot_ct(path, pix1, scale: str = "linear"):
@@ -125,7 +195,13 @@ def plot_ct(path, pix1, scale: str = "linear"):
     print("\n> > > Plotting cross-talk vs distance in pixels < < <\n")
     os.chdir(path)
 
-    file = glob.glob("*CT_data.csv*")[0]
+    files = glob.glob("*.dat*")
+
+    os.chdir("C:/Users/bruce/Documents/Quantum astrometry/CT")
+
+    file = glob.glob("*CT_data_{}-{}.csv*".format(files[0], files[-1]))[0]
+
+    plot_name = "{}_{}".format(files[0], files[-1])
 
     data = pd.read_csv(file)
 
@@ -154,9 +230,12 @@ def plot_ct(path, pix1, scale: str = "linear"):
             ct.append(ct_pix)
         yerr.append(sem(ct_pix))
 
-    xticks = np.arange(distance[0], distance[-1], 2)
+        xticks = np.linspace(
+            distance[0], distance[-1], int(len(distance) / 10), dtype=int
+        )
 
     plt.rcParams.update({"font.size": 20})
+
     fig = plt.figure(figsize=(10, 7))
     ax1 = fig.add_subplot(111)
     if scale == "log":
@@ -167,4 +246,6 @@ def plot_ct(path, pix1, scale: str = "linear"):
     ax1.set_title("Pixel {}".format(pix1))
     ax1.set_xticks(xticks)
 
-    plt.savefig("{file}_{pix}".format(file=file[:-4], pix=pix1))
+    plt.savefig("{plot}_{pix}.png".format(plot=plot_name, pix=pix1))
+
+    pickle.dump(fig, open("{}.pickle".format(plot_name), "wb"))

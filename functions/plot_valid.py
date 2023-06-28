@@ -33,7 +33,7 @@ from functions import unpack as f_up
 
 def plot_pixel_hist(
     path,
-    pix1,
+    pix,
     fw_ver: str,
     board_number: str,
     timestamps: int = 512,
@@ -41,11 +41,13 @@ def plot_pixel_hist(
 ):
     """Plot a histogram for each pixel in the given range.
 
+    Used mainly for debugging the LinoSPAD2 output.
+
     Parameters
     ----------
     path : str
         Path to data file.
-    pix1 : array-like
+    pix : array-like
         Array of pixels indices. Preferably pixels where the peak is.
     timestamps : int, optional
         Number of timestamps per pixel per acquisition cycle. The default is
@@ -79,10 +81,10 @@ def plot_pixel_hist(
                 num, board_number, fw_ver="block", timestamps=timestamps
             )
 
-        if pix1 is None:
+        if pix is None:
             pixels = np.arange(145, 165, 1)
         else:
-            pixels = pix1
+            pixels = pix
         for i, pixel in enumerate(pixels):
             plt.figure(figsize=(16, 10))
             plt.rcParams.update({"font.size": 22})
@@ -266,14 +268,14 @@ def plot_valid_mult(
             )
 
     # Apply mask if requested
-    # if app_mask is True:
-    #     path_to_back = os.getcwd()
-    #     path_to_mask = os.path.realpath(__file__) + "/../.." + "/masks"
-    #     os.chdir(path_to_mask)
-    #     file_mask = glob.glob("*{}*".format(board_number))[0]
-    #     mask = np.genfromtxt(file_mask).astype(int)
-    #     valid_per_pixel[mask] = 0
-    #     os.chdir(path_to_back)
+    if app_mask is True:
+        path_to_back = os.getcwd()
+        path_to_mask = os.path.realpath(__file__) + "/../.." + "/masks"
+        os.chdir(path_to_mask)
+        file_mask = glob.glob("*{}*".format(board_number))[0]
+        mask = np.genfromtxt(file_mask).astype(int)
+        valid_per_pixel[mask] = 0
+        os.chdir(path_to_back)
 
     peak = int(np.max(valid_per_pixel))
 
@@ -310,104 +312,6 @@ def plot_valid_mult(
     if show_fig is False:
         plt.close("all")
     os.chdir("..")
-
-
-# def plot_valid_FW2212(
-#     path,
-#     board_number,
-#     fw_ver: str,
-#     timestamps: int = 512,
-#     scale: str = "linear",
-#     style: str = "-o",
-#     show_fig: bool = False,
-#     app_mask: bool = True,
-# ):
-#     """Plot number of timestamps in each pixel for FW2212 and single datafile.
-
-#     Works only with the LinoSPAD2 firmware version 2212, both block and
-#     skip versions.
-
-#     Parameters
-#     ----------
-#     path : str
-#         Path to the datafiles.
-#     board_number : str
-#         The LinoSPAD2 board number. Required for choosing the correct
-#         calibration data.
-#     fw_ver : str
-#         2212 firmware version: 'block' or 'skip'.
-#     timestamps : int, optional
-#         Number of timestamps per pixel per acquisition cycle. Default is "512".
-#     scale : str, optional
-#         Scale for the y-axis of the plot. Use "log" for logarithmic.
-#         The default is "linear".
-#     style : str, optional
-#         Style of the plot. The default is "-o".
-#     show_fig : bool, optional
-#         Switch for showing the plot. The default is False.
-#     app_mask : bool, optional
-#         Switch for applying the mask on warm/hot pixels. The default is true.
-
-#     Returns
-#     -------
-#     None.
-
-#     """
-#     if show_fig is True:
-#         plt.ion()
-#     else:
-#         plt.ioff()
-
-#     os.chdir(path)
-
-#     files = glob.glob("*.dat*")
-
-#     if "Ne" and "540" in path:
-#         chosen_color = "seagreen"
-#     elif "Ne" and "656" in path:
-#         chosen_color = "orangered"
-#     elif "Ne" and "585" in path:
-#         chosen_color = "goldenrod"
-#     elif "Ar" in path:
-#         chosen_color = "mediumslateblue"
-#     else:
-#         chosen_color = "salmon"
-
-#     for i, file in enumerate(files):
-#         print("\n> > > Plotting timestamps, Working on {} < < <\n".format(file))
-
-#         data = f_up.unpack_2212(file, board_number, fw_ver, timestamps)
-
-#         valid_per_pixel = np.zeros(256)
-
-#         for i in range(0, 256):
-#             a = np.array(data["{}".format(i)])
-#             valid_per_pixel[i] = len(np.where(a > 0)[0])
-
-#         # Apply mask if requested
-#         if app_mask is True:
-#             path_to_back = os.getcwd()
-#             path_to_mask = os.path.realpath(__file__) + "/../.." + "/masks"
-#             os.chdir(path_to_mask)
-#             file_mask = glob.glob("*{}*".format(board_number))[0]
-#             mask = np.genfromtxt(file_mask).astype(int)
-#             valid_per_pixel[mask] = 0
-#             os.chdir(path_to_back)
-
-#         plt.rcParams.update({"font.size": 22})
-#         fig = plt.figure(figsize=(16, 10))
-#         plt.plot(valid_per_pixel, "-o", color=chosen_color)
-#         plt.xlabel("Pixel number [-]")
-#         plt.ylabel("Timestamps [-]")
-
-#         try:
-#             os.chdir("results")
-#         except FileNotFoundError:
-#             os.mkdir("results")
-#             os.chdir("results")
-#         fig.tight_layout()
-#         plt.savefig("{}.png".format(file))
-#         os.chdir("..")
 
 
 def plot_valid_FW2212(
@@ -525,8 +429,37 @@ def plot_valid_FW2212(
     os.chdir("..")
 
 
-# TODO: docstring
 def plot_spdc(path, board_number: str, timestamps: int = 512, show_fig: bool = False):
+    """Plot number of timestamps in each pixel for FW2212, SPDC data.
+
+    Plots SPDC data subtracting the background (data with SPDC output off). Due to
+    the low sensitivity of LinoSPAD2 to light at 810 nm of Thorlabs SPDC output,
+    subtracting background is required to show any meaningful signal.
+
+    Parameters
+    ----------
+    path : str
+        Path to data files.
+    board_number : str
+        LinoSPAD2 daugtherboard number. Either "A5" or "NL11" is accepted.
+    timestamps : int, optional
+        Number of timestamps per pixel per acquisition cycle. The default is 512.
+    show_fig : bool, optional
+        Switch for showing the plot. The default is False.
+
+    Raises
+    ------
+    TypeError
+        Raised when 'board_number' is not string.
+    ValueError
+        Raised when the number of datafiles of SPDC data is different from the
+        number of datafiles of background data.
+
+    Returns
+    -------
+    None.
+
+    """
     # parameter type check
     if isinstance(board_number, str) is not True:
         raise TypeError("'board_number' should be string, either 'NL11' or 'A5'")
@@ -559,6 +492,7 @@ def plot_spdc(path, board_number: str, timestamps: int = 512, show_fig: bool = F
 
     pix_coor = np.arange(256).reshape(64, 4)
 
+    # Collect SPDC data
     for i in tqdm(range(len(files)), desc="Going through datafiles"):
         data_all = f_up.unpack_2212_numpy(
             files[i], board_number="A5", timestamps=timestamps
@@ -570,6 +504,7 @@ def plot_spdc(path, board_number: str, timestamps: int = 512, show_fig: bool = F
             ind1 = ind[np.where(data_all[tdc].T[1][ind] > 0)[0]]
             valid_per_pixel[i] += len(data_all[tdc].T[1][ind1])
 
+    # Collect background data for subtracting
     os.chdir(path_bckg)
 
     for i in tqdm(range(len(files_bckg)), desc="Going through background datafiles"):
