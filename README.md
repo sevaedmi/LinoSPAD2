@@ -33,8 +33,8 @@ One can create an environment for this project either using conda or  install
 necessary packages using pip.
 ```
 pip install -r requirements.txt
-or
 ```
+or
 ```
 conda create --name NEW_ENVIRONMENT_NAME --file /PATH/TO/requirements.txt -c conda-forge
 ```
