@@ -1,29 +1,30 @@
 """Module with scripts for unpacking data from LinoSPAD2.
 
 Functions for unpacking either 'txt' of 'dat' data files of LinoSPAD2.
-Functions for either 10, 512 or a given number of timestamps per acquisition
-cycle per pixel are available.
+Functions for either 10, 512 or a given number of timestamps per
+acquisition cycle per pixel are available.
 
 This file can also be imported as a module and contains the following
 functions:
 
-    * unpack_binary_flex - unpacks the 'dat' data files with a given number of
-    timestamps per acquisition cycle
+    * unpack_binary_flex - unpacks the 'dat' data files with a given
+    number of timestamps per acquisition cycle
 
     * unpack_numpy - unpacks the 'dat' data files with a given number of
-    timestamps per acquisition cycle. Uses the calibration data. Imputing the
-    LinoSPAD2 board number is required.
+    timestamps per acquisition cycle. Uses the calibration data.
+    Imputing the LinoSPAD2 board number is required.
 
-    * unpack_numpy_dict - unpacks the 'dat' data files with a given number of
-    timestamps per acquisition cycle. Uses the calibration data. Imputing the
-    LinoSPAD2 board number is required. Returns a dictionary of timestamps
-    from the requested pixels.
+    * unpack_numpy_dict - unpacks the 'dat' data files with a given
+    number of timestamps per acquisition cycle. Uses the calibration
+    data. Imputing the LinoSPAD2 board number is required. Returns a
+    dictionary of timestamps from the requested pixels.
 
-    * unpack_2212 - function for unpacking data into a dictionary for the
-    LinoSPAD2 firmware 2212 versions "skip" and "block".
+    * unpack_2212 - function for unpacking data into a dictionary for
+    the LinoSPAD2 firmware 2212 versions "skip" and "block".
 
-    * unpack_2212_numpy - function for unpacking data from LinoSPAD2, firmware
-    version '2212b'. Utilizes the numpy library to speed up the process.
+    * unpack_2212_numpy - function for unpacking data from LinoSPAD2,
+    firmware version '2212b'. Utilizes the numpy library to speed up the
+    process.
 
 
 """
@@ -41,17 +42,18 @@ from functions.calibrate import calibrate_load
 def unpack_binary_flex(filename, timestamps: int = 512):
     """Unpack binary data from the LinoSPAD2.
 
-    Unpacking a single 'dat' output of the LinoSPAD2. Due to the straightforward
-    approach used mainly for debugging, otherwise is pretty slow.
+    Unpacking a single 'dat' output of the LinoSPAD2. Due to the
+    straightforward approach used mainly for debugging, otherwise is
+    pretty slow.
 
     Parameters
     ----------
     filename : str
-        File with data from LinoSPAD2 in which precisely timestamps lines
-        of data per acquistion cycle is written.
+        File with data from LinoSPAD2 in which precisely timestamps
+        lines of data per acquistion cycle is written.
     timestamps: int, optional
-        Number of binary-encoded timestamps in the 'dat' file. The default
-        value is 512.
+        Number of binary-encoded timestamps in the 'dat' file. The
+        default value is 512.
 
     Returns
     -------
@@ -114,8 +116,8 @@ def unpack_numpy(
 
     Function for unpacking the .dat data files using the calibration
     data. The output is a matrix of '256 x timestamps*number_of_cycles'
-    timestamps in ps. The fastest version that utilizes the numpy library.
-    Works only with firmware version 2208.
+    timestamps in ps. The fastest version that utilizes the numpy
+    library. Works only with firmware version 2208.
 
     Parameters
     ----------
@@ -124,10 +126,12 @@ def unpack_numpy(
     board_number : str
         LinoSPAD2 board number.
     timestamps : int, optional
-        Number of timestamps per acquisition cycle per pixel. The default is 512.
+        Number of timestamps per acquisition cycle per pixel. The
+        default is 512.
     pix : list, optional
-        List of pixel numbers for which the data should be returned. The default is [],
-        in which case data for all pixels will be returned.
+        List of pixel numbers for which the data should be returned.
+        The default is [], in which case data for all pixels will be
+        returned.
 
     Returns
     -------
@@ -145,10 +149,10 @@ def unpack_numpy(
 
     >>> a = np.arange(4*5*3)
     >>> a
-    array([ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15,
-            16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31,
-            32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47,
-            48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59])
+    array([ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14,
+            15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
+            30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44,
+            45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59])
     >>> b = a.reshape(3, 4, 5)
     >>> b
     array([[[ 0,  1,  2,  3,  4],
@@ -201,7 +205,7 @@ def unpack_numpy(
     )
     # path to the current script, two levels up (the script itself is in the path) and
     # one level down to the calibration data
-    path_calib_data = os.path.realpath(__file__) + "/../.." + "/calibration_data"
+    path_calib_data = os.path.realpath(__file__) + "/../.." + "/params/calibration_data"
 
     try:
         cal_mat = calibrate_load(path_calib_data, board_number)
@@ -219,7 +223,7 @@ def unpack_numpy(
 
     if app_mask is True:
         path_to_back = os.getcwd()
-        path_to_mask = os.path.realpath(__file__) + "/../.." + "/masks"
+        path_to_mask = os.path.realpath(__file__) + "/../.." + "/params/masks"
         os.chdir(path_to_mask)
         file_mask = glob("*{}*".format(board_number))[0]
         mask = np.genfromtxt(file_mask).astype(int)
@@ -245,8 +249,8 @@ def unpack_numpy_dict(
 
     Function for unpacking the .dat data files using the calibration
     data. The output is a matrix of '256 x timestamps*number_of_cycles'
-    timestamps in ps. The fastest version that utilizes the numpy library.
-    Unpacks data only from firmware version 2208.
+    timestamps in ps. The fastest version that utilizes the numpy
+    library. Unpacks data only from firmware version 2208.
 
     Parameters
     ----------
@@ -255,7 +259,8 @@ def unpack_numpy_dict(
     board_number : str
         LinoSPAD2 board number.
     timestamps : int, optional
-        Number of timestamps per acquisition cycle per pixel. The default is 512.
+        Number of timestamps per acquisition cycle per pixel. The
+        default is 512.
 
     Returns
     -------
@@ -273,10 +278,10 @@ def unpack_numpy_dict(
 
     >>> a = np.arange(4*5*3)
     >>> a
-    array([ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15,
-            16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31,
-            32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47,
-            48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59])
+    array([ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14,
+            15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
+            30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44,
+            45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59])
     >>> b = a.reshape(3, 4, 5)
     >>> b
     array([[[ 0,  1,  2,  3,  4],
@@ -329,7 +334,7 @@ def unpack_numpy_dict(
     )
     # path to the current script, two levels up (the script itself is in the path) and
     # one level down to the calibration data
-    path_calib_data = os.path.realpath(__file__) + "/../.." + "/calibration_data"
+    path_calib_data = os.path.realpath(__file__) + "/../.." + "/params/calibration_data"
 
     try:
         cal_mat = calibrate_load(path_calib_data, board_number)
@@ -347,7 +352,7 @@ def unpack_numpy_dict(
 
     if app_mask is True:
         path_to_back = os.getcwd()
-        path_to_mask = os.path.realpath(__file__) + "/../.." + "/masks"
+        path_to_mask = os.path.realpath(__file__) + "/../.." + "/params/masks"
         os.chdir(path_to_mask)
         file_mask = glob("*{}*".format(board_number))[0]
         mask = np.genfromtxt(file_mask).astype(int)
@@ -419,8 +424,8 @@ def unpack_numpy_dict(
 def unpack_2212(filename, board_number: str, fw_ver: str, timestamps: int = 512):
     """Unpack binary data from LinoSPAD2, firmware version 2212.
 
-    Function for unpacking data into a dictionary for the firmware versions 2212 "skip"
-    or "block". Uses the calibration data.
+    Function for unpacking data into a dictionary for the firmware
+    versions 2212 "skip" or "block". Uses the calibration data.
 
     Parameters
     ----------
@@ -431,13 +436,14 @@ def unpack_2212(filename, board_number: str, fw_ver: str, timestamps: int = 512)
     fw_ver : str
         2212 firmware version: either "skip" or "block".
     timestamps : int, optional
-        Number of timestamps per acquisition cycle per pixel. The default is 512.
+        Number of timestamps per acquisition cycle per pixel. The
+        default is 512.
 
     Returns
     -------
     dict
-        Matrix of timestamps with 256 rows. Output is a dictionary as the number
-        of columns is different for each row.
+        Matrix of timestamps with 256 rows. Output is a dictionary as
+        the number of columns is different for each row.
 
     """
     # parameter type check
@@ -496,7 +502,7 @@ def unpack_2212(filename, board_number: str, fw_ver: str, timestamps: int = 512)
 
     # path to the current script, two levels up (the script itself is in the path) and
     # one level down to the calibration data
-    path_calib_data = os.path.realpath(__file__) + "/../.." + "/calibration_data"
+    path_calib_data = os.path.realpath(__file__) + "/../.." + "/params/calibration_data"
 
     try:
         cal_mat = calibrate_load(path_calib_data, board_number)
@@ -521,27 +527,30 @@ def unpack_2212(filename, board_number: str, fw_ver: str, timestamps: int = 512)
 def unpack_2212_numpy(file, board_number: str, timestamps: int = 512):
     """Unpack data from firmware version 2212.
 
-    Unpacks binary-encoded data from LinoSPAD2 firmware version 2212 block.
-    Uses numpy to achieve best speed for unpacking. Data is returned as a 3d array
-    where rows are TDC numbers, columns are the data, each cell contains pixel
-    number in the TDC (from 0 to 3) and the timestamp recorded by that pixel.
+    Unpacks binary-encoded data from LinoSPAD2 firmware version 2212
+    block. Uses numpy to achieve best speed for unpacking. Data is
+    returned as a 3d array where rows are TDC numbers, columns are the
+    data, each cell contains pixel number in the TDC (from 0 to 3) and
+    the timestamp recorded by that pixel.
 
     Parameters
     ----------
     file : str
         '.dat' data file.
     board_number : str
-        LinoSPAD2 daughterboard number. Either 'A5' or 'NL11' are recognized.
+        LinoSPAD2 daughterboard number. Either 'A5' or 'NL11' are
+        recognized.
     timestamps : int, optional
-        Number of timestamps per TDC per acquisition cycle. The default is 512.
+        Number of timestamps per TDC per acquisition cycle. The default
+        is 512.
 
     Raises
     ------
     TypeError
-        Controller for the type of 'board_number' parameter which should be string.
-    FileNotFoundError
-        Controller for stopping the script in the case no calibration data
-        were found.
+        Controller for the type of 'board_number' parameter which should
+        be string. FileNotFoundError
+        Controller for stopping the script in the case no calibration
+        data were found.
 
     Returns
     -------
@@ -598,7 +607,7 @@ def unpack_2212_numpy(file, board_number: str, timestamps: int = 512):
     # path to the current script, two levels up (the script itself is in the path)
     # and one level down to the calibration data
     pix_coor = np.arange(256).reshape(64, 4)
-    path_calib_data = os.path.realpath(__file__) + "/../.." + "/calibration_data"
+    path_calib_data = os.path.realpath(__file__) + "/../.." + "/params/calibration_data"
 
     try:
         cal_mat = calibrate_load(path_calib_data, board_number)

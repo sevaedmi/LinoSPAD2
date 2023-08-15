@@ -4,41 +4,36 @@ This file can also be imported as a module and contains the following
 functions:
 
     * calc_diff - calculate timestamp differences for a given
-    pair of pixels. Returns an array of differences. Works only with the 2208
-    firmware version.
+    pair of pixels. Returns an array of differences. Works only with the
+    2208 firmware version.
 
 """
 
 import numpy as np
 
 
-def calc_diff_2208(
-    data_pair,
-    timestamps: int = 512,
-    range_left: float = -2.5e3,
-    range_right: float = 2.5e3,
-):
+def calc_diff_2208(data_pair, timestamps: int = 512, delta_window: float = 10e3):
     """Calculate timestamp differences for firmware 2208.
 
-    Calculated and returns timestamp differences for the given pair of pixels
-    (indicated by the data_pair - data from a single pair of pixels). Works only with
-    the 2208 firmware version.
+    Calculated and returns timestamp differences for the given pair of
+    pixels (indicated by the data_pair - data from a single pair of
+    pixels). Works only with the 2208 firmware version.
 
     Parameters
     ----------
     data_pair : array-like
         Data from 2 pixels.
     timestamps : int, optional
-        Number of timestamps per pixel per acquisition window. The default is
-        512.
+        Number of timestamps per pixel per acquisition window. The
+        default is 512.
     range_left : float, optional
-        Left limit for the timestamp differences. Values below that are not
-        taken into account and the differences are not returned. The default
-        is -2.5e3.
+        Left limit for the timestamp differences. Values below that are
+        not taken into account and the differences are not returned. The
+        default is -2.5e3.
     range_right : float, optional
-        Right limit for the timestamp differences. Values above that are not
-        taken into account and the differences are not returned. The default
-        is 2.5e3.
+        Right limit for the timestamp differences. Values above that are
+        not taken into account and the differences are not returned. The
+        default is 2.5e3.
 
     Returns
     -------
@@ -72,26 +67,28 @@ def calc_diff_2208(
 def calc_diff_2212(data1, data2, cycle_ends, delta_window: float = 10e3):
     """Calculate timestamp differences for firmware 2212.
 
-    Calculate timestamp differences for two given pixels and LinoSPAD2 firmware version 2212.
+    Calculate timestamp differences for two given pixels and LinoSPAD2
+    firmware version 2212.
 
     Parameters
     ----------
     data1 : array-like
-        Array of data from the first pixel of the pair for which timestamp differences are
-        calculated.
+        Array of data from the first pixel of the pair for which
+        timestamp differences are calculated.
     data2 : array-like
-        Array of data from the second pixel of the pair for which timestamp differecnes are
-        calculated.
+        Array of data from the second pixel of the pair for which
+        timestamp differecnes are calculated.
     cycle_ends : array-like
         Array of positions of '-2's that indicate ends of cycles.
     delta_window : float, optional
-        A width of a window in which the number of timestamp differences are counted. The default
-        value is 10 ns. The default is 10e3.
+        A width of a window in which the number of timestamp differences
+        are counted. The default value is 10 ns. The default is 10e3.
 
     Returns
     -------
     deltas_out : list
-        All timestamp differences found in a given time window for a given pair of pixels.
+        All timestamp differences found in a given time window for a
+        given pair of pixels.
 
     """
     deltas_out = []

@@ -27,3 +27,10 @@ the functions, containing masks for hot/warm pixels and TDC nonlinearity calibra
 data for LinoSPAD2 NL11 and A5 daughterboards, respectively.
 
 'jupyter' folder collects functions written in Jupyter by some of the contributors.
+
+"requirements.txt" collects all packages required for this project to run.
+One can create an environment for this project either using conda or  install
+necessary packages using pip.
+>>> pip install -r requirements.txt
+or
+>>> conda create --name NEW_ENVIRONMENT_NAME --file /PATH/TO/requirements.txt -c conda-forge

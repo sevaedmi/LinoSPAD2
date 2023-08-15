@@ -18,16 +18,17 @@ import pandas as pd
 def calibrate_save(path, timestamps: int = 512):
     """Calculate and save calibration data.
 
-    Function for calculating the calibration matrix and saving it into a .csv
-    file. The data file used for the calculation should be taken with the
-    sensor uniformly illuminated by ambient light.
+    Function for calculating the calibration matrix and saving it into a
+    .csv file. The data file used for the calculation should be taken
+    with the sensor uniformly illuminated by ambient light.
 
     Parameters
     ----------
     path : str
         Path to the data file.
     timestamps : int, optional
-        Number of timestamps per acquisition cycle per pixel. The default is 512.
+        Number of timestamps per acquisition cycle per pixel. The
+        default is 512.
 
     Returns
     -------

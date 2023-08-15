@@ -1,16 +1,17 @@
-"""Module with function for plotting data from spectrometer setup with LinoSPAD2.
+"""Module for plotting data from spectrometer setup with LinoSPAD2.
 
-A set of functions to unpack data, count the timestamps, and plot the results.
+A set of functions to unpack data, count the timestamps, and plot the
+results.
 
 This file can also be imported as a module and contains the following
 functions:
 
-    * ar_spec - unpacks data, counts the number of timestamps in each pixel,
-    fits with gaussian each discovered peak and plots the results.
+    * ar_spec - unpacks data, counts the number of timestamps in each
+    pixel, fits with gaussian each discovered peak and plots the results.
 
-    * spdc_ac - unpacks data, counts the number of timestamps in each pixel,
-    collects timestamps differences for an anti-correlation plot and plots
-    the results.
+    * spdc_ac - unpacks data, counts the number of timestamps in each
+    pixel, collects timestamps differences for an anti-correlation plot
+    and plots the results.
 
 """
 import glob
@@ -32,21 +33,23 @@ from functions import unpack as f_up
 def ar_spec(path, board_number: str, tmrl: list, timestamps: int = 512):
     """Plot and fit a spectrum.
 
-    Unpacks spectrum data, plots the number of counts vs wavelength and fits
-    with gaussian function each of the peaks. Peaks are looked for automatically using
-    a threshold of 10% of max of all counts. Works only with LinoSPAD2 firmware version
-    2212b.
+    Unpacks spectrum data, plots the number of counts vs wavelength and
+    fits with gaussian function each of the peaks. Peaks are looked for
+    automatically using a threshold of 10% of max of all counts. Works
+    only with LinoSPAD2 firmware version 2212b.
 
     Parameters
     ----------
     path : str
         Path to datafiles.
     board_number : str
-        LinoSPAD2 daughterboard number. Either 'A5' or 'NL11' are recognized.
+        LinoSPAD2 daughterboard number. Either 'A5' or 'NL11' are
+        recognized.
     tmrl: list
         NIST values for the two most right lines.
     timestamps : int, optional
-        Number of timestamps per acqusition cycle per TDC. The default is 512.
+        Number of timestamps per acqusition cycle per TDC. The default
+        is 512.
 
     Returns
     -------
@@ -81,7 +84,7 @@ def ar_spec(path, board_number: str, tmrl: list, timestamps: int = 512):
 
     # Mask the hot/warm pixels
     path_to_back = os.getcwd()
-    path_to_mask = os.path.realpath(__file__) + "/../.." + "/masks"
+    path_to_mask = os.path.realpath(__file__) + "/../.." + "/params/masks"
     os.chdir(path_to_mask)
     file_mask = glob.glob("*{}*".format(board_number))[0]
     mask = np.genfromtxt(file_mask).astype(int)
@@ -192,16 +195,17 @@ def spdc_ac_save(
 ):
     """Calculate and save to csv timestamps differences from SPDC data.
 
-    Unpack SPDC data, calculates timestamp differences between the two given lists
-    of pixels' numbers, and saves it to a .csv file. Works only with LinoSPAD2
-    firmware version 2212b.
+    Unpack SPDC data, calculates timestamp differences between the two
+    given lists of pixels' numbers, and saves it to a .csv file. Works
+    only with LinoSPAD2 firmware version 2212b.
 
     Parameters
     ----------
     path : str
         Path to datafiles.
     board_number : str
-        LinoSPAD2 daughterboard number. Either 'A5' or 'NL11' are recognized.
+        LinoSPAD2 daughterboard number. Either 'A5' or 'NL11' are
+        recognized.
     pix_left : list
         List of pixel numbers covering signal/idler.
     pix_right : list
@@ -209,9 +213,11 @@ def spdc_ac_save(
     rewrite : bool
         Switch for rewriting the .csv file with timestamp differences.
     timestamps : int, optional
-        Number of timestamps per pixel number per TDC. The default is 512.
+        Number of timestamps per pixel number per TDC. The default is
+        512.
     delta_window : float, optional
-        Time range in which timestamp differences are collcted. The default is 10e3.
+        Time range in which timestamp differences are collcted. The
+        default is 10e3.
 
     Returns
     -------
@@ -274,7 +280,7 @@ def spdc_ac_save(
 
     # Mask the hot/warm pixels
     path_to_back = os.getcwd()
-    path_to_mask = os.path.realpath(__file__) + "/../.." + "/masks"
+    path_to_mask = os.path.realpath(__file__) + "/../.." + "/params/masks"
     os.chdir(path_to_mask)
     file_mask = glob.glob("*{}*".format(board_number))[0]
     mask = np.genfromtxt(file_mask).astype(int)
@@ -353,7 +359,8 @@ def spdc_ac_cp(
 ):
     """Plot anti-correlation plot from SPDC data.
 
-    Using timestamp differences from .csv file, plot an anti-correlation plot.
+    Using timestamp differences from .csv file, plot an anti-correlation
+    plot.
 
 
     Parameters
@@ -363,7 +370,8 @@ def spdc_ac_cp(
     rewrite : bool
         Switch for overwriting the plot if it exists.
     interpolation : bool, optional
-        Switch for applying bessel interpolation on the plot. The default is False.
+        Switch for applying bessel interpolation on the plot. The
+        default is False.
     show_fig : bool, optional
         Switch for showing the plot. The default is False.
 

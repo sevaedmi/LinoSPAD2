@@ -1,23 +1,23 @@
 """Module with scripts for plotting the LinoSPAD2 output.
 
-This script utilizes an unpacking module used specifically for the LinoSPAD2
-data output.
+This script utilizes an unpacking module used specifically for the
+LinoSPAD2 data output.
 
 This file can also be imported as a module and contains the following
 functions:
 
-    * plot_pixel_hist - plots a histogram of timestamps for a single pixel.
-    The function can be used mainly for controlling the homogenity of the
-    LinoSPAD2 output.
+    * plot_pixel_hist - plots a histogram of timestamps for a single
+    pixel. The function can be used mainly for controlling the
+    homogenity of the LinoSPAD2 output.
 
     * plot_valid - plots the number of valid timestamps in each pixel.
 
-    * plot_valid_mult - plots the number of valid timestamps in each pixel.
-    Analyzes all datafiles in the given folder.
+    * plot_valid_mult - plots the number of valid timestamps in each
+    pixel. Analyzes all datafiles in the given folder.
 
-    * plot_valid_FW2212 - plots the number of valid timestamps in each pixel.
-    Works with the firmware version 2212 (both block and skip). Analyzes all datafiles
-    in the given folder.
+    * plot_valid_FW2212 - plots the number of valid timestamps in each
+    pixel. Works with the firmware version 2212 (both block and skip).
+    Analyzes all datafiles in the given folder.
 
 """
 
@@ -50,8 +50,8 @@ def plot_pixel_hist(
     pix : array-like
         Array of pixels indices. Preferably pixels where the peak is.
     timestamps : int, optional
-        Number of timestamps per pixel per acquisition cycle. The default is
-        512.
+        Number of timestamps per pixel per acquisition cycle. The
+        default is 512.
     show_fig : bool, optional
         Switch for showing the output figure. The default is False.
 
@@ -125,7 +125,8 @@ def plot_valid(
         The LinoSPAD2 board number. Required for choosing the correct
         calibration data.
     timestamps : int, optional
-        Number of timestamps per pixel per acquisition cycle. Default is "512".
+        Number of timestamps per pixel per acquisition cycle. Default is
+        "512".
     scale : str, optional
         Scale for the y-axis of the plot. Use "log" for logarithmic.
         The default is "linear".
@@ -134,7 +135,8 @@ def plot_valid(
     show_fig : bool, optional
         Switch for showing the plot. The default is False.
     app_mask : bool, optional
-        Switch for applying the mask on warm/hot pixels. The default is true.
+        Switch for applying the mask on warm/hot pixels. The default is
+        True.
 
     Returns
     -------
@@ -163,7 +165,7 @@ def plot_valid(
         # Apply mask if requested
         if app_mask is True:
             path_to_back = os.getcwd()
-            path_to_mask = os.path.realpath(__file__) + "/../.." + "/masks"
+            path_to_mask = os.path.realpath(__file__) + "/../.." + "/params/masks"
             os.chdir(path_to_mask)
             file_mask = glob.glob("*{}*".format(board_number))[0]
             mask = np.genfromtxt(file_mask).astype(int)
@@ -224,7 +226,8 @@ def plot_valid_mult(
         The LinoSPAD2 board number. Required for choosing the correct
         calibration data.
     timestamps : int, optional
-        Number of timestamps per pixel per acquisition cycle. Default is "512".
+        Number of timestamps per pixel per acquisition cycle. Default is
+        "512".
     scale : str, optional
         Scale for the y-axis of the plot. Use "log" for logarithmic.
         The default is "linear".
@@ -233,10 +236,11 @@ def plot_valid_mult(
     show_fig : bool, optional
         Switch for showing the plot. The default is False.
     mult_files: bool, optional
-        Switch for analyzing all data files in the given folder. The default
-        is False.
+        Switch for analyzing all data files in the given folder. The
+        default is False.
     app_mask : bool, optional
-        Switch for applying the mask on warm/hot pixels. The default is true.
+        Switch for applying the mask on warm/hot pixels. Default is
+        True.
 
     Returns
     -------
@@ -270,7 +274,7 @@ def plot_valid_mult(
     # Apply mask if requested
     if app_mask is True:
         path_to_back = os.getcwd()
-        path_to_mask = os.path.realpath(__file__) + "/../.." + "/masks"
+        path_to_mask = os.path.realpath(__file__) + "/../.." + "/params/masks"
         os.chdir(path_to_mask)
         file_mask = glob.glob("*{}*".format(board_number))[0]
         mask = np.genfromtxt(file_mask).astype(int)
@@ -324,7 +328,7 @@ def plot_valid_FW2212(
     show_fig: bool = False,
     app_mask: bool = True,
 ):
-    """Plot number of timestamps in each pixel for FW2212 and all datafiles.
+    """Plot number of timestamps in each pixel for all datafiles.
 
     Works only with the LinoSPAD2 firmware version 2212, both block and
     skip versions. Analazys all datafiles in the given folder.
@@ -339,7 +343,8 @@ def plot_valid_FW2212(
     fw_ver : str
         2212 firmware version: '2212b' or '2212s'.
     timestamps : int, optional
-        Number of timestamps per pixel per acquisition cycle. Default is "512".
+        Number of timestamps per pixel per acquisition cycle. Default is
+        "512".
     scale : str, optional
         Scale for the y-axis of the plot. Use "log" for logarithmic.
         The default is "linear".
@@ -348,7 +353,8 @@ def plot_valid_FW2212(
     show_fig : bool, optional
         Switch for showing the plot. The default is False.
     app_mask : bool, optional
-        Switch for applying the mask on warm/hot pixels. The default is true.
+        Switch for applying the mask on warm/hot pixels. The default is
+        True.
 
     Returns
     -------
@@ -406,7 +412,7 @@ def plot_valid_FW2212(
     # Apply mask if requested
     if app_mask is True:
         path_to_back = os.getcwd()
-        path_to_mask = os.path.realpath(__file__) + "/../.." + "/masks"
+        path_to_mask = os.path.realpath(__file__) + "/../.." + "/params/masks"
         os.chdir(path_to_mask)
         file_mask = glob.glob("*{}*".format(board_number))[0]
         mask = np.genfromtxt(file_mask).astype(int)
@@ -432,18 +438,21 @@ def plot_valid_FW2212(
 def plot_spdc(path, board_number: str, timestamps: int = 512, show_fig: bool = False):
     """Plot number of timestamps in each pixel for FW2212, SPDC data.
 
-    Plots SPDC data subtracting the background (data with SPDC output off). Due to
-    the low sensitivity of LinoSPAD2 to light at 810 nm of Thorlabs SPDC output,
-    subtracting background is required to show any meaningful signal.
+    Plots SPDC data subtracting the background (data with SPDC output
+    off). Due to the low sensitivity of LinoSPAD2 to light at 810 nm of
+    Thorlabs SPDC output, subtracting background is required to show any
+    meaningful signal.
 
     Parameters
     ----------
     path : str
         Path to data files.
     board_number : str
-        LinoSPAD2 daugtherboard number. Either "A5" or "NL11" is accepted.
+        LinoSPAD2 daugtherboard number. Either "A5" or "NL11" is
+        accepted.
     timestamps : int, optional
-        Number of timestamps per pixel per acquisition cycle. The default is 512.
+        Number of timestamps per pixel per acquisition cycle. The
+        default is 512.
     show_fig : bool, optional
         Switch for showing the plot. The default is False.
 
@@ -452,8 +461,8 @@ def plot_spdc(path, board_number: str, timestamps: int = 512, show_fig: bool = F
     TypeError
         Raised when 'board_number' is not string.
     ValueError
-        Raised when the number of datafiles of SPDC data is different from the
-        number of datafiles of background data.
+        Raised when the number of datafiles of SPDC data is different
+        from the number of datafiles of background data.
 
     Returns
     -------
@@ -523,7 +532,7 @@ def plot_spdc(path, board_number: str, timestamps: int = 512, show_fig: bool = F
 
     # Mask the hot/warm pixels
     path_to_back = os.getcwd()
-    path_to_mask = os.path.realpath(__file__) + "/../.." + "/masks"
+    path_to_mask = os.path.realpath(__file__) + "/../.." + "/params/masks"
     os.chdir(path_to_mask)
     file_mask = glob.glob("*{}*".format(board_number))[0]
     mask = np.genfromtxt(file_mask).astype(int)

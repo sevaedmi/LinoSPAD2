@@ -1,13 +1,13 @@
 """Module for fitting timestamp differences with Gaussian function.
 
-This script utilizes an unpacking module used specifically for the LinoSPAD2
-data output.
+This script utilizes an unpacking module used specifically for the
+LinoSPAD2 data output.
 
 This file can also be imported as a module and contains the following
 functions:
 
-    * fit_wg - fit timestamp differences of a pair of pixels with a gaussian function
-    and plot both in a single figure.
+    * fit_wg - fit timestamp differences of a pair of pixels with a
+    gaussian function and plot both in a single figure.
 
 """
 
@@ -23,8 +23,8 @@ from scipy.optimize import curve_fit
 def fit_wg(path, pix_pair: list, window: float = 5e3, step: int = 1):
     """Fit with gaussian function and plot it.
 
-    Fits timestamp differences of a pair of pixels with gaussian function and
-    plots it next to the histogram of the differences.
+    Fits timestamp differences of a pair of pixels with gaussian
+    function and plots it next to the histogram of the differences.
 
     Parameters
     ----------
@@ -33,10 +33,11 @@ def fit_wg(path, pix_pair: list, window: float = 5e3, step: int = 1):
     pix_pair : list
         Two pixel numbers for which fit is done.
     window : float, optional
-        Time range in which timestamp differences are fitted. The default is 5e3.
+        Time range in which timestamp differences are fitted. The
+        default is 5e3.
     step : int, optional
-        Bins of delta t histogram should be in units of 17.857 (average LinoSPAD2
-        TDC bin width). Default is 1.
+        Bins of delta t histogram should be in units of 17.857 (average
+        LinoSPAD2 TDC bin width). Default is 1.
 
     Raises
     ------
@@ -45,7 +46,8 @@ def fit_wg(path, pix_pair: list, window: float = 5e3, step: int = 1):
     FileNotFoundError
         Raised when no '.csv' file with timestamp differences is found.
     ValueError
-        Raised when no data for the requested pair of pixels was found in the .csv file.
+        Raised when no data for the requested pair of pixels was found
+        in the .csv file.
 
     Returns
     -------

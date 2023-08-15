@@ -6,12 +6,12 @@ for the given data sets.
 This file can also be imported as a module and contains the following
 functions:
 
-    * colect_ct - function for calculating and collecting the cross-talk data into
-    a .csv file.
+    * colect_ct - function for calculating and collecting the cross-talk
+    data into a .csv file.
 
-    * plot_ct - function for plotting the cross-talk data from the .csv file as the
-    cross-talk vs the distance between the two pixels, for which the cross-talk is
-    calculated, in pixels.
+    * plot_ct - function for plotting the cross-talk data from the .csv
+    file as the cross-talk vs the distance between the two pixels, for
+    which the cross-talk is calculated, in pixels.
 
 """
 
@@ -38,9 +38,9 @@ def collect_ct(
 ):
     """Calculate cross-talk and save it to a .csv file.
 
-    Calculate timestamp differences for all pixels in the given range, where all timestamp
-    differences are calculated for the first pixel in the range. Works with firmware versions
-    "2208" and "2212b".
+    Calculate timestamp differences for all pixels in the given range,
+    where all timestamp differences are calculated for the first pixel
+    in the range. Works with firmware versions "2208" and "2212b".
 
     Parameters
     ----------
@@ -49,15 +49,16 @@ def collect_ct(
     pixels : array-like
         Array of pixel numbers.
     board_number : str
-        The LinoSPAD2 daughterboard number. Only "NL11" and "A5" values are accepted.
-    fw_ver : str
-        Firmware version installed on the LinoSPAD2 motherboard. Only "2208" and "2212b" values
+        The LinoSPAD2 daughterboard number. Only "NL11" and "A5" values
         are accepted.
+    fw_ver : str
+        Firmware version installed on the LinoSPAD2 motherboard. Only
+        "2208" and "2212b" values are accepted.
     timestamps : int, optional
         Number of timestamps per pixel per cycle. The default is 512.
     delta_window : float, optional
-        A width of a window in which the number of timestamp differences are counted. The default
-        value is 10 ns. The default is 10e3.
+        A width of a window in which the number of timestamp differences
+        are counted. The default value is 10 ns. The default is 10e3.
 
     Returns
     -------
@@ -183,9 +184,11 @@ def plot_ct(path, pix1, scale: str = "linear"):
     Parameters
     ----------
     path : str
-        Path to the folder where a .csv file with the cross-talk data is located.
+        Path to the folder where a .csv file with the cross-talk data is
+        located.
     pix1 : int
-        Pixel number relative to which the cross-talk data should be plotted.
+        Pixel number relative to which the cross-talk data should be
+        plotted.
 
     Returns
     -------

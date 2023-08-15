@@ -1,28 +1,29 @@
-"""Module with scripts for calculating and plotting the timestamp differences.
+"""Module for calculating and plotting the timestamp differences.
 
-This script utilizes an unpacking module used specifically for the LinoSPAD2
-binary data output.
+This script utilizes an unpacking module used specifically for the
+LinoSPAD2 binary data output.
 
 This file can also be imported as a module and contains the following
 functions:
 
-    * plot_grid_mult - function for plotting a grid of NxN plots (N+1 for
-    number of pixels) of timestamp differences. Uses the calibration data. Imputing
-    the LinoSPAD2 board number is required.
+    * plot_grid_mult - function for plotting a grid of NxN plots (N+1
+    for number of pixels) of timestamp differences. Uses the calibration
+    data. Imputing the LinoSPAD2 board number is required.
 
-    * plot_grid_mult_2212 - function for plotting a grid of NxN plots (N+1 for
-    number of pixels) of timestamp differences. Works only with the 2212 version of
-    the LinoSPAD2 firmware. Uses the calibration data. Imputing the LinoSPAD2
-    daughterboard number is required.
+    * plot_grid_mult_2212 - function for plotting a grid of NxN plots
+    (N+1 for number of pixels) of timestamp differences. Works only with
+    the 2212 version of the LinoSPAD2 firmware. Uses the calibration
+    data. Imputing the LinoSPAD2 daughterboard number is required.
 
-    * deltas_save - unpacks the binary data, calculates timestamp differences
-    and saves into a .csv file.
+    * deltas_save - unpacks the binary data, calculates timestamp
+    differences and saves into a .csv file.
 
-    * deltas_save_numpy - unpacks the binary data, calculates timestamp differences
-    and saves into a .csv file. Works with firmware versions '2208' and '2212b'.
+    * deltas_save_numpy - unpacks the binary data, calculates timestamp
+    differences and saves into a .csv file. Works with firmware versions
+    '2208' and '2212b'.
 
-    * delta_cp - collect timestamps from the .csv file and plot them in a grid.
-
+    * delta_cp - collect timestamps from the .csv file and plot them in
+    a grid.
 """
 import glob
 import os
@@ -35,8 +36,8 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from tqdm import tqdm
 
+from functions import calc_diff as cd
 from functions import unpack as f_up
-from functions.calc_diff import calc_diff as cd
 
 
 def plot_grid_mult(
@@ -50,44 +51,47 @@ def plot_grid_mult(
     show_fig: bool = False,
     same_y: bool = False,
 ):
-    """
-    Plot a grid of delta ts for all pairs of given pixels.
+    """Plot a grid of delta ts for all pairs of given pixels.
 
-    Function for calculating timestamp differences and plotting them in a grid. Works
-    with multiple .dat files, keeping the data only for the required pixels and thus
-    reducing the memory occupied. Works with fimware version 2208.
+    Function for calculating timestamp differences and plotting them in
+    a grid. Works with multiple .dat files, keeping the data only for
+    the required pixels and thus reducing the memory occupied. Works
+    with fimware version 2208.
 
     Parameters
     ----------
     path : str
         Path to data files.
     pix : array-like
-        Pixel numbers for which the timestamps differences should be calculated.
+        Pixel numbers for which the timestamps differences should be
+        calculated.
     board_number : str
-        The LinoSPAD2 board number. Input required for using the calibration data.
+        The LinoSPAD2 board number. Input required for using the
+        calibration data.
     timestamps : int, optional
-        Number of timestamps per acquisition cycle per pixel. The default is 512.
+        Number of timestamps per acquisition cycle per pixel. The
+        default is 512.
     range_left : float, optional
-        Left border of the window in which the timestamp differences should be
-        calculated. The default is -2.5e3.
+        Left border of the window in which the timestamp differences
+        should be calculated. The default is -2.5e3.
     range_right : float, optional
-        Right border of the windot in which the timestamp differences should be
-        calculated. The default is 2.5e3.
+        Right border of the windot in which the timestamp differences
+        should be calculated. The default is 2.5e3.
     show_fig : bool, optional
         Switch for showing the plots. The default is False.
     same_y : bool, optional
-        Switch for equalizing the y axis for all plots. The default is False.
+        Switch for equalizing the y axis for all plots. The default is
+        False.
 
     Raises
     ------
     TypeError
-        Only boolean values of 'rewrite' are accepted. The error is raised
-        so that the plot does not accidentally gets rewritten.
+        Only boolean values of 'rewrite' are accepted. The error is
+        raised so that the plot does not accidentally gets rewritten.
 
     Returns
     -------
     None.
-
     """
     # parameter type check
     if isinstance(rewrite, bool) is not True:
@@ -137,7 +141,7 @@ def plot_grid_mult(
 
                 data_pair = np.vstack((data_pix[q], data_pix[w]))
 
-                delta_ts = cd(
+                delta_ts = cd.calc_diff_2208(
                     data_pair,
                     timestamps=timestamps,
                     range_left=range_left,
@@ -267,16 +271,15 @@ def plot_grid_mult_2212(
     show_fig: bool = False,
     same_y: bool = False,
 ):
-    """
-    Plot a grid of delta ts for all pairs of given pixels.
+    """Plot a grid of delta ts for all pairs of given pixels.
 
     Parameters
     ----------
     path : str
         Path to data files.
     pix : array-like
-        Array of pixel numbers for which the timestamp differences should be
-        calculated and plotted.
+        Array of pixel numbers for which the timestamp differences
+        should be calculated and plotted.
     board_number : str
         The LinoSPAD2 daughterboard nubmer.
     fw_ver : str
@@ -284,7 +287,8 @@ def plot_grid_mult_2212(
     rewrite : bool
         Switch for rewriting the plot if it already exists.
     timestamps : int, optional
-        Number of timestamps per acquisition cycle per pixel. The default is 512.
+        Number of timestamps per acquisition cycle per pixel. The default
+        is 512.
     range_left : float, optional
         Lower limit for timestamp differences. The default is -2.5e3.
     range_right : float, optional
@@ -292,18 +296,18 @@ def plot_grid_mult_2212(
     show_fig : bool, optional
         Switch for showing figure after plotting. The default is False.
     same_y : bool, optional
-        Switch for making the y axis the same for all plots. The default is True.
+        Switch for making the y axis the same for all plots. The default
+        is True.
 
     Raises
     ------
     TypeError
-        Only boolean values of 'rewrite' are accepted. The error is raised
-        so that the plot does not accidentally gets rewritten.
+        Only boolean values of 'rewrite' are accepted. The error is
+        raised so that the plot does not accidentally gets rewritten.
 
     Returns
     -------
     None.
-
     """
     # parameter type check
     if isinstance(rewrite, bool) is not True:
@@ -484,30 +488,30 @@ def deltas_save(
 ):
     """Calculate and save timestamp differences into .csv file.
 
-    Unpacks data into a dictionary, calculated timestamp differences for the requested
-    pixels and saves them into a .csv table.
+    Unpacks data into a dictionary, calculated timestamp differences for
+    the requested pixels and saves them into a .csv table.
 
     Parameters
     ----------
     path : str
         Path to data files.
     pix : list
-        List of pixel numbers for which the timestamp differences should be calculated
-        and saved.
+        List of pixel numbers for which the timestamp differences should
+        be calculated and saved.
     rewrite : bool
         Switch for rewriting the csv file if it already exists.
     board_number : str
         The LinoSPAD2 daughterboard number.
     timestamps : int, optional
-        Number of timestamps per acquisition cycle per pixel. The default is 512.
+        Number of timestamps per acquisition cycle per pixel. The default
+        is 512.
     delta_window : float, optional
-        Size of a window against which timestamp differences are compared. Differences
-        in that window are saved. The default is 50e3 (50 ns).
+        Size of a window against which timestamp differences are compared.
+        Differences in that window are saved. The default is 50e3 (50 ns).
 
     Returns
     -------
     None.
-
     """
     # parameter type check
     if isinstance(fw_ver, str) is not True:
@@ -681,38 +685,40 @@ def deltas_save_numpy(
 ):
     """Calculate and save timestamp differences into .csv file.
 
-    Unpacks data into a dictionary, calculated timestamp differences for the requested
-    pixels and saves them into a .csv table.
+    Unpacks data into a dictionary, calculated timestamp differences for
+    the requested pixels and saves them into a .csv table.
 
     Parameters
     ----------
     path : str
         Path to data files.
     pix : list
-        List of pixel numbers for which the timestamp differences should be calculated
-        and saved.
+        List of pixel numbers for which the timestamp differences should
+        be calculate and saved.
     rewrite : bool
         Switch for rewriting the csv file if it already exists.
     board_number : str
         The LinoSPAD2 daughterboard number.
     fw_ver: str
-        LinoSPAD2 firmware version. Versions "2208" and "2212b (block)" are recognized.
+        LinoSPAD2 firmware version. Versions "2208" and "2212b (block)"
+        are recognized.
     timestamps : int, optional
-        Number of timestamps per acquisition cycle per pixel. The default is 512.
+        Number of timestamps per acquisition cycle per pixel. The default
+        is 512.
     delta_window : float, optional
-        Size of a window to which timestamp differences are compared. Differences
-        in that window are saved. The default is 50e3 (50 ns).
+        Size of a window to which timestamp differences are compared.
+        Differences in that window are saved. The default is 50e3 (50 ns).
 
     Raises
     ------
     TypeError
-        Only boolean values of 'rewrite' and string values of 'fw_ver' are accepted.
-        First error is raised so that the plot does not accidentally gets rewritten.
+        Only boolean values of 'rewrite' and string values of 'fw_ver'
+        are accepted. First error is raised so that the plot does not
+        accidentally gets rewritten.
 
     Returns
     -------
     None.
-
     """
     # parameter type check
     if isinstance(fw_ver, str) is not True:
@@ -911,13 +917,12 @@ def delta_cp(
     Raises
     ------
     TypeError
-        Only boolean values of 'rewrite' are accepted. The error is raised
-        so that the plot does not accidentally gets rewritten.
+        Only boolean values of 'rewrite' are accepted. The error is
+        raised so that the plot does not accidentally gets rewritten.
 
     Returns
     -------
     None.
-
     """
     # parameter type check
     if isinstance(rewrite, bool) is not True:
