@@ -31,6 +31,10 @@ data for LinoSPAD2 NL11 and A5 daughterboards, respectively.
 "requirements.txt" collects all packages required for this project to run.
 One can create an environment for this project either using conda or  install
 necessary packages using pip.
->>> pip install -r requirements.txt
+```
+pip install -r requirements.txt
 or
->>> conda create --name NEW_ENVIRONMENT_NAME --file /PATH/TO/requirements.txt -c conda-forge
+```
+```
+conda create --name NEW_ENVIRONMENT_NAME --file /PATH/TO/requirements.txt -c conda-forge
+```
