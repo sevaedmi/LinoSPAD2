@@ -14,7 +14,9 @@ functions:
 import numpy as np
 
 
-def calc_diff_2208(data_pair, timestamps: int = 512, delta_window: float = 10e3):
+def calc_diff_2208(
+    data_pair, timestamps: int = 512, delta_window: float = 10e3
+):
     """Calculate timestamp differences for firmware 2208.
 
     Calculate and return timestamp differences for the given pair of

@@ -83,7 +83,9 @@ def deltas_save_numpy(
     if isinstance(rewrite, bool) is not True:
         raise TypeError("'rewrite' should be boolean")
     if isinstance(board_number, str) is not True:
-        raise TypeError("'board_number' should be string, either 'NL11' or 'A5'")
+        raise TypeError(
+            "'board_number' should be string, either 'NL11' or 'A5'"
+        )
     os.chdir(path)
 
     files_all = glob.glob("*.dat*")
@@ -96,15 +98,19 @@ def deltas_save_numpy(
         if os.path.isfile("{name}.csv".format(name=out_file_name)):
             if rewrite is True:
                 print(
-                    "\n! ! ! csv file already exists and will be" "rewritten. ! ! !\n"
+                    "\n! ! ! csv file already exists and will be"
+                    "rewritten. ! ! !\n"
                 )
                 for i in range(5):
-                    print("\n! ! ! Deleting the file in {} ! ! !\n".format(5 - i))
+                    print(
+                        "\n! ! ! Deleting the file in {} ! ! !\n".format(5 - i)
+                    )
                     time.sleep(1)
                 os.remove("{}.csv".format(out_file_name))
             else:
                 sys.exit(
-                    "\n csv file already exists, 'rewrite' set to" "'False', exiting."
+                    "\n csv file already exists, 'rewrite' set to"
+                    "'False', exiting."
                 )
         os.chdir("..")
     except FileNotFoundError:
@@ -145,7 +151,9 @@ def deltas_save_numpy(
                             cycle += 1
                             continue
                         deltas = (
-                            data["{}".format(w)][cyc2[cycle] + 1 : cyc2[cycle + 1]]
+                            data["{}".format(w)][
+                                cyc2[cycle] + 1 : cyc2[cycle + 1]
+                            ]
                             - tmsp1
                         )
                         # Collect deltas in the requested window
@@ -153,7 +161,9 @@ def deltas_save_numpy(
                         deltas_all["{},{}".format(q, w)].extend(deltas[ind])
 
             # Save data as a .csv file
-            data_for_plot_df = pd.DataFrame.from_dict(deltas_all, orient="index")
+            data_for_plot_df = pd.DataFrame.from_dict(
+                deltas_all, orient="index"
+            )
             del deltas_all
             data_for_plot_df = data_for_plot_df.T
             try:
@@ -202,12 +212,16 @@ def deltas_save_numpy(
                     # get timestamp for both pixels in the given cycle
                     for cyc in range(len(cycler) - 1):
                         pix1_ = pix1[
-                            np.logical_and(pix1 > cycler[cyc], pix1 < cycler[cyc + 1])
+                            np.logical_and(
+                                pix1 > cycler[cyc], pix1 < cycler[cyc + 1]
+                            )
                         ]
                         if not np.any(pix1_):
                             continue
                         pix2_ = pix2[
-                            np.logical_and(pix2 > cycler[cyc], pix2 < cycler[cyc + 1])
+                            np.logical_and(
+                                pix2 > cycler[cyc], pix2 < cycler[cyc + 1]
+                            )
                         ]
                         if not np.any(pix2_):
                             continue
@@ -221,10 +235,14 @@ def deltas_save_numpy(
                         for t1 in tmsp1:
                             deltas = tmsp2 - t1
                             ind = np.where(np.abs(deltas) < delta_window)[0]
-                            deltas_all["{},{}".format(q, w)].extend(deltas[ind])
+                            deltas_all["{},{}".format(q, w)].extend(
+                                deltas[ind]
+                            )
 
             # Save data as a .csv file
-            data_for_plot_df = pd.DataFrame.from_dict(deltas_all, orient="index")
+            data_for_plot_df = pd.DataFrame.from_dict(
+                deltas_all, orient="index"
+            )
             del deltas_all
             data_for_plot_df = data_for_plot_df.T
             try:
@@ -241,7 +259,9 @@ def deltas_save_numpy(
                     header=False,
                 )
             else:
-                data_for_plot_df.to_csv("{}.csv".format(out_file_name), index=False)
+                data_for_plot_df.to_csv(
+                    "{}.csv".format(out_file_name), index=False
+                )
             os.chdir("..")
 
 
@@ -299,11 +319,18 @@ def delta_cp(
     # check if plot exists and if it should be rewrited
     try:
         os.chdir("results/delta_t")
-        if os.path.isfile("{name}_delta_t_grid.png".format(name=csv_file_name)):
+        if os.path.isfile(
+            "{name}_delta_t_grid.png".format(name=csv_file_name)
+        ):
             if rewrite is True:
-                print("\n! ! ! Plot already exists and will be" "rewritten. ! ! !\n")
+                print(
+                    "\n! ! ! Plot already exists and will be"
+                    "rewritten. ! ! !\n"
+                )
             else:
-                sys.exit("\nPlot already exists, 'rewrite' set to 'False', exiting.")
+                sys.exit(
+                    "\nPlot already exists, 'rewrite' set to 'False', exiting."
+                )
         os.chdir("../..")
     except FileNotFoundError:
         pass
@@ -357,7 +384,9 @@ def delta_cp(
                     100,
                 )
             except ValueError:
-                print("\nCouldn't calculate bins: probably not enough delta ts.")
+                print(
+                    "\nCouldn't calculate bins: probably not enough delta ts."
+                )
                 continue
 
             if "Ne" and "540" in path:

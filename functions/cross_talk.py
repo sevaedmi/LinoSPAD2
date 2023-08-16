@@ -68,7 +68,9 @@ def collect_ct(
     """
     # parameter type check
     if isinstance(board_number, str) is not True:
-        raise TypeError("'board_number' should be string, either 'NL11' or 'A5'")
+        raise TypeError(
+            "'board_number' should be string, either 'NL11' or 'A5'"
+        )
     if isinstance(fw_ver, str) is not True:
         raise TypeError("'fw_ver' should be string, either '2208' or '2212b'")
 
@@ -131,7 +133,9 @@ def collect_ct(
 
                 data2 = data_all[tdc2].T[1][pix2]
 
-                deltas = cd.calc_diff_2212(data1, data2, cycle_ends, delta_window)
+                deltas = cd.calc_diff_2212(
+                    data1, data2, cycle_ends, delta_window
+                )
 
                 timestamps_pix1 = len(np.where(data1 > 0)[0])
                 if timestamps_pix1 == 0:
@@ -148,7 +152,9 @@ def collect_ct(
                 deltas_list.append(len(deltas))
                 ct_list.append(ct)
 
-    print("\n> > > Saving data to a .csv file in folder {} < < <\n".format(path))
+    print(
+        "\n> > > Saving data to a .csv file in folder {} < < <\n".format(path)
+    )
 
     dic = {
         "File": file_name_list,
