@@ -70,7 +70,11 @@ def plot_pixel_hist(
     else:
         plt.ioff()
     for i, num in enumerate(DATA_FILES):
-        print("> > > Plotting pixel histograms, Working on {} < < <\n".format(num))
+        print(
+            "> > > Plotting pixel histograms, Working on {} < < <\n".format(
+                num
+            )
+        )
 
         if fw_ver == "2208":
             data = f_up.unpack_numpy(num, board_number, timestamps)
@@ -101,7 +105,9 @@ def plot_pixel_hist(
             except Exception:
                 os.makedirs("results/single pixel histograms")
                 os.chdir("results/single pixel histograms")
-            plt.savefig("{file}, pixel {pixel}.png".format(file=num, pixel=pixel))
+            plt.savefig(
+                "{file}, pixel {pixel}.png".format(file=num, pixel=pixel)
+            )
             os.chdir("../..")
 
 
@@ -187,7 +193,9 @@ def plot_sen_pop(
             data = f_up.unpack_2212(files[i], board_number, fw_ver, timestamps)
             for i in range(0, 256):
                 a = np.array(data["{}".format(i)])
-                valid_per_pixel[i] = valid_per_pixel[i] + len(np.where(a > 0)[0])
+                valid_per_pixel[i] = valid_per_pixel[i] + len(
+                    np.where(a > 0)[0]
+                )
         elif fw_ver == "2212b":
             data = f_up.unpack_2212_numpy(files[i], board_number, timestamps)
 
@@ -225,7 +233,9 @@ def plot_sen_pop(
     os.chdir("..")
 
 
-def plot_spdc(path, board_number: str, timestamps: int = 512, show_fig: bool = False):
+def plot_spdc(
+    path, board_number: str, timestamps: int = 512, show_fig: bool = False
+):
     """Plot sensor population for SPDC data.
 
     Plots SPDC data subtracting the background (data with the SPDC
@@ -261,7 +271,9 @@ def plot_spdc(path, board_number: str, timestamps: int = 512, show_fig: bool = F
     """
     # parameter type check
     if isinstance(board_number, str) is not True:
-        raise TypeError("'board_number' should be string, either 'NL11' or 'A5'")
+        raise TypeError(
+            "'board_number' should be string, either 'NL11' or 'A5'"
+        )
 
     if show_fig is True:
         plt.ion()
@@ -306,7 +318,9 @@ def plot_spdc(path, board_number: str, timestamps: int = 512, show_fig: bool = F
     # Collect background data for subtracting
     os.chdir(path_bckg)
 
-    for i in tqdm(range(len(files_bckg)), desc="Going through background datafiles"):
+    for i in tqdm(
+        range(len(files_bckg)), desc="Going through background datafiles"
+    ):
         data_all_bckg = f_up.unpack_2212_numpy(
             files_bckg[i], board_number="A5", timestamps=timestamps
         )

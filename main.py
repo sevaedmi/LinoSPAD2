@@ -17,7 +17,7 @@ path_expl = ""
 # ======================================================================
 
 if __name__ == "__main__":
-    plot_valid.plot_valid_FW2212(
+    plot_valid.plot_sen_pop(
         path_expl,
         board_number="A5",
         fw_ver="2212b",
