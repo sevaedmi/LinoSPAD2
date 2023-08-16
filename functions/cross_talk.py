@@ -30,7 +30,7 @@ from functions import unpack as f_up
 
 def collect_ct(
     path,
-    pixels: int,
+    pixels,
     board_number: str,
     fw_ver: str,
     timestamps: int = 512,
@@ -40,7 +40,8 @@ def collect_ct(
 
     Calculate timestamp differences for all pixels in the given range,
     where all timestamp differences are calculated for the first pixel
-    in the range. Works with firmware versions "2208" and "2212b".
+    in the range. Works with firmware versions "2208" and "2212b". The
+    output is saved as a .csv file in the folder with the datafiles.
 
     Parameters
     ----------
@@ -53,12 +54,12 @@ def collect_ct(
         are accepted.
     fw_ver : str
         Firmware version installed on the LinoSPAD2 motherboard. Only
-        "2208" and "2212b" values are accepted.
+        "2208" and "2212b" are accepted.
     timestamps : int, optional
         Number of timestamps per pixel per cycle. The default is 512.
     delta_window : float, optional
         A width of a window in which the number of timestamp differences
-        are counted. The default value is 10 ns. The default is 10e3.
+        are counted. The default value is 10e3 (10ns).
 
     Returns
     -------
@@ -189,6 +190,8 @@ def plot_ct(path, pix1, scale: str = "linear"):
     pix1 : int
         Pixel number relative to which the cross-talk data should be
         plotted.
+    scale : str, optional
+        Switch for plot scale, logarithmic or linear. Default is "linear".
 
     Returns
     -------

@@ -1,13 +1,11 @@
 """Module for fitting timestamp differences with Gaussian function.
 
-This script utilizes an unpacking module used specifically for the
-LinoSPAD2 data output.
-
 This file can also be imported as a module and contains the following
 functions:
 
     * fit_wg - fit timestamp differences of a pair of pixels with a
-    gaussian function and plot both in a single figure.
+    gaussian function and plot both a histogram of timestamp
+    differences and the fit in a single figure.
 
 """
 
@@ -25,6 +23,8 @@ def fit_wg(path, pix_pair: list, window: float = 5e3, step: int = 1):
 
     Fits timestamp differences of a pair of pixels with gaussian
     function and plots it next to the histogram of the differences.
+    Timestamp differences are collected from a .csv file with those, if
+    such exists.
 
     Parameters
     ----------
@@ -74,7 +74,8 @@ def fit_wg(path, pix_pair: list, window: float = 5e3, step: int = 1):
         raise FileNotFoundError("\nFile with data not found")
 
     data = pd.read_csv(
-        "{}".format(csv_file_name), usecols=["{},{}".format(pix_pair[0], pix_pair[1])]
+        "{}".format(csv_file_name),
+        usecols=["{},{}".format(pix_pair[0], pix_pair[1])],
     )
     try:
         data_to_plot = data["{},{}".format(pix_pair[0], pix_pair[1])]

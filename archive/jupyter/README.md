@@ -1,1 +1,1 @@
-This folder contains scripts for Jupyter Notebook.
+This folder contains scripts forkey Jupyter Notebook.

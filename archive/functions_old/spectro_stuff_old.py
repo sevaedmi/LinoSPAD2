@@ -8,10 +8,14 @@ functions:
 
     * ar_spec - unpacks data, counts the number of timestamps in each
     pixel, fits with gaussian each discovered peak and plots the results.
+    Works with firmware version '2212b'.
 
-    * spdc_ac - unpacks data, counts the number of timestamps in each
+    * spdc_ac_save - unpacks data, counts the number of timestamps in each
     pixel, collects timestamps differences for an anti-correlation plot
     and plots the results.
+
+    * spdc_ac_cp - plot an anti-correlation plot using SPDC data from
+    a .csv file.
 
 """
 import glob
@@ -61,7 +65,7 @@ def ar_spec(path, board_number: str, tmrl: list, timestamps: int = 512):
         raise TypeError("'board_number' should be string, either 'NL11' or 'A5'")
     if len(tmrl) != 2:
         raise ValueError(
-            "'tmrp' should include exactly two most right lines expected in" "the plot"
+            "'tmrp' should include exactly two most right lines" "expected in the plot"
         )
     os.chdir(path)
 
@@ -97,12 +101,12 @@ def ar_spec(path, board_number: str, tmrl: list, timestamps: int = 512):
 
     peak_pos = sg.find_peaks(valid_per_pixel, threshold=v_max / 10)[0]
 
-    # Convert pixels to wavelengths; NIST values are used, accounting for air refractive
-    # index of 1.0003
+    # Convert pixels to wavelengths; NIST values are used, accounting
+    # for air refractive index of 1.0003
     pixels = np.arange(0, 256, 1)
     # To convert pix to nm, use linear equation y = ax + b
-    # a = (y_2 - y_1) / (p-2 - p_1), where y_1, y_2 are pix position in pixels,
-    # p_1, p_2 - in nm.
+    # a = (y_2 - y_1) / (p-2 - p_1), where y_1, y_2 are pix position in
+    # pixels, p_1, p_2 - in nm.
     # b = y_2 - (y_2 - y_1) / (p_2 - p_1) * p_1 = y_2 - a * p_1
     nm_per_pix = (tmrl[1] / 1.0003 - tmrl[0] / 1.0003) / (peak_pos[-1] - peak_pos[-2])
     x_nm = nm_per_pix * pixels + tmrl[1] / 1.0003 - nm_per_pix * peak_pos[-1]
@@ -146,8 +150,14 @@ def ar_spec(path, board_number: str, tmrl: list, timestamps: int = 512):
         perr[i] = np.sqrt(np.diag(pcov[i]))
         fit_plot[i] = gauss(x_nm, par[i][0], par[i][1], par[i][2], par[i][3])
 
-    # colors = ["#008080", "#009480", "#00a880", "#00bc80", "#00d080", "#00e480"]
-    colors1 = ["#cd9bd8", "#da91c5", "#e189ae", "#e48397", "#e08080", "#ffda9e"]
+    colors1 = [
+        "#cd9bd8",
+        "#da91c5",
+        "#e189ae",
+        "#e48397",
+        "#e08080",
+        "#ffda9e",
+    ]
 
     plt.figure(figsize=(16, 10))
     plt.rcParams.update({"font.size": 22})
@@ -241,21 +251,23 @@ def spdc_ac_save(
         os.chdir("delta_ts_data")
         if os.path.isfile("{}.csv".format(out_file_name)):
             if rewrite is True:
-                print("\n! ! ! csv file already exists and will be rewritten. ! ! !\n")
+                print(
+                    "\n! ! ! csv file already exists and will be" "rewritten. ! ! !\n"
+                )
                 for i in range(5):
                     print("\n! ! ! Deleting the file in {} ! ! !\n".format(5 - i))
                     time.sleep(1)
                 os.remove("{}.csv".format(out_file_name))
             else:
                 sys.exit(
-                    "\n csv file already exists, 'rewrite' set to 'False', exiting."
+                    "\n csv file already exists, 'rewrite' set to" "'False', exiting."
                 )
         os.chdir("..")
     except FileNotFoundError:
         pass
 
-    # If .csv file does not exist or it set to be rewritten, prepare header with all
-    # pixels' pair combinations
+    # If .csv file does not exist or it set to be rewritten, prepare
+    # header with all pixels' pair combinations
     new_csv = {}
 
     for q in pix_left:
@@ -273,9 +285,9 @@ def spdc_ac_save(
 
     os.chdir("..")
 
-    # Prepare arrays for the for loop: first for pixel addresses for converting to
-    # TDC number and pix number in that TDC (0, 1, 2, 3); second for number of timestamp
-    # differences in each pixel pair
+    # Prepare arrays for the for loop: first for pixel addresses for
+    # converting to TDC number and pix number in that TDC (0, 1, 2, 3);
+    # second for number of timestamp differences in each pixel pair
     pix_coor = np.arange(256).reshape(64, 4)
 
     # Mask the hot/warm pixels
@@ -397,9 +409,9 @@ def spdc_ac_cp(
         os.chdir("results/delta_t")
         if os.path.isfile("{name}_delta_t_grid.png".format(name=csv_file_name)):
             if rewrite is True:
-                print("\n! ! ! Plot already exists and will be rewritten. ! ! !\n")
+                print("\n! ! ! Plot already exists and will be" "rewritten. ! ! !\n")
             else:
-                sys.exit("\nPlot already exists, 'rewrite' set to 'False', exiting.")
+                sys.exit("\nPlot already exists, 'rewrite' set to 'False'," "exiting.")
         os.chdir("../..")
     except FileNotFoundError:
         pass
@@ -415,8 +427,8 @@ def spdc_ac_cp(
     else:
         interpolation = "None"
 
-    # Matrix of 256 by 256 pixels with number of timestamp differences per pair of
-    # pixels.
+    # Matrix of 256 by 256 pixels with number of timestamp differences
+    # per pair of pixels.
     mat = np.zeros((256, 256))
 
     data = pd.read_csv("delta_ts_data/{}.csv".format(csv_file_name))

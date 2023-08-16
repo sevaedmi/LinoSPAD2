@@ -1,35 +1,37 @@
-Scripts for unpacking and analyzing data collected with LinoSPAD2. The data
-should be binary-encoded (the ".dat" format) as the ".txt" format takes much longer
-to unpack. The 1D binary streams of data from the detector can be unpacked
-and saved with the "unpack" module in the "functions" directory.
+# Introduction
+This module was written for data analysis for LinoSPAD2, mainly for
+analysis of the timestamp output. The key functions are ones for
+unpacking the binary output of the detector that utilize the numpy
+Python library for quick unpacking of .dat files to matrices,
+dictionaries or dataframes.
 
-"main.py" is the main hub where individual modules are called. Modules for
-real time plotting of the number of valid timestamps vs the pixel index
-("plot_valid"), for plotting a grid of differences in timestamps for a given
-range of pixels ("delta_t"), and for fitting the timestamp differences with
-a gaussian function are available ("fits").
+The "functions" folder holds all functions from unpacking to plotting
+numerous types of graphs (pixel population, histograms of timestamp
+differences, etc.)
 
-The "tools" directory contains numerous scripts, some of which mirror some of
-the modules in the "functions" as a standalone scripts that can be used as a
-debugging tool. Other scripts were used in the testing of new functions.
+The "params" folder holds masks (used to mask some of the noisiest
+pixels) and calibration data (compensating for TDC nonlinearities and
+offset) for LinoSPAD2 daughterboards "A5" and "NL11".
 
-'_old' directories contain previous iterations of the scripts that are left for
-later reference, debugging, or insipiration.
+The "archive" folder is a collection of scripts for debugging, tests,
+older versions of functions, etc.
 
-The 'app' directory contains scripts that run an application for data analysis,
-namely realtime plotting of timestamp counts in each pixel for better focusing
-during manipulations with the setup. However, the app was moved to a standalone
-directory, https://github.com/rngKomorebi/LinoSPAD2-app and the version in this
-repo is outdated.
+A full documentation, including examples and a full documentation of
+modules and functions, can be found at TODO:insert link to doc.
 
-Folders 'masks' and 'calibration_data' serve as parameter holders for some of
-the functions, containing masks for hot/warm pixels and TDC nonlinearity calibration
-data for LinoSPAD2 NL11 and A5 daughterboards, respectively.
+Additionaly, a standalone repo with an application for online plotting
+of sensor population can be found [here](https://github.com/rngKomorebi/LinoSPAD2-app).
 
-'jupyter' folder collects functions written in Jupyter by some of the contributors.
+Some functions (mainly the plotting ones) save plots as pictures in the
+.png format, creating a folder for the output in the same folder that
+holds the data.
 
-"requirements.txt" collects all packages required for this project to run.
-One can create an environment for this project either using conda or  install
+# Installation and usage
+
+To start using the module, one can download the whole repo. The 'main.py'
+serves as the main hub for calling the functions. "requirements.txt"
+collects all packages required for this project to run. One can create
+an environment for this project either using conda or install the
 necessary packages using pip.
 ```
 pip install -r requirements.txt
@@ -38,3 +40,12 @@ or
 ```
 conda create --name NEW_ENVIRONMENT_NAME --file /PATH/TO/requirements.txt -c conda-forge
 ```
+
+# How to contribute
+This repo consists of two branches: 'main' serves as the release version
+of the module, tested, proved to be functional and ready-to-use, while
+'develop' branch serves as the main hub for testing new stuff. To
+contribute, the best way would be to fork the 'develop' branch and
+submit via pull requests. Everyone willing to contribute is kindly asked
+to follow the [PEP 8](https://peps.python.org/pep-0008/) and
+[PEP 257](https://peps.python.org/pep-0257/) in particular.
