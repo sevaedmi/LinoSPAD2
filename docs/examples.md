@@ -71,7 +71,7 @@ not applied, pixels with 0 timestamps are most probably dead #TODO check.
 The plot is saved as a .png file in a reasonable format in the 'results'
 folder in the same directory where data files are.
 
-![Sensor population plot](/images/0000000000.dat-0000000499.dat.png)
+![Sensor population plot](images/0000000000.dat-0000000499.dat.png)
 
 ## Plotting timestamp differences
 
@@ -90,7 +90,7 @@ The function 'delta_cp' from the same module used to collect the data
 from the .csv file and plot it as a grid of histograms for the given
 pairs of pixels, see the figure below.
 
-![Delta t histogram](/images/0000000000-0000000499_delta_t_grid.png)
+![Delta t histogram](images/0000000000-0000000499_delta_t_grid.png)
 
 This is a typical result for the '2212b' (block) firmware version. The
 dips in some of the pairs are due to the pixels being connected to the
@@ -115,7 +115,7 @@ expected value is the position of the peak (if there's one). In the
 example below, a histogram of timestamp differences for pixels 3 and 45
 is fitted with a Gaussian function.
 
-![Delta t fitted](/images/0000008500-0000008839_pixels3,45_fit.png)
+![Delta t fitted](images/0000008500-0000008839_pixels3,45_fit.png)
 
 
 ## Cross-talk analysis
