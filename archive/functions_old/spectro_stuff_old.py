@@ -62,10 +62,13 @@ def ar_spec(path, board_number: str, tmrl: list, timestamps: int = 512):
     """
     # parameter type check
     if isinstance(board_number, str) is not True:
-        raise TypeError("'board_number' should be string, either 'NL11' or 'A5'")
+        raise TypeError(
+            "'board_number' should be string, either 'NL11' or 'A5'"
+        )
     if len(tmrl) != 2:
         raise ValueError(
-            "'tmrp' should include exactly two most right lines" "expected in the plot"
+            "'tmrp' should include exactly two most right lines"
+            "expected in the plot"
         )
     os.chdir(path)
 
@@ -108,11 +111,15 @@ def ar_spec(path, board_number: str, tmrl: list, timestamps: int = 512):
     # a = (y_2 - y_1) / (p-2 - p_1), where y_1, y_2 are pix position in
     # pixels, p_1, p_2 - in nm.
     # b = y_2 - (y_2 - y_1) / (p_2 - p_1) * p_1 = y_2 - a * p_1
-    nm_per_pix = (tmrl[1] / 1.0003 - tmrl[0] / 1.0003) / (peak_pos[-1] - peak_pos[-2])
+    nm_per_pix = (tmrl[1] / 1.0003 - tmrl[0] / 1.0003) / (
+        peak_pos[-1] - peak_pos[-2]
+    )
     x_nm = nm_per_pix * pixels + tmrl[1] / 1.0003 - nm_per_pix * peak_pos[-1]
 
     peak_pos_nm = (
-        np.array(peak_pos) * nm_per_pix + tmrl[1] / 1.0003 - nm_per_pix * peak_pos[-1]
+        np.array(peak_pos) * nm_per_pix
+        + tmrl[1] / 1.0003
+        - nm_per_pix * peak_pos[-1]
     )
 
     def gauss(x, A, x0, sigma, C):
@@ -236,9 +243,13 @@ def spdc_ac_save(
     """
     # parameter type check
     if isinstance(board_number, str) is not True:
-        raise TypeError("'board_number' should be string, either 'NL11' or 'A5'")
+        raise TypeError(
+            "'board_number' should be string, either 'NL11' or 'A5'"
+        )
     if isinstance(rewrite, bool) is not True:
-        raise TypeError("'rewrite' should be boolean, 'True' for rewriting the .csv")
+        raise TypeError(
+            "'rewrite' should be boolean, 'True' for rewriting the .csv"
+        )
 
     os.chdir(path)
 
@@ -252,15 +263,19 @@ def spdc_ac_save(
         if os.path.isfile("{}.csv".format(out_file_name)):
             if rewrite is True:
                 print(
-                    "\n! ! ! csv file already exists and will be" "rewritten. ! ! !\n"
+                    "\n! ! ! csv file already exists and will be"
+                    "rewritten. ! ! !\n"
                 )
                 for i in range(5):
-                    print("\n! ! ! Deleting the file in {} ! ! !\n".format(5 - i))
+                    print(
+                        "\n! ! ! Deleting the file in {} ! ! !\n".format(5 - i)
+                    )
                     time.sleep(1)
                 os.remove("{}.csv".format(out_file_name))
             else:
                 sys.exit(
-                    "\n csv file already exists, 'rewrite' set to" "'False', exiting."
+                    "\n csv file already exists, 'rewrite' set to"
+                    "'False', exiting."
                 )
         os.chdir("..")
     except FileNotFoundError:
@@ -326,12 +341,16 @@ def spdc_ac_save(
                 # Get timestamp for both pixels in the given cycle
                 for cyc in np.arange(len(cycler) - 1):
                     pix1_ = pix1[
-                        np.logical_and(pix1 > cycler[cyc], pix1 < cycler[cyc + 1])
+                        np.logical_and(
+                            pix1 > cycler[cyc], pix1 < cycler[cyc + 1]
+                        )
                     ]
                     if not np.any(pix1_):
                         continue
                     pix2_ = pix2[
-                        np.logical_and(pix2 > cycler[cyc], pix2 < cycler[cyc + 1])
+                        np.logical_and(
+                            pix2 > cycler[cyc], pix2 < cycler[cyc + 1]
+                        )
                     ]
                     if not np.any(pix2_):
                         continue
@@ -398,7 +417,9 @@ def spdc_ac_cp(
 
     """
     if isinstance(rewrite, bool) is not True:
-        raise TypeError("'rewrite' should be boolean, 'True' for rewriting the plot")
+        raise TypeError(
+            "'rewrite' should be boolean, 'True' for rewriting the plot"
+        )
 
     os.chdir(path)
     files_all = glob.glob("*.dat*")
@@ -407,11 +428,19 @@ def spdc_ac_cp(
     # Check if plot exists and if it should be rewrited
     try:
         os.chdir("results/delta_t")
-        if os.path.isfile("{name}_delta_t_grid.png".format(name=csv_file_name)):
+        if os.path.isfile(
+            "{name}_delta_t_grid.png".format(name=csv_file_name)
+        ):
             if rewrite is True:
-                print("\n! ! ! Plot already exists and will be" "rewritten. ! ! !\n")
+                print(
+                    "\n! ! ! Plot already exists and will be"
+                    "rewritten. ! ! !\n"
+                )
             else:
-                sys.exit("\nPlot already exists, 'rewrite' set to 'False'," "exiting.")
+                sys.exit(
+                    "\nPlot already exists, 'rewrite' set to 'False',"
+                    "exiting."
+                )
         os.chdir("../..")
     except FileNotFoundError:
         pass
@@ -436,17 +465,22 @@ def spdc_ac_cp(
     # Fill the matrix
     for i in range(len(data.columns)):
         pixs = data.columns[i].split(",")
-        ind = np.where(np.abs(np.array(data[data.columns[i]])) < delta_window)[0]
+        ind = np.where(np.abs(np.array(data[data.columns[i]])) < delta_window)[
+            0
+        ]
         if not np.any(ind):
             continue
-        mat[int(pixs[0])][int(pixs[1])] = len(data[data.columns[i]][ind].dropna())
+        mat[int(pixs[0])][int(pixs[1])] = len(
+            data[data.columns[i]][ind].dropna()
+        )
 
     # Find where the data in the matrix is for setting limits for plot
     positives = np.where(mat > 0)
 
     deg = (
         np.arctan(
-            (positives[1][-1] - positives[1][0]) / (positives[0][-1] - positives[0][0])
+            (positives[1][-1] - positives[1][0])
+            / (positives[0][-1] - positives[0][0])
         )
         * 180
         / np.pi
@@ -463,7 +497,9 @@ def spdc_ac_cp(
             deg=format(deg, ".2f")
         )
     )
-    pos = ax.imshow(mat.T, cmap="cividis", interpolation=interpolation, origin="lower")
+    pos = ax.imshow(
+        mat.T, cmap="cividis", interpolation=interpolation, origin="lower"
+    )
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size="5%", pad=0.05)
     plt.colorbar(pos, cax=cax, label="# of coincidences [-]")

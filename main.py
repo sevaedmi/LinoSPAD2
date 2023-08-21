@@ -1,9 +1,7 @@
-"""The main hub for analysis of LinoSPAD2 data.
-
-"""
+"""The main hub for LinoSPAD2 data analysis."""
 
 
-from functions import plot_valid
+from functions import plot_tmsp
 
 # ======================================================================
 # Paths to where data or the 'csv' files with the resuts are located.
@@ -11,17 +9,16 @@ from functions import plot_valid
 
 path_expl = ""
 
-
 # ======================================================================
 # Function execution.
 # ======================================================================
 
 if __name__ == "__main__":
-    plot_valid.plot_sen_pop(
+    plot_tmsp.plot_sen_pop(
         path_expl,
         board_number="A5",
         fw_ver="2212b",
         timestamps=200,
         show_fig=True,
-        app_mask=False,
+        app_mask=True,
     )

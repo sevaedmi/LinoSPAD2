@@ -8,7 +8,7 @@ import numpy as np
 
 from functions.calc_diff import calc_diff, calc_diff_df
 from functions.delta_t import plot_grid, plot_grid_df
-from functions.plot_valid import plot_valid, plot_valid_df
+from functions.plot_tmsp import plot_valid, plot_valid_df
 from functions.unpack import unpack_binary_df, unpack_binary_flex, unpack_numpy
 
 path = "C:/Users/bruce/Documents/Quantum astrometry/LinoSPAD/Software/Data/Ne lamp/FW 2208/540 nm"

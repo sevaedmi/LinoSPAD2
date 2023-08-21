@@ -10,8 +10,6 @@ functions:
     pixel. The function can be used mainly for checking the
     homogenity of the LinoSPAD2 output.
 
-
-
     * plot_sen_pop - plots the sensor population as a number of valid
     timestamps in each pixel. Works with the firmware version 2212 (both
     block and skip). Analyzes all datafiles in the given folder.
@@ -20,6 +18,7 @@ functions:
 
 import glob
 import os
+import sys
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -137,7 +136,8 @@ def plot_sen_pop(
         The LinoSPAD2 board number. Required for choosing the correct
         calibration data.
     fw_ver : str
-        2212 firmware version: '2212b' or '2212s'.
+        LinoSPAD2 firmware version. Versions '2212b' (block) or '2212s'
+        (skip) are recognized.
     timestamps : int, optional
         Number of timestamps per pixel per acquisition cycle. Default is
         "512".
@@ -186,27 +186,28 @@ def plot_sen_pop(
 
     valid_per_pixel = np.zeros(256)
 
-    print("\n> > > Collecting data, Working in {} < < <\n".format(path))
+    print(
+        "\n> > > Collecting data for sensor population plot,"
+        "Working in {} < < <\n".format(path)
+    )
 
     for i in tqdm(range(len(files)), desc="Collecting data"):
         if fw_ver == "2212s":
-            data = f_up.unpack_2212(files[i], board_number, fw_ver, timestamps)
-            for i in range(0, 256):
-                a = np.array(data["{}".format(i)])
-                valid_per_pixel[i] = valid_per_pixel[i] + len(
-                    np.where(a > 0)[0]
-                )
+            pix_coor = np.arange(256).reshape(4, 64).T
         elif fw_ver == "2212b":
-            data = f_up.unpack_2212_numpy(files[i], board_number, timestamps)
-
             pix_coor = np.arange(256).reshape(64, 4)
-            for i in range(256):
-                tdc, pix = np.argwhere(pix_coor == i)[0]
-                ind = np.where(data[tdc].T[0] == pix)[0]
-                ind1 = np.where(data[tdc].T[1][ind] > 0)[0]
-                valid_per_pixel[i] += len(data[tdc].T[1][ind[ind1]])
+        else:
+            print("\nFirmware version is not recognized, exiting.")
+            sys.exit()
 
-    print("\n> > > Plotting timestamps < < <\n")
+        data = f_up.unpack_bin(files[i], board_number, timestamps)
+        for i in range(256):
+            tdc, pix = np.argwhere(pix_coor == i)[0]
+            ind = np.where(data[tdc].T[0] == pix)[0]
+            ind1 = np.where(data[tdc].T[1][ind] > 0)[0]
+            valid_per_pixel[i] += len(data[tdc].T[1][ind[ind1]])
+
+    print("\n> > > Plotting < < <\n")
     # Apply mask if requested
     if app_mask is True:
         path_to_back = os.getcwd()
@@ -224,12 +225,17 @@ def plot_sen_pop(
     plt.ylabel("Timestamps [-]")
 
     try:
-        os.chdir("results")
+        os.chdir("results/sensor_population")
     except FileNotFoundError:
-        os.mkdir("results")
-        os.chdir("results")
+        os.mkdir("results/sensor_population")
+        os.chdir("results/sensor_population")
     fig.tight_layout()
     plt.savefig("{}.png".format(plot_name))
+    print(
+        "> > > The plot is saved as '{file}.png' in {path} < < <".format(
+            file=plot_name, path=os.getcwd()
+        )
+    )
     os.chdir("..")
 
 
@@ -305,7 +311,7 @@ def plot_spdc(
 
     # Collect SPDC data
     for i in tqdm(range(len(files)), desc="Going through datafiles"):
-        data_all = f_up.unpack_2212_numpy(
+        data_all = f_up.unpack_bin(
             files[i], board_number="A5", timestamps=timestamps
         )
 
@@ -321,7 +327,7 @@ def plot_spdc(
     for i in tqdm(
         range(len(files_bckg)), desc="Going through background datafiles"
     ):
-        data_all_bckg = f_up.unpack_2212_numpy(
+        data_all_bckg = f_up.unpack_bin(
             files_bckg[i], board_number="A5", timestamps=timestamps
         )
 

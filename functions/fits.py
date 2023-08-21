@@ -88,7 +88,7 @@ def fit_wg(path, pix_pair: list, window: float = 5e3, step: int = 1):
 
     data_to_plot = data_to_plot.dropna()
     data_to_plot = np.array(data_to_plot)
-    # Use window of 40 ns for calculating histogram and fitting
+    # Use window of 40 ns for calculating histogram data
     data_to_plot = np.delete(data_to_plot, np.argwhere(data_to_plot < -20e3))
     data_to_plot = np.delete(data_to_plot, np.argwhere(data_to_plot > 20e3))
 
@@ -112,10 +112,10 @@ def fit_wg(path, pix_pair: list, window: float = 5e3, step: int = 1):
         print("Couldn't find position of histogram max")
 
     data_to_plot = np.delete(
-        data_to_plot, np.argwhere(data_to_plot < b[n_argmax] - window)
+        data_to_plot, np.argwhere(data_to_plot < b[n_argmax] - window / 2)
     )
     data_to_plot = np.delete(
-        data_to_plot, np.argwhere(data_to_plot > b[n_argmax] + window)
+        data_to_plot, np.argwhere(data_to_plot > b[n_argmax] + window / 2)
     )
 
     # bins must be in units of 17.857 ps
@@ -154,7 +154,7 @@ def fit_wg(path, pix_pair: list, window: float = 5e3, step: int = 1):
         chosen_color = "salmon"
 
     plt.figure(figsize=(16, 10))
-    plt.xlabel(r"$\Delta$ [ps]")
+    plt.xlabel(r"$\Delta$t [ps]")
     plt.ylabel("# of coincidences [-]")
     plt.step(
         b[1:],
