@@ -22,7 +22,7 @@ The "archive" folder is a collection of scripts for debugging, tests,
 older versions of functions, etc.
 
 Full documentation, including examples and full documentation of
-modules and functions can be found at TODO:insert link to doc.
+modules and functions can be found [here](https://rngkomorebi.github.io/LinoSPAD2/).
 
 Some functions (mainly the plotting ones) save plots as pictures in the
 .png format, creating a folder for the output in the same folder that
