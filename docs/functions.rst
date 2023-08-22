@@ -1,10 +1,13 @@
-Functions
+functions package
 =================
 
 .. automodule:: functions
    :members:
    :undoc-members:
    :show-inheritance:
+
+Submodules
+----------
 
 .. toctree::
    :maxdepth: 4
@@ -14,5 +17,5 @@ Functions
    functions.cross_talk
    functions.delta_t
    functions.fits
-   functions.plot_valid
+   functions.plot_tmsp
    functions.unpack
