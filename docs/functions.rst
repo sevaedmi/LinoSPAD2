@@ -1,4 +1,4 @@
-functions package
+Functions
 =================
 
 .. automodule:: functions
