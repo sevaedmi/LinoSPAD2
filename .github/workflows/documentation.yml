@@ -10,13 +10,10 @@ jobs:
       - uses: actions/setup-python@v3
       - name: Install dependencies
         run: |
-          pip install sphinx sphinx_rtd_theme myst-parser sphinx-math-dollar
+          pip install sphinx sphinx_rtd_theme myst-parser sphinx-math-dollar sphinx-autodoc
       - name: Sphinx build
         run: |
-          sphinx-build docs _build.
-        with:
-            sphinx-apidoc: True
-            sphinx-apidoc-opts: -e -M -f -o . ../
+          sphinx-apidoc -f -e -M -o docs . ../
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
