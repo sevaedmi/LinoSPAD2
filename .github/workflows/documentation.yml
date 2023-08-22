@@ -13,7 +13,9 @@ jobs:
           pip install sphinx sphinx_rtd_theme myst-parser sphinx-math-dollar
       - name: Sphinx build
         run: |
-          sphinx-apidoc -e -f -M -o docs .
+          sphinx-build docs _build.
+        with:
+            sphinx-apidoc: True
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
