@@ -189,13 +189,13 @@ def fit_wg(path, pix_pair: list, window: float = 5e3, step: int = 1):
     plt.legend(loc="best")
 
     try:
-        os.chdir("results/gauss_fit")
+        os.chdir("results/fits")
     except Exception:
-        os.makedirs("results/gauss_fit")
-        os.chdir("results/gauss_fit")
+        os.makedirs("results/fits")
+        os.chdir("results/fits")
 
     plt.savefig(
-        "{file}_pixels"
+        "{file}_pixels_"
         "{pix1},{pix2}_fit.png".format(
             file=file_name, pix1=pix_pair[0], pix2=pix_pair[1]
         )

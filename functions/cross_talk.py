@@ -220,11 +220,11 @@ def plot_ct(path, pix1, scale: str = "linear"):
             continue
 
         distance.append(pix - pix1)
-        if len(ct_pix > 1):
+        if len(ct_pix) > 1:
             ct.append(np.average(ct_pix))
+            yerr.append(sem(ct_pix))
         else:
             ct.append(ct_pix)
-        yerr.append(sem(ct_pix))
 
         xticks = np.linspace(
             distance[0], distance[-1], int(len(distance) / 10), dtype=int
@@ -236,7 +236,10 @@ def plot_ct(path, pix1, scale: str = "linear"):
     ax1 = fig.add_subplot(111)
     if scale == "log":
         plt.yscale("log")
-    ax1.errorbar(distance, ct, yerr=yerr, color="salmon")
+    if not yerr:
+        ax1.plot(distance, ct, color="salmon")
+    else:
+        ax1.errorbar(distance, ct, yerr=yerr, color="salmon")
     ax1.set_xlabel("Distance in pixels [-]")
     ax1.set_ylabel("Average cross-talk [%]")
     ax1.set_title("Pixel {}".format(pix1))

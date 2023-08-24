@@ -44,7 +44,7 @@ def plot_pixel_hist(
     ----------
     path : str
         Path to data file.
-    pix : array-like
+    pix : array-like, list
         Array of pixels indices.
     timestamps : int, optional
         Number of timestamps per pixel per acquisition cycle. The
@@ -60,6 +60,10 @@ def plot_pixel_hist(
     # parameter type check
     if isinstance(fw_ver, str) is not True:
         raise TypeError("'fw_ver' should be string")
+
+    if type(pix) is int:
+        pix = [pix]
+
     os.chdir(path)
 
     DATA_FILES = glob.glob("*.dat*")
@@ -75,37 +79,40 @@ def plot_pixel_hist(
             )
         )
 
-        if fw_ver == "2208":
-            data = f_up.unpack_numpy(num, board_number, timestamps)
-        elif fw_ver == "2212b":
-            # TODO change to faster numpy
-            data = f_up.unpack_2212(
-                num, board_number, fw_ver="block", timestamps=timestamps
-            )
+        data = f_up.unpack_bin(num, board_number, timestamps=timestamps)
 
         if pix is None:
             pixels = np.arange(145, 165, 1)
         else:
             pixels = pix
-        for i, pixel in enumerate(pixels):
+        for i in range(len(pixels)):
             plt.figure(figsize=(16, 10))
             plt.rcParams.update({"font.size": 22})
             # bins = np.arange(0, 4e9, 17.867 * 1e6)  # bin size of 17.867 us
             bins = np.linspace(0, 4e9, 200)
-            if fw_ver == "2208":
-                plt.hist(data[pixel], bins=bins, color="teal")
-            if fw_ver == "2212b":
-                plt.hist(data["{}".format(pixel)], bins=bins, color="teal")
+            if fw_ver == "2212s":
+                pix_coor = np.arange(256).reshape(4, 64).T
+            elif fw_ver == "2212b":
+                pix_coor = np.arange(256).reshape(64, 4)
+            else:
+                print("\nFirmware version is not recognized, exiting.")
+                sys.exit()
+            tdc, pix = np.argwhere(pix_coor == i)[0]
+            ind = np.where(data[tdc].T[0] == pix)[0]
+            ind1 = np.where(data[tdc].T[1][ind] > 0)[0]
+            data_to_plot = data[tdc].T[1][ind[ind1]]
+
+            plt.hist(data_to_plot, bins=bins, color="teal")
             plt.xlabel("Time [ms]")
             plt.ylabel("Counts [-]")
-            plt.title("Pixel {}".format(pixel))
+            plt.title("Pixel {}".format(pixels[i]))
             try:
                 os.chdir("results/single pixel histograms")
             except Exception:
                 os.makedirs("results/single pixel histograms")
                 os.chdir("results/single pixel histograms")
             plt.savefig(
-                "{file}, pixel {pixel}.png".format(file=num, pixel=pixel)
+                "{file}, pixel {pixel}.png".format(file=num, pixel=pixels[i])
             )
             os.chdir("../..")
 
@@ -171,7 +178,7 @@ def plot_sen_pop(
 
     files = glob.glob("*.dat*")
 
-    plot_name = files[0] + "-" + files[-1]
+    plot_name = files[0][:-4] + "-" + files[-1][:-4]
 
     if "Ne" and "540" in path:
         chosen_color = "seagreen"
@@ -227,7 +234,7 @@ def plot_sen_pop(
     try:
         os.chdir("results/sensor_population")
     except FileNotFoundError:
-        os.mkdir("results/sensor_population")
+        os.makedirs("results/sensor_population")
         os.chdir("results/sensor_population")
     fig.tight_layout()
     plt.savefig("{}.png".format(plot_name))
@@ -236,7 +243,7 @@ def plot_sen_pop(
             file=plot_name, path=os.getcwd()
         )
     )
-    os.chdir("..")
+    os.chdir("../..")
 
 
 def plot_spdc(
@@ -361,10 +368,10 @@ def plot_spdc(
     plt.tight_layout()
 
     try:
-        os.chdir("results")
+        os.chdir("results/sensor_population")
     except Exception:
-        os.makedirs("results")
-        os.chdir("results")
+        os.makedirs("results/sensor_population")
+        os.chdir("results/sensor_population")
     plt.savefig("{}_SPDC_counts.png".format(plot_name))
     plt.pause(0.1)
-    os.chdir("..")
+    os.chdir("../..")

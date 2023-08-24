@@ -11,7 +11,7 @@ sys.path.append(r"")
 from functions.cross_talk import collect_ct, plot_ct
 
 
-class TestCollectCT(unittest.TestCase):
+class TestCTFull(unittest.TestCase):
     def setUp(self):
         # Set up test variables
         self.path = "tests/test_data"
@@ -19,8 +19,10 @@ class TestCollectCT(unittest.TestCase):
         self.board_number = "A5"
         self.timestamps = 200
         self.delta_window = 10e3
+        self.pix1 = 0
+        self.scale = "linear"
 
-    def test_collect_ct_positive(self):
+    def test_a_collect_ct_positive(self):
         # Test positive case of collect_ct function
         collect_ct(
             self.path,
@@ -34,22 +36,14 @@ class TestCollectCT(unittest.TestCase):
         data = pd.read_csv(file, header=None)
         self.assertEqual(len(data), 20)
 
-    def test_collect_ct_negative(self):
+    def test_b_collect_ct_negative(self):
         # Test negative case of collect_ct function
         with self.assertRaises(TypeError):
             collect_ct(
                 self.path, self.pixels, 123, self.timestamps, self.delta_window
             )
 
-
-class TestPlotCT(unittest.TestCase):
-    def setUp(self):
-        # Set up test variables
-        self.path = "tests/test_data"
-        self.pix1 = 0
-        self.scale = "linear"
-
-    def test_plot_ct_positive(self):
+    def test_c_plot_ct_positive(self):
         # Test positive case of plot_ct function
         work_dir = r"{}".format(os.path.realpath(__file__) + "../../..")
         os.chdir(work_dir)
@@ -59,7 +53,7 @@ class TestPlotCT(unittest.TestCase):
         plot_file = "{plot}_{pix}.png".format(plot=plot_name, pix=self.pix1)
         self.assertTrue(os.path.exists(plot_file))
 
-    def test_plot_ct_negative(self):
+    def test_d_plot_ct_negative(self):
         # Test negative case of plot_ct function
         with self.assertRaises(FileNotFoundError):
             plot_ct("nonexistent_folder", self.pix1, self.scale)
