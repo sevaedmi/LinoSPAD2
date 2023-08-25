@@ -23,6 +23,8 @@ class TestDeltasFull(unittest.TestCase):
 
     def test_a_deltas_save_positive(self):
         # Test positive case for deltas_save function
+        work_dir = r"{}".format(os.path.realpath(__file__) + "../../..")
+        os.chdir(work_dir)
         deltas_save(
             self.path,
             self.pixels,
@@ -41,6 +43,8 @@ class TestDeltasFull(unittest.TestCase):
     # Negative test case
     # Invalid firmware version
     def test_b_deltas_save_negative(self):
+        work_dir = r"{}".format(os.path.realpath(__file__) + "../../..")
+        os.chdir(work_dir)
         # Test negative case for deltas_save function
         with self.assertRaises(TypeError):
             deltas_save(

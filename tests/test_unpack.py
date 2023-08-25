@@ -1,4 +1,5 @@
 import unittest
+import os
 
 import numpy as np
 
@@ -8,6 +9,8 @@ from LinoSPAD2.functions.unpack import unpack_bin
 class TestUnpackBin(unittest.TestCase):
     def test_valid_input(self):
         # Positive test case with valid inputs
+        work_dir = r"{}".format(os.path.realpath(__file__) + "../../..")
+        os.chdir(work_dir)
         file = r"tests/test_data/test_data_2212b.dat"
         board_number = "A5"
         timestamps = 200
