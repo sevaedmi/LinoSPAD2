@@ -13,7 +13,7 @@ import os
 
 import numpy as np
 
-from functions.calibrate import calibrate_load
+from LinoSPAD2.functions.calibrate import calibrate_load
 
 
 def unpack_bin(file, board_number: str, timestamps: int = 512):

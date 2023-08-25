@@ -1,7 +1,6 @@
-lmfit>=1.2.2
-matplotlib>=3.7.2
-numpy>=1.24.4
-pandas>=2.0.3
-scipy>=1.11.1
-seaborn>=0.11.2
-tqdm>=4.66.1
+lmfit==1.2.2
+matplotlib==3.7.2
+numpy==1.25.2
+pandas==2.0.3
+Pillow==10.0.0
+tqdm==4.66.1

@@ -1,7 +1,7 @@
 """Module for analyzing cross-talk of LinoSPAD2.
 
-A set of functions to calculate and collect the cross-talk data
-for the given data sets.
+A set of functions to calculate and save, collect and plot the
+cross-talk data for the given data sets.
 
 This file can also be imported as a module and contains the following
 functions:
@@ -24,10 +24,11 @@ from matplotlib import pyplot as plt
 from scipy.stats import sem
 from tqdm import tqdm
 
-from functions import calc_diff as cd
-from functions import unpack as f_up
+from LinoSPAD2.functions import calc_diff as cd
+from LinoSPAD2.functions import unpack as f_up
 
 
+# TODO add compatibility with FW2212s
 def collect_ct(
     path,
     pixels,
@@ -139,10 +140,13 @@ def collect_ct(
     ct_data = pd.DataFrame(dic)
 
     try:
-        os.chdir(path + "/cross_talk_data")
+        # os.chdir(path + "/cross_talk_data")
+        os.chdir("cross_talk_data")
     except FileNotFoundError:
-        os.makedirs("{}".format(path + "/cross_talk_data"))
-        os.chdir(path + "/cross_talk_data")
+        # os.makedirs("{}".format(path + "/cross_talk_data"))
+        os.makedirs("{}".format("cross_talk_data"))
+        # os.chdir(path + "/cross_talk_data")
+        os.chdir("cross_talk_data")
 
     if glob.glob("*CT_data_{}-{}.csv*".format(files[0], files[-1])) == []:
         ct_data.to_csv(
@@ -152,9 +156,9 @@ def collect_ct(
     else:
         ct_data.to_csv(
             "CT_data_{}-{}.csv".format(files[0], files[-1]),
-            mode="a",
+            # mode="a",
             index=False,
-            header=False,
+            # header=False,
         )
 
 
@@ -187,7 +191,9 @@ def plot_ct(path, pix1, scale: str = "linear"):
 
     files = glob.glob("*.dat*")
 
-    os.chdir(path + "/cross_talk_data")
+    # os.chdir(path + "/cross_talk_data")
+
+    os.chdir("cross_talk_data")
 
     file = glob.glob("*CT_data_{}-{}.csv*".format(files[0], files[-1]))[0]
 
@@ -214,11 +220,11 @@ def plot_ct(path, pix1, scale: str = "linear"):
             continue
 
         distance.append(pix - pix1)
-        if len(ct_pix > 1):
+        if len(ct_pix) > 1:
             ct.append(np.average(ct_pix))
+            yerr.append(sem(ct_pix))
         else:
             ct.append(ct_pix)
-        yerr.append(sem(ct_pix))
 
         xticks = np.linspace(
             distance[0], distance[-1], int(len(distance) / 10), dtype=int
@@ -230,7 +236,10 @@ def plot_ct(path, pix1, scale: str = "linear"):
     ax1 = fig.add_subplot(111)
     if scale == "log":
         plt.yscale("log")
-    ax1.errorbar(distance, ct, yerr=yerr, color="salmon")
+    if not yerr:
+        ax1.plot(distance, ct, color="salmon")
+    else:
+        ax1.errorbar(distance, ct, yerr=yerr, color="salmon")
     ax1.set_xlabel("Distance in pixels [-]")
     ax1.set_ylabel("Average cross-talk [%]")
     ax1.set_title("Pixel {}".format(pix1))

@@ -2,7 +2,7 @@
 
 ## Unpacking the binary output of LinoSPAD2
 
-The key functions of this module are the ones from unpack.py that
+The key functions of this package are the ones from unpack.py that
 allow unpacking binary-encoded timestamp-output data from LinoSPAD2
 into matrices or dictionaries with dimensions 'pixel number X timestamps'
 (firmware version 2208) or 'TDC number x timestamps' (firmware version
@@ -39,7 +39,7 @@ When running the LinoSPAD2 data acquisition software, multiple options
 are provided that affect the data output, such as the number of data
 acquisition cycles, number of timestamps per pixel/TDC per cycle
 recorded, clock, etc. In the scope of the functions provided by this
-module, the most important ones are the number of timestamps and the
+package, the most important ones are the number of timestamps and the
 daughterboard number (used for applying correct masks for hot pixels and
 for calibration data). For example, given a data file with the number of
 timestamps of 200, the unpacking function would look like this:
@@ -61,8 +61,8 @@ matrix is 4020 elements long.
 
 ## Plotting sensor population
 
-The sensor population plot is very simple: the function plot_sen_pop
-from the plot_tsmp module collects all valid timestamps in each pixel
+The sensor population plot is very simple: the function 'plot_sen_pop'
+from the 'plot_tsmp' module collects all valid timestamps in each pixel
 across all datafiles in the given folder and plots it as a number of
 timestamps vs pixel number (256 total). The figure below is an example
 of such a plot, where data were taken in a two-spectrometer setup
@@ -80,7 +80,7 @@ array of pixels' indices. The '-2's inserted during unpacking are used
 here as indicators of separate cycles and timestamps from the same cycle
 only are taken into account when comparing data from two pixels. The
 function used for collecting timestamp differences is the
-'delta_save' from the delta_t module. The output is saved as a .csv table - mainly because data analysis takes a long time and in the case a plot
+'delta_save' from the 'delta_t' module. The output is saved as a .csv table - mainly because data analysis takes a long time and in the case a plot
 needs to be redone, one does not have to wait for the analysis again
 and just use the .csv file. The boolean parameter 'rewrite' should be
 always provided for the function to work, with 'True' for rewriting the
