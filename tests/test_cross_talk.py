@@ -1,14 +1,12 @@
 import glob
 import os
 import shutil
-import sys
 import unittest
 
 import numpy as np
 import pandas as pd
 
-sys.path.append(r"")
-from functions.cross_talk import collect_ct, plot_ct
+from LinoSPAD2.functions.cross_talk import collect_ct, plot_ct
 
 
 class TestCTFull(unittest.TestCase):
@@ -23,6 +21,8 @@ class TestCTFull(unittest.TestCase):
         self.scale = "linear"
 
     def test_a_collect_ct_positive(self):
+        work_dir = r"{}".format(os.path.realpath(__file__) + "../../..")
+        os.chdir(work_dir)
         # Test positive case of collect_ct function
         collect_ct(
             self.path,
@@ -37,6 +37,8 @@ class TestCTFull(unittest.TestCase):
         self.assertEqual(len(data), 20)
 
     def test_b_collect_ct_negative(self):
+        work_dir = r"{}".format(os.path.realpath(__file__) + "../../..")
+        os.chdir(work_dir)
         # Test negative case of collect_ct function
         with self.assertRaises(TypeError):
             collect_ct(

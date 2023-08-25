@@ -24,8 +24,8 @@ from matplotlib import pyplot as plt
 from scipy.stats import sem
 from tqdm import tqdm
 
-from functions import calc_diff as cd
-from functions import unpack as f_up
+from LinoSPAD2.functions import calc_diff as cd
+from LinoSPAD2.functions import unpack as f_up
 
 
 # TODO add compatibility with FW2212s

@@ -1,12 +1,10 @@
 import unittest
 import numpy as np
-import sys
 import os
 import shutil
 
-sys.path.append(r"")
-from functions.delta_t import deltas_save, delta_cp
-from functions.fits import fit_wg
+from LinoSPAD2.functions.delta_t import deltas_save, delta_cp
+from LinoSPAD2.functions.fits import fit_wg
 
 
 class TestDeltasFull(unittest.TestCase):

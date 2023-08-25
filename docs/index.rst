@@ -3,7 +3,7 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-LinoSPAD2 data analysis module's documentation
+LinoSPAD2 timestamp output analysis package
 ==========================================================
 
 This document aims to provide complete documentation on the LinoSPAD2
@@ -17,7 +17,7 @@ used and a collection of all docstrings from modules and functions.
    intro
    installation
    examples
-   functions
+   LinoSPAD2
    contribute
    license
    acknowledgement

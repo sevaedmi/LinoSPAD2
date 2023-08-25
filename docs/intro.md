@@ -1,6 +1,6 @@
 # Introduction
 
-This module was written for data analysis for LinoSPAD2, mainly for
+This package was written for data analysis for LinoSPAD2, mainly for
 analysis of the timestamp output. The key functions are ones for
 unpacking the binary output of the detector that utilize the numpy
 Python library for quick unpacking of .dat files to matrices,

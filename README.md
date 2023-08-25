@@ -1,10 +1,10 @@
 # LinoSPAD2
 
-Module for unpacking and analyzing the binary data from LinoSPAD2.
+Package for unpacking and analyzing the binary data from LinoSPAD2.
 
 ## Introduction
 
-This module was written for data analysis for LinoSPAD2, mainly for
+This package was written for data analysis for LinoSPAD2, mainly for
 analysis of the timestamp output. The key functions are ones for
 unpacking the binary output of the detector that utilize the numpy
 Python library for quick unpacking of .dat files to matrices,
@@ -35,7 +35,7 @@ of sensor population can be found [here](https://github.com/rngKomorebi/LinoSPAD
 
 ## Installation and usage
 
-To start using the module, one can download the whole repo. The 'main.py'
+To start using the package, one can download the whole repo. The 'main.py'
 serves as the main hub for calling the functions. "requirements.txt"
 collects all packages required for this project to run. One can create
 an environment for this project either using conda or install the
@@ -48,11 +48,24 @@ or (recommended)
 ```
 conda create --name NEW_ENVIRONMENT_NAME --file /PATH/TO/requirements.txt -c conda-forge
 ```
+To install the package, first, switch to the created environment:
+```
+conda activate NEW_ENVIRONMENT_NAME
+```
+and run
+```
+pip install -e .
+```
+that will install the local package LinoSPAD2. After that, you can
+import all functions in your project:
+```
+from LinoSPAD2.functions import plot_tmsp, delta_t, fits
+```
 
 ## How to contribute
 
 This repo consists of two branches: 'main' serves as the release version
-of the module, tested, proved to be functional and ready-to-use, while
+of the package, tested, proved to be functional and ready-to-use, while
 the 'develop' branch serves as the main hub for testing new stuff. To
 contribute, the best way would be to fork the 'develop' branch and
 submit via pull requests. Everyone willing to contribute is kindly asked
@@ -61,6 +74,6 @@ to follow the [PEP 8](https://peps.python.org/pep-0008/) and
 
 ## License and contact info
 
-This module is available under the MIT license. See LICENSE for more
+This package is available under the MIT license. See LICENSE for more
 information. If you'd like to contact me, the author, feel free to
 write at sergei.kulkov23@gmail.com.

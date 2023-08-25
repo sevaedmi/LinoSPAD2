@@ -1,10 +1,8 @@
-import sys
 import unittest
 
 import numpy as np
 
-sys.path.append(r"")
-from functions.unpack import unpack_bin
+from LinoSPAD2.functions.unpack import unpack_bin
 
 
 class TestUnpackBin(unittest.TestCase):

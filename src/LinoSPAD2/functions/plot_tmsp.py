@@ -24,12 +24,12 @@ import numpy as np
 from matplotlib import pyplot as plt
 from tqdm import tqdm
 
-from functions import unpack as f_up
+from LinoSPAD2.functions import unpack as f_up
 
 
 def plot_pixel_hist(
     path,
-    pix,
+    pixels,
     fw_ver: str,
     board_number: str,
     timestamps: int = 512,
@@ -44,8 +44,12 @@ def plot_pixel_hist(
     ----------
     path : str
         Path to data file.
-    pix : array-like, list
+    pixels : array-like, list
         Array of pixels indices.
+    fw_ver : str
+        LinoSPAD2 firmware version.
+    board_number : str
+        LinoSPAD2 daugtherboard number.
     timestamps : int, optional
         Number of timestamps per pixel per acquisition cycle. The
         default is 512.
@@ -61,8 +65,8 @@ def plot_pixel_hist(
     if isinstance(fw_ver, str) is not True:
         raise TypeError("'fw_ver' should be string")
 
-    if type(pix) is int:
-        pix = [pix]
+    if type(pixels) is int:
+        pixels = [pixels]
 
     os.chdir(path)
 
@@ -81,10 +85,9 @@ def plot_pixel_hist(
 
         data = f_up.unpack_bin(num, board_number, timestamps=timestamps)
 
-        if pix is None:
+        if pixels is None:
             pixels = np.arange(145, 165, 1)
-        else:
-            pixels = pix
+
         for i in range(len(pixels)):
             plt.figure(figsize=(16, 10))
             plt.rcParams.update({"font.size": 22})

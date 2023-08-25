@@ -1,10 +1,12 @@
 import unittest
 import os
-import sys
 import shutil
 
-sys.path.append(r"")
-from functions.plot_tmsp import plot_pixel_hist, plot_sen_pop, plot_spdc
+from LinoSPAD2.functions.plot_tmsp import (
+    plot_pixel_hist,
+    plot_sen_pop,
+    plot_spdc,
+)
 
 
 class TestPlotScripts(unittest.TestCase):
