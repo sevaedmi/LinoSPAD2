@@ -13,7 +13,7 @@ jobs:
           pip install sphinx sphinx_rtd_theme myst-parser sphinx-math-dollar -r requirements.txt
       - name: Sphinx build
         run: |
-          sphinx-apidoc -f -e -M -o docs src/LinoSPAD2/functions
+          sphinx-apidoc -f -e -M -o docs src/LinoSPAD2
           sphinx-build docs _build
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
