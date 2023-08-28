@@ -2,6 +2,9 @@
 
 Package for unpacking and analyzing the binary data from LinoSPAD2.
 
+![Tests](https://github.com/rngKomorebi/LinoSPAD2/actions/workflows/tests.yml/badge.svg)
+![Documentation](https://github.com/rngKomorebi/LinoSPAD2/actions/workflows/documentation.yml/badge.svg)
+
 ## Introduction
 
 This package was written for data analysis for LinoSPAD2, mainly for
