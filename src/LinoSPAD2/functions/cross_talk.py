@@ -7,10 +7,10 @@ This file can also be imported as a module and contains the following
 functions:
 
     * colect_ct - function for calculating and collecting the cross-talk
-    data into a .csv file. Works with firmware version '2212b'.
+    data into a '.csv' file. Works with firmware version '2212b'.
 
-    * plot_ct - function for plotting the cross-talk data from the .csv
-    file as the cross-talk vs the distance between the two pixels, for
+    * plot_ct - function for plotting the cross-talk data from the '.csv'
+    file as the cross-talk vs. the distance between the two pixels, for
     which the cross-talk is calculated, in pixels.
 
 """
@@ -36,12 +36,12 @@ def collect_ct(
     timestamps: int = 512,
     delta_window: float = 10e3,
 ):
-    """Calculate cross-talk and save it to a .csv file.
+    """Calculate cross-talk and save it to a '.csv' file.
 
     Calculate timestamp differences for all pixels in the given range,
     where all timestamp differences are calculated for the first pixel
     in the range. Works with firmware version "2212b". The
-    output is saved as a .csv file in the folder "/cross_talk_data",
+    output is saved as a '.csv' file in the folder "/cross_talk_data",
     which is created if it does not exist, in the same folder where
     datafiles are located.
 
@@ -163,23 +163,23 @@ def collect_ct(
 
 
 def plot_ct(path, pix1, scale: str = "linear"):
-    """Plot cross-talk data from a .csv file.
+    """Plot cross-talk data from a '.csv' file.
 
-    Plots cross-talk data from a .csv file as cross-talk values (in %)
-    vs distance in pixels from the given pixel to the right. Plot is
+    Plots cross-talk data from a '.csv' file as cross-talk values (in %)
+    vs distance in pixels from the given pixel to the right. The plot is
     saved in the folder "/results/cross_talk", which is created if it
     does not exist, in the same folder where data are located.
 
     Parameters
     ----------
     path : str
-        Path to the folder where a .csv file with the cross-talk data is
+        Path to the folder where a '.csv' file with the cross-talk data is
         located.
     pix1 : int
         Pixel number relative to which the cross-talk data should be
         plotted.
     scale : str, optional
-        Switch for plot scale, logarithmic or linear. Default is "linear".
+        Switch for plot scale: logarithmic or linear. Default is "linear".
 
     Returns
     -------

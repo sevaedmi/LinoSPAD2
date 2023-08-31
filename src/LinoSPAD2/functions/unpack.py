@@ -20,9 +20,9 @@ def unpack_bin(file, board_number: str, timestamps: int = 512):
     """Unpack data from firmware version 2212.
 
     Unpacks binary-encoded data from LinoSPAD2 firmware version 2212.
-    Uses numpy to achieve best speed for unpacking. Data is returned
-    as a 3d array where rows are TDC numbers, columns are the data, each
-    cell contains pixel number in the TDC (from 0 to 3) and the
+    Uses numpy to achieve the best speed for unpacking. Data is returned
+    as a 3D array where rows are TDC numbers, columns are the data, and
+    each cell contains pixel number in the TDC (from 0 to 3) and the
     timestamp recorded by that pixel.
 
     Parameters
@@ -40,14 +40,14 @@ def unpack_bin(file, board_number: str, timestamps: int = 512):
     ------
     TypeError
         Controller for the type of 'board_number' parameter which should
-        be string. FileNotFoundError
+        be a string. FileNotFoundError
         Controller for stopping the script in the case no calibration
         data were found.
 
     Returns
     -------
     data_all : array-like
-        3d array of pixel coordinates in the TDC and the timestamps.
+        3D array of pixel coordinates in the TDC and the timestamps.
 
     """
     # parameter type check

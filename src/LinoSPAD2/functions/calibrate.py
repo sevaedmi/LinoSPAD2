@@ -4,9 +4,9 @@ This file can also be imported as a module and contains the following
 functions:
 
     * calibrate_save - calculate a calibration matrix and save it as
-    a .csv table.
+    a '.csv' table.
 
-    * calibrate_load - load the calibration matrix from a .csv table.
+    * calibrate_load - load the calibration matrix from a '.csv' table.
 """
 import glob
 import os
@@ -19,7 +19,7 @@ def calibrate_save(path, timestamps: int = 512):
     """Calculate and save calibration data.
 
     Function for calculating the calibration matrix and saving it into a
-    .csv file. The data file used for the calculation should be taken
+    '.csv' file. The data file used for the calculation should be taken
     with the sensor uniformly illuminated by ambient light.
 
     Parameters
@@ -72,7 +72,7 @@ def calibrate_load(path, board_number: str):
     Parameters
     ----------
     path : str
-        Path to the .csv file with the calibration matrix.
+        Path to the '.csv' file with the calibration matrix.
     board_number: str
         The LinoSPAD2 board number.
 

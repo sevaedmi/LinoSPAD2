@@ -19,11 +19,11 @@ from scipy.optimize import curve_fit
 
 
 def fit_wg(path, pix_pair: list, window: float = 5e3, step: int = 1):
-    """Fit with gaussian function and plot it.
+    """Fit with Gaussian function and plot it.
 
-    Fits timestamp differences of a pair of pixels with gaussian
+    Fits timestamp differences of a pair of pixels with Gaussian
     function and plots it next to the histogram of the differences.
-    Timestamp differences are collected from a .csv file with those, if
+    Timestamp differences are collected from a '.csv' file with those if
     such exists.
 
     Parameters
@@ -42,12 +42,12 @@ def fit_wg(path, pix_pair: list, window: float = 5e3, step: int = 1):
     Raises
     ------
     FileNotFoundError
-        Raised when no '.dat' datafiles are found.
+        Raised when no '.dat' data files are found.
     FileNotFoundError
         Raised when no '.csv' file with timestamp differences is found.
     ValueError
         Raised when no data for the requested pair of pixels was found
-        in the .csv file.
+        in the '.csv' file.
 
     Returns
     -------
