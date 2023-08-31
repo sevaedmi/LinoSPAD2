@@ -36,10 +36,10 @@ def deltas_save(
     timestamps: int = 512,
     delta_window: float = 50e3,
 ):
-    """Calculate and save timestamp differences into .csv file.
+    """Calculate and save timestamp differences into '.csv' file.
 
     Unpacks data into a dictionary, calculates timestamp differences for
-    the requested pixels and saves them into a .csv table. Works with
+    the requested pixels, and saves them into a '.csv' table. Works with
     firmware version 2212. The plot is saved
     in the 'results' folder, which is created (if it does not already
     exist) in the same folder where data are.
@@ -52,7 +52,7 @@ def deltas_save(
         List of pixel numbers for which the timestamp differences should
         be calculate and saved.
     rewrite : bool
-        Switch for rewriting the csv file if it already exists.
+        Switch for rewriting the '.csv' file if it already exists.
     board_number : str
         The LinoSPAD2 daughterboard number.
     fw_ver: str
@@ -223,9 +223,9 @@ def delta_cp(
     range_right: int = 10e3,
     same_y: bool = False,
 ):
-    """Collect and plot timestamp differences from a .csv file.
+    """Collect and plot timestamp differences from a '.csv' file.
 
-    Plots timestamp differences from a .csv file as a grid of histograms
+    Plots timestamp differences from a '.csv' file as a grid of histograms
     and as a single plot.
 
     Parameters
@@ -241,10 +241,10 @@ def delta_cp(
         Lower limit for timestamp differences, lower values are not used.
         The default is -10e3.
     range_right : int, optional
-        Upper limit for timestamp differences, higher values are no used.
+        Upper limit for timestamp differences, higher values are not used.
         The default is 10e3.
     same_y : bool, optional
-        Switch for plotting the histograms with the same y axis.
+        Switch for plotting the histograms with the same y-axis.
         The default is False.
 
     Raises

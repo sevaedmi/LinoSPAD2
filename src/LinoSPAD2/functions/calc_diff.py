@@ -1,10 +1,14 @@
 """Module for computing timestamp differences.
 
+Compares all timestamps from the same cycle for the given pair of pixels
+against a given value (delta_window). Differences in that window are saved
+and returned as a list.
+
 This file can also be imported as a module and contains the following
 functions:
 
     * calc_diff_2212 - calculate timestamp differences for the given
-    pair of pixels. Works only with firmware version '2212b'.
+    pair of pixels. Works only with firmware version '2212'.
 
 """
 
@@ -15,7 +19,7 @@ def calc_diff_2212(data1, data2, cycle_ends, delta_window: float = 10e3):
     """Calculate timestamp differences for firmware 2212.
 
     Calculate timestamp differences for two given pixels and LinoSPAD2
-    firmware version 2212b.
+    firmware version 2212.
 
     Parameters
     ----------
@@ -24,7 +28,7 @@ def calc_diff_2212(data1, data2, cycle_ends, delta_window: float = 10e3):
         timestamp differences are calculated.
     data2 : array-like
         Array of data from the second pixel of the pair for which
-        timestamp differecnes are calculated.
+        timestamp differences are calculated.
     cycle_ends : array-like
         Array of positions of '-2's that indicate ends of cycles.
     delta_window : float, optional

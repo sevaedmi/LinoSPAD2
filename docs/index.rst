@@ -7,8 +7,8 @@ LinoSPAD2 timestamp output analysis package
 ==========================================================
 
 This document aims to provide complete documentation on the LinoSPAD2
-data analysis module, with a couple of examples how functions should be
-used and a collection of all docstrings from modules and functions.
+data analysis package, with a couple of examples of how functions should
+be used and a collection of all docstrings from modules and functions.
 
 .. toctree::
    :maxdepth: 3

@@ -1,4 +1,4 @@
-"""Module with scripts for plotting the LinoSPAD2 output.
+"""Module with scripts for plotting the LinoSPAD2 sensor population.
 
 This script utilizes an unpacking module used specifically for the
 LinoSPAD2 data output.
@@ -8,11 +8,16 @@ functions:
 
     * plot_pixel_hist - plots a histogram of timestamps for a single
     pixel. The function can be used mainly for checking the
-    homogenity of the LinoSPAD2 output.
+    homogeneity of the LinoSPAD2 output.
 
-    * plot_sen_pop - plots the sensor population as a number of valid
+    * plot_sen_pop - plots the sensor population as a number of
     timestamps in each pixel. Works with the firmware version 2212 (both
-    block and skip). Analyzes all datafiles in the given folder.
+    block and skip). Analyzes all data files in the given folder.
+    
+    * plot_spdc - plot sensor population for SPDC data. Data files
+    taken with background only (SPDC output is off) should be provided.
+    The background is subtracted from the actual data for clearer
+    plot of the SPDC signal.
 
 """
 
@@ -37,7 +42,7 @@ def plot_pixel_hist(
 ):
     """Plot a histogram for each pixel in the given range.
 
-    Used mainly for checking the homogenity of the LinoSPAD2 output
+    Used mainly for checking the homogeneity of the LinoSPAD2 output
     (mainly clock and acquisition window size settings).
 
     Parameters
@@ -49,7 +54,7 @@ def plot_pixel_hist(
     fw_ver : str
         LinoSPAD2 firmware version.
     board_number : str
-        LinoSPAD2 daugtherboard number.
+        LinoSPAD2 daughterboard number.
     timestamps : int, optional
         Number of timestamps per pixel per acquisition cycle. The
         default is 512.
@@ -63,7 +68,7 @@ def plot_pixel_hist(
     """
     # parameter type check
     if isinstance(fw_ver, str) is not True:
-        raise TypeError("'fw_ver' should be string")
+        raise TypeError("'fw_ver' should be a string")
 
     if type(pixels) is int:
         pixels = [pixels]
@@ -132,8 +137,8 @@ def plot_sen_pop(
 ):
     """Plot number of timestamps in each pixel for all datafiles.
 
-    Plot sensor population as number of timestamps vs pixel number.
-    Analyzes all datafiles in the given folder. Output figure is saved
+    Plot sensor population as number of timestamps vs. pixel number.
+    Analyzes all data files in the given folder. The output figure is saved
     in the "results" folder, which is created if it does not exist, in
     the same folder where datafiles are. Works with the firmware version
     '2212'.
@@ -264,7 +269,7 @@ def plot_spdc(
     path : str
         Path to data files.
     board_number : str
-        LinoSPAD2 daugtherboard number. Either "A5" or "NL11" is
+        LinoSPAD2 daughterboard number. Either "A5" or "NL11" is
         accepted.
     timestamps : int, optional
         Number of timestamps per pixel per acquisition cycle. The
@@ -275,10 +280,10 @@ def plot_spdc(
     Raises
     ------
     TypeError
-        Raised when 'board_number' is not string.
+        Raised when 'board_number' is not a string.
     ValueError
-        Raised when the number of datafiles of SPDC data is different
-        from the number of datafiles of background data.
+        Raised when the number of data files of SPDC data is different
+        from the number of data files of background data.
 
     Returns
     -------
