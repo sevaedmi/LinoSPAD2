@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LinoSPAD2.functions.calc_diff &mdash; LinoSPAD2 data analysis module 0.9.0 documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../../../_static/documentation_options.js?v=39bb1c6d"></script>
+        <script src="../../../_static/doctools.js?v=888ff710"></script>
+        <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            LinoSPAD2 data analysis module
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../intro.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation and dependencies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../LinoSPAD2.html">LinoSPAD2 functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../contribute.html">How to contribute</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../license.html">License and contact info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../acknowledgement.html">Acknowledgement</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">LinoSPAD2 data analysis module</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">LinoSPAD2.functions.calc_diff</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for LinoSPAD2.functions.calc_diff</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Module for computing timestamp differences.</span>
+
+<span class="sd">Compares all timestamps from the same cycle for the given pair of pixels</span>
+<span class="sd">against a given value (delta_window). Differences in that window are saved</span>
+<span class="sd">and returned as a list.</span>
+
+<span class="sd">This file can also be imported as a module and contains the following</span>
+<span class="sd">functions:</span>
+
+<span class="sd">    * calc_diff_2212 - calculate timestamp differences for the given</span>
+<span class="sd">    pair of pixels. Works only with firmware version &#39;2212&#39;.</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+
+<div class="viewcode-block" id="calc_diff_2212">
+<a class="viewcode-back" href="../../../LinoSPAD2.functions.calc_diff.html#LinoSPAD2.functions.calc_diff.calc_diff_2212">[docs]</a>
+<span class="k">def</span> <span class="nf">calc_diff_2212</span><span class="p">(</span><span class="n">data1</span><span class="p">,</span> <span class="n">data2</span><span class="p">,</span> <span class="n">cycle_ends</span><span class="p">,</span> <span class="n">delta_window</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">10e3</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Calculate timestamp differences for firmware 2212.</span>
+
+<span class="sd">    Calculate timestamp differences for two given pixels and LinoSPAD2</span>
+<span class="sd">    firmware version 2212.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    data1 : array-like</span>
+<span class="sd">        Array of data from the first pixel of the pair for which</span>
+<span class="sd">        timestamp differences are calculated.</span>
+<span class="sd">    data2 : array-like</span>
+<span class="sd">        Array of data from the second pixel of the pair for which</span>
+<span class="sd">        timestamp differences are calculated.</span>
+<span class="sd">    cycle_ends : array-like</span>
+<span class="sd">        Array of positions of &#39;-2&#39;s that indicate ends of cycles.</span>
+<span class="sd">    delta_window : float, optional</span>
+<span class="sd">        A width of a window in which the number of timestamp differences</span>
+<span class="sd">        are counted. The default value is 10 ns. The default is 10e3.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    deltas_out : list</span>
+<span class="sd">        All timestamp differences found in a given time window for a</span>
+<span class="sd">        given pair of pixels.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">deltas_out</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">for</span> <span class="n">cyc</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">cycle_ends</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
+        <span class="n">data1_cycle</span> <span class="o">=</span> <span class="n">data1</span><span class="p">[</span><span class="n">cycle_ends</span><span class="p">[</span><span class="n">cyc</span><span class="p">]</span> <span class="p">:</span> <span class="n">cycle_ends</span><span class="p">[</span><span class="n">cyc</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]]</span>
+        <span class="n">data2_cycle</span> <span class="o">=</span> <span class="n">data2</span><span class="p">[</span><span class="n">cycle_ends</span><span class="p">[</span><span class="n">cyc</span><span class="p">]</span> <span class="p">:</span> <span class="n">cycle_ends</span><span class="p">[</span><span class="n">cyc</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]]</span>
+
+        <span class="c1"># calculate delta t</span>
+        <span class="n">tmsp1</span> <span class="o">=</span> <span class="n">data1_cycle</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">data1_cycle</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)[</span><span class="mi">0</span><span class="p">]]</span>
+        <span class="n">tmsp2</span> <span class="o">=</span> <span class="n">data2_cycle</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">data2_cycle</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)[</span><span class="mi">0</span><span class="p">]]</span>
+        <span class="k">for</span> <span class="n">t1</span> <span class="ow">in</span> <span class="n">tmsp1</span><span class="p">:</span>
+            <span class="c1"># calculate all timestamp differences in the given cycle</span>
+            <span class="n">deltas</span> <span class="o">=</span> <span class="n">tmsp2</span> <span class="o">-</span> <span class="n">t1</span>
+            <span class="c1"># take values in the given delta t window only</span>
+            <span class="n">ind</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">deltas</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">delta_window</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">deltas_out</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">deltas</span><span class="p">[</span><span class="n">ind</span><span class="p">])</span>
+
+    <span class="k">return</span> <span class="n">deltas_out</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Sergei Kulkov.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

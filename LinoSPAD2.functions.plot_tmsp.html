@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LinoSPAD2.functions.plot_tmsp module &mdash; LinoSPAD2 data analysis module 0.9.0 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=39bb1c6d"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="LinoSPAD2.functions.unpack module" href="LinoSPAD2.functions.unpack.html" />
+    <link rel="prev" title="LinoSPAD2.functions.fits module" href="LinoSPAD2.functions.fits.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            LinoSPAD2 data analysis module
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="intro.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation and dependencies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="LinoSPAD2.html">LinoSPAD2 functions</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="LinoSPAD2.functions.calc_diff.html">LinoSPAD2.functions.calc_diff module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="LinoSPAD2.functions.calibrate.html">LinoSPAD2.functions.calibrate module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="LinoSPAD2.functions.cross_talk.html">LinoSPAD2.functions.cross_talk module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="LinoSPAD2.functions.delta_t.html">LinoSPAD2.functions.delta_t module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="LinoSPAD2.functions.fits.html">LinoSPAD2.functions.fits module</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">LinoSPAD2.functions.plot_tmsp module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#LinoSPAD2.functions.plot_tmsp.plot_pixel_hist"><code class="docutils literal notranslate"><span class="pre">plot_pixel_hist()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#LinoSPAD2.functions.plot_tmsp.plot_sen_pop"><code class="docutils literal notranslate"><span class="pre">plot_sen_pop()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#LinoSPAD2.functions.plot_tmsp.plot_spdc"><code class="docutils literal notranslate"><span class="pre">plot_spdc()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="LinoSPAD2.functions.unpack.html">LinoSPAD2.functions.unpack module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="contribute.html">How to contribute</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">License and contact info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="acknowledgement.html">Acknowledgement</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">LinoSPAD2 data analysis module</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="LinoSPAD2.html">LinoSPAD2 functions</a></li>
+      <li class="breadcrumb-item active">LinoSPAD2.functions.plot_tmsp module</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/LinoSPAD2.functions.plot_tmsp.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-LinoSPAD2.functions.plot_tmsp">
+<span id="linospad2-functions-plot-tmsp-module"></span><h1>LinoSPAD2.functions.plot_tmsp module<a class="headerlink" href="#module-LinoSPAD2.functions.plot_tmsp" title="Link to this heading"></a></h1>
+<p>Module with scripts for plotting the LinoSPAD2 sensor population.</p>
+<p>This script utilizes an unpacking module used specifically for the
+LinoSPAD2 data output.</p>
+<p>This file can also be imported as a module and contains the following
+functions:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>plot_pixel_hist - plots a histogram of timestamps for a single</p></li>
+</ul>
+<p>pixel. The function can be used mainly for checking the
+homogeneity of the LinoSPAD2 output.</p>
+<ul class="simple">
+<li><p>plot_sen_pop - plots the sensor population as a number of</p></li>
+</ul>
+<p>timestamps in each pixel. Works with the firmware version 2212 (both
+block and skip). Analyzes all data files in the given folder.</p>
+<ul class="simple">
+<li><p>plot_spdc - plot sensor population for SPDC data. Data files</p></li>
+</ul>
+<p>taken with background only (SPDC output is off) should be provided.
+The background is subtracted from the actual data for clearer
+plot of the SPDC signal.</p>
+</div></blockquote>
+<dl class="py function">
+<dt class="sig sig-object py" id="LinoSPAD2.functions.plot_tmsp.plot_pixel_hist">
+<span class="sig-prename descclassname"><span class="pre">LinoSPAD2.functions.plot_tmsp.</span></span><span class="sig-name descname"><span class="pre">plot_pixel_hist</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pixels</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fw_ver</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">board_number</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timestamps</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">512</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_fig</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/LinoSPAD2/functions/plot_tmsp.html#plot_pixel_hist"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#LinoSPAD2.functions.plot_tmsp.plot_pixel_hist" title="Link to this definition"></a></dt>
+<dd><p>Plot a histogram for each pixel in the given range.</p>
+<p>Used mainly for checking the homogeneity of the LinoSPAD2 output
+(mainly clock and acquisition window size settings).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> (<em>str</em>) – Path to data file.</p></li>
+<li><p><strong>pixels</strong> (<em>array-like</em><em>, </em><em>list</em>) – Array of pixels indices.</p></li>
+<li><p><strong>fw_ver</strong> (<em>str</em>) – LinoSPAD2 firmware version.</p></li>
+<li><p><strong>board_number</strong> (<em>str</em>) – LinoSPAD2 daughterboard number.</p></li>
+<li><p><strong>timestamps</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of timestamps per pixel per acquisition cycle. The
+default is 512.</p></li>
+<li><p><strong>show_fig</strong> (<em>bool</em><em>, </em><em>optional</em>) – Switch for showing the output figure. The default is False.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>None.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="LinoSPAD2.functions.plot_tmsp.plot_sen_pop">
+<span class="sig-prename descclassname"><span class="pre">LinoSPAD2.functions.plot_tmsp.</span></span><span class="sig-name descname"><span class="pre">plot_sen_pop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">board_number</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fw_ver</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timestamps</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">512</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'linear'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">style</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'-o'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_fig</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">app_mask</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/LinoSPAD2/functions/plot_tmsp.html#plot_sen_pop"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#LinoSPAD2.functions.plot_tmsp.plot_sen_pop" title="Link to this definition"></a></dt>
+<dd><p>Plot number of timestamps in each pixel for all datafiles.</p>
+<p>Plot sensor population as number of timestamps vs. pixel number.
+Analyzes all data files in the given folder. The output figure is saved
+in the “results” folder, which is created if it does not exist, in
+the same folder where datafiles are. Works with the firmware version
+‘2212’.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> (<em>str</em>) – Path to the datafiles.</p></li>
+<li><p><strong>board_number</strong> (<em>str</em>) – The LinoSPAD2 board number. Required for choosing the correct
+calibration data.</p></li>
+<li><p><strong>fw_ver</strong> (<em>str</em>) – LinoSPAD2 firmware version. Versions ‘2212b’ (block) or ‘2212s’
+(skip) are recognized.</p></li>
+<li><p><strong>timestamps</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of timestamps per pixel per acquisition cycle. Default is
+“512”.</p></li>
+<li><p><strong>scale</strong> (<em>str</em><em>, </em><em>optional</em>) – Scale for the y-axis of the plot. Use “log” for logarithmic.
+The default is “linear”.</p></li>
+<li><p><strong>style</strong> (<em>str</em><em>, </em><em>optional</em>) – Style of the plot. The default is “-o”.</p></li>
+<li><p><strong>show_fig</strong> (<em>bool</em><em>, </em><em>optional</em>) – Switch for showing the plot. The default is False.</p></li>
+<li><p><strong>app_mask</strong> (<em>bool</em><em>, </em><em>optional</em>) – Switch for applying the mask on warm/hot pixels. The default is
+True.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>None.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="LinoSPAD2.functions.plot_tmsp.plot_spdc">
+<span class="sig-prename descclassname"><span class="pre">LinoSPAD2.functions.plot_tmsp.</span></span><span class="sig-name descname"><span class="pre">plot_spdc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">board_number</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timestamps</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">512</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_fig</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/LinoSPAD2/functions/plot_tmsp.html#plot_spdc"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#LinoSPAD2.functions.plot_tmsp.plot_spdc" title="Link to this definition"></a></dt>
+<dd><p>Plot sensor population for SPDC data.</p>
+<p>Plots SPDC data subtracting the background (data with the SPDC
+output turned off). Due to the low sensitivity of the LinoSPAD2
+sensor to light at 810 nm of Thorlabs SPDC output, subtracting
+background is required to show any meaningful signal.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> (<em>str</em>) – Path to data files.</p></li>
+<li><p><strong>board_number</strong> (<em>str</em>) – LinoSPAD2 daughterboard number. Either “A5” or “NL11” is
+accepted.</p></li>
+<li><p><strong>timestamps</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of timestamps per pixel per acquisition cycle. The
+default is 512.</p></li>
+<li><p><strong>show_fig</strong> (<em>bool</em><em>, </em><em>optional</em>) – Switch for showing the plot. The default is False.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>TypeError</strong> – Raised when ‘board_number’ is not a string.</p></li>
+<li><p><strong>ValueError</strong> – Raised when the number of data files of SPDC data is different
+    from the number of data files of background data.</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="LinoSPAD2.functions.fits.html" class="btn btn-neutral float-left" title="LinoSPAD2.functions.fits module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="LinoSPAD2.functions.unpack.html" class="btn btn-neutral float-right" title="LinoSPAD2.functions.unpack module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Sergei Kulkov.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
