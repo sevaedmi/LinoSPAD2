@@ -42,6 +42,9 @@ an environment for this project either using conda or install the
 necessary packages using pip (for creating virtual environments using pip
 see [this](https://packaging.python.org/en/latest/guides/installing-using-pip-and-virtual-environments/)):
 ```
+pip install virtualenv
+py -m venv PATH/TO/ENVIRONMENT/ENVIRONMENT_NAME
+PATH/TO/ENVIRONMENT/ENVIRONMENT_NAME/Scripts/activate
 pip install -r requirements.txt
 ```
 or (recommended)
@@ -51,6 +54,10 @@ conda create --name NEW_ENVIRONMENT_NAME --file /PATH/TO/requirements.txt -c con
 To install the package, first, switch to the created environment:
 ```
 conda activate NEW_ENVIRONMENT_NAME
+```
+or
+```
+PATH/TO/ENVIRONMENT/ENVIRONMENT_NAME/Scripts/activate
 ```
 and run
 ```

@@ -29,7 +29,7 @@ from LinoSPAD2.functions import unpack as f_up
 
 def deltas_save(
     path,
-    pixels,
+    pixels: list,
     rewrite: bool,
     board_number: str,
     fw_ver: str,
@@ -50,7 +50,8 @@ def deltas_save(
         Path to data files.
     pixels : list
         List of pixel numbers for which the timestamp differences should
-        be calculate and saved.
+        be calculate and saved or list of two lists with pixel numbers
+        for peak vs. peak calculations.
     rewrite : bool
         Switch for rewriting the '.csv' file if it already exists.
     board_number : str
@@ -78,14 +79,19 @@ def deltas_save(
     None.
     """
     # parameter type check
-    if isinstance(fw_ver, str) is not True:
+    if isinstance(pixels, list) is False:
+        raise TypeError(
+            "'pixels' should be a list of integers or a list of two lists"
+        )
+    if isinstance(fw_ver, str) is False:
         raise TypeError("'fw_ver' should be string, '2212b' or '2208'")
-    if isinstance(rewrite, bool) is not True:
+    if isinstance(rewrite, bool) is False:
         raise TypeError("'rewrite' should be boolean")
-    if isinstance(board_number, str) is not True:
+    if isinstance(board_number, str) is False:
         raise TypeError(
             "'board_number' should be string, either 'NL11' or 'A5'"
         )
+
     os.chdir(path)
 
     files_all = glob.glob("*.dat*")
@@ -131,6 +137,30 @@ def deltas_save(
         print("\nFirmware version is not recognized.")
         sys.exit()
 
+    # Mask the hot/warm pixels
+    path_to_back = os.getcwd()
+    path_to_mask = os.path.realpath(__file__) + "/../.." + "/params/masks"
+    os.chdir(path_to_mask)
+    file_mask = glob.glob("*{}*".format(board_number))[0]
+    mask = np.genfromtxt(file_mask).astype(int)
+    os.chdir(path_to_back)
+
+    # Check if 'pixels' is one or two peaks, swap their positions if
+    # needed
+    if isinstance(pixels[0], list) is True:
+        pixels_left = pixels[0]
+        pixels_right = pixels[1]
+        # Check if pixels from first list are to the left of the right
+        # (peaks are not mixed up)
+        if pixels_left[-1] > pixels_right[0]:
+            plc_hld = pixels_left
+            pixels_left = pixels_right
+            pixels_right = plc_hld
+            del plc_hld
+    elif isinstance(pixels[0], int) is True:
+        pixels_left = pixels
+        pixels_right = pixels
+
     for i in tqdm(range(ceil(len(files_all))), desc="Collecting data"):
         file = files_all[i]
 
@@ -141,9 +171,13 @@ def deltas_save(
         data_all = f_up.unpack_bin(file, board_number, timestamps)
 
         # Calculate and collect timestamp differences
-        for q in pixels:
-            for w in pixels:
+        # for q in pixels:
+        for q in pixels_left:
+            # for w in pixels:
+            for w in pixels_right:
                 if w <= q:
+                    continue
+                if q in mask or w in mask:
                     continue
                 deltas_all["{},{}".format(q, w)] = []
                 # find end of cycles
@@ -339,7 +373,7 @@ def delta_cp(
                 )
             except ValueError:
                 print(
-                    "\nCouldn't calculate bins for {q}-{w} pair: probably not"
+                    "\nCouldn't calculate bins for {q}-{w} pair: probably not "
                     "enough delta ts.".format(q=q, w=w)
                 )
                 continue
@@ -417,6 +451,6 @@ def delta_cp(
     print(
         "\n> > > Plot is saved as {file}.png in {path}< < <".format(
             file=csv_file_name + "_delta_t_grid.png",
-            path=path + "results/delta_t",
+            path=path + "/results/delta_t",
         )
     )

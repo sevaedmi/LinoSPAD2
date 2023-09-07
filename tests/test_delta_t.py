@@ -11,7 +11,7 @@ class TestDeltasFull(unittest.TestCase):
     def setUp(self):
         # Set up test variables
         self.path = "tests/test_data"
-        self.pixels = np.arange(0, 5, 1)
+        self.pixels = [[x for x in range(10)], [x for x in range(10, 20)]]
         self.board_number = "A5"
         self.fw_ver = "2212b"
         self.timestamps = 200
@@ -62,12 +62,12 @@ class TestDeltasFull(unittest.TestCase):
         # Positive test case
         os.chdir(r"{}".format(os.path.realpath(__file__) + "/../.."))
         delta_cp(
-            self.path,
-            self.pixels,
-            self.rewrite,
-            self.range_left,
-            self.range_right,
-            self.same_y,
+            path=self.path,
+            pixels=[0, 1, 2, 3, 10, 15, 16, 19],
+            rewrite=self.rewrite,
+            range_left=self.range_left,
+            range_right=self.range_right,
+            same_y=self.same_y,
         )
 
         # Check if the plot file is created
