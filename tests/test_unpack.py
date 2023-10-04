@@ -14,8 +14,9 @@ class TestUnpackBin(unittest.TestCase):
         file = r"tests/test_data/test_data_2212b.dat"
         board_number = "A5"
         timestamps = 200
+        fw_ver = "2212b"
 
-        data_all = unpack_bin(file, board_number, timestamps)
+        data_all = unpack_bin(file, board_number, fw_ver, timestamps)
 
         # Assert the shape of the output data
         self.assertEqual(data_all.shape, (64, 4020, 2))

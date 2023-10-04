@@ -16,7 +16,7 @@ import numpy as np
 from LinoSPAD2.functions.calibrate import calibrate_load
 
 
-def unpack_bin(file, board_number: str, timestamps: int = 512):
+def unpack_bin(file, board_number: str, fw_ver: str, timestamps: int = 512):
     """Unpack data from firmware version 2212.
 
     Unpacks binary-encoded data from LinoSPAD2 firmware version 2212.
@@ -32,6 +32,8 @@ def unpack_bin(file, board_number: str, timestamps: int = 512):
     board_number : str
         LinoSPAD2 daughterboard number. Either 'A5' or 'NL11' are
         recognized.
+    fw_ver : str
+        LinoSPAD2 firmware version. Either '2212s' or '2212b' are accepted.
     timestamps : int, optional
         Number of timestamps per TDC per acquisition cycle. The default
         is 512.
@@ -53,6 +55,8 @@ def unpack_bin(file, board_number: str, timestamps: int = 512):
     # parameter type check
     if isinstance(board_number, str) is not True:
         raise TypeError("'board_number' should be string, 'NL11' or 'A5'")
+    if isinstance(fw_ver, str) is not True:
+        raise TypeError("'fw_ver' should be string, '2212s' or '2212b'")
 
     # unpack binary data
     rawFile = np.fromfile(file, dtype=np.uint32)
@@ -110,7 +114,9 @@ def unpack_bin(file, board_number: str, timestamps: int = 512):
     )
 
     try:
-        cal_mat = calibrate_load(path_calib_data, board_number)
+        cal_mat, offset_arr = calibrate_load(
+            path_calib_data, board_number, fw_ver
+        )
     except FileNotFoundError:
         raise FileNotFoundError(
             "No .csv file with the calibration data was found, check the path "
@@ -129,7 +135,9 @@ def unpack_bin(file, board_number: str, timestamps: int = 512):
             continue
         # apply calibration
         data_all[tdc].T[1][ind] = (
-            data_all[tdc].T[1][ind] - data_all[tdc].T[1][ind] % 140
-        ) * 17.857 + cal_mat[i, (data_all[tdc].T[1][ind] % 140)]
+            (data_all[tdc].T[1][ind] - data_all[tdc].T[1][ind] % 140) * 17.857
+            + cal_mat[i, (data_all[tdc].T[1][ind] % 140)]
+            + offset_arr[i]
+        )
 
     return data_all

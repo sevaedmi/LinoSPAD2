@@ -66,7 +66,7 @@ def calibrate_save(path, timestamps: int = 512):
     cal_mat_df.to_csv("Calibration_data.csv")
 
 
-def calibrate_load(path, board_number: str):
+def calibrate_load(path, board_number: str, fw_ver: str):
     """Load the calibration data.
 
     Parameters
@@ -75,6 +75,8 @@ def calibrate_load(path, board_number: str):
         Path to the '.csv' file with the calibration matrix.
     board_number: str
         The LinoSPAD2 board number.
+    fw_ver: str
+        LinoSPAD2 firmware version.
 
     Returns
     -------
@@ -85,11 +87,22 @@ def calibrate_load(path, board_number: str):
     path_to_back = os.getcwd()
     os.chdir(path)
 
-    file = glob.glob("*{}*".format(board_number))[0]
+    # Compensating for TDC nonlinearities
+    file_TDC = glob.glob("*TDC_{bn}_{fw}*".format(bn=board_number, fw=fw_ver))[
+        0
+    ]
+    # Compensating for offset
+    file_offset = glob.glob(
+        "*Offset_{bn}_{fw}*".format(bn=board_number, fw=fw_ver)
+    )[0]
 
-    data_matrix = np.genfromtxt(file, delimiter=",", skip_header=1)
-    data_matrix = np.delete(data_matrix, 0, axis=1)
+    # Skipping first row of TDC bins' numbers
+    data_matrix_TDC = np.genfromtxt(file_TDC, delimiter=",", skip_header=1)
+    # Cut the first column which is pixel numbers
+    data_matrix_TDC = np.delete(data_matrix_TDC, 0, axis=1)
+
+    offset_arr = np.load(file_offset)
 
     os.chdir(path_to_back)
 
-    return data_matrix
+    return data_matrix_TDC, offset_arr

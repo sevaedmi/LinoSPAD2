@@ -88,7 +88,9 @@ def plot_pixel_hist(
             )
         )
 
-        data = f_up.unpack_bin(num, board_number, timestamps=timestamps)
+        data = f_up.unpack_bin(
+            num, board_number, fw_ver, timestamps=timestamps
+        )
 
         if pixels is None:
             pixels = np.arange(145, 165, 1)
@@ -215,7 +217,7 @@ def plot_sen_pop(
             print("\nFirmware version is not recognized, exiting.")
             sys.exit()
 
-        data = f_up.unpack_bin(files[i], board_number, timestamps)
+        data = f_up.unpack_bin(files[i], board_number, fw_ver, timestamps)
         for i in range(256):
             tdc, pix = np.argwhere(pix_coor == i)[0]
             ind = np.where(data[tdc].T[0] == pix)[0]
@@ -327,7 +329,7 @@ def plot_spdc(
     # Collect SPDC data
     for i in tqdm(range(len(files)), desc="Going through datafiles"):
         data_all = f_up.unpack_bin(
-            files[i], board_number="A5", timestamps=timestamps
+            files[i], board_number="A5", fw_ver="2212b", timestamps=timestamps
         )
 
         for i in np.arange(0, 256):
@@ -343,7 +345,10 @@ def plot_spdc(
         range(len(files_bckg)), desc="Going through background datafiles"
     ):
         data_all_bckg = f_up.unpack_bin(
-            files_bckg[i], board_number="A5", timestamps=timestamps
+            files_bckg[i],
+            board_number="A5",
+            fw_ver="2212b",
+            timestamps=timestamps,
         )
 
         # Fot plotting counts

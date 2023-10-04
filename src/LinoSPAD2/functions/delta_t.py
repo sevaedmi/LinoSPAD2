@@ -168,7 +168,7 @@ def deltas_save(
         deltas_all = {}
 
         # Unpack data for the requested pixels into dictionary
-        data_all = f_up.unpack_bin(file, board_number, timestamps)
+        data_all = f_up.unpack_bin(file, board_number, fw_ver, timestamps)
 
         # Calculate and collect timestamp differences
         # for q in pixels:

@@ -86,7 +86,12 @@ def collect_ct(
 
     pix_coor = np.arange(256).reshape(64, 4)
     for i, file in enumerate(tqdm(files)):
-        data_all = f_up.unpack_bin(file, board_number, timestamps)
+        data_all = f_up.unpack_bin(
+            file,
+            board_number=board_number,
+            fw_ver="2212b",
+            timestamps=timestamps,
+        )
 
         tdc1, pix_c1 = np.argwhere(pix_coor == pixels[0])[0]
         pix1 = np.where(data_all[tdc1].T[0] == pix_c1)[0]
