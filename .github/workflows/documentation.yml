@@ -10,6 +10,7 @@ jobs:
       - uses: actions/setup-python@v3
       - name: Install dependencies
         run: |
+          pip install --upgrade pip
           pip install sphinx sphinx_rtd_theme myst-parser sphinx-math-dollar -r requirements.txt
       - name: Sphinx build
         run: |
