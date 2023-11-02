@@ -133,7 +133,8 @@ def unpack_bin(file, board_number: str, fw_ver: str, timestamps: int = 512):
         ind = ind[np.where(data_all[tdc].T[1][ind] >= 0)[0]]
         if not np.any(ind):
             continue
-        # apply calibration
+        # apply calibration; offset is added due to how delta ts are
+        # calculated
         data_all[tdc].T[1][ind] = (
             (data_all[tdc].T[1][ind] - data_all[tdc].T[1][ind] % 140) * 17.857
             + cal_mat[i, (data_all[tdc].T[1][ind] % 140)]

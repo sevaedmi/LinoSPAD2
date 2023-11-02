@@ -240,13 +240,19 @@ def deltas_save(
             )
         os.chdir("..")
 
-    print(
-        "\n> > > Timestamp differences are saved as {file}.csv in "
-        "{path} < < <".format(
-            file=out_file_name,
-            path=path + "\delta_ts_data",
+    if (
+        os.path.isfile(path + "/delta_ts_data/{}.csv".format(out_file_name))
+        is True
+    ):
+        print(
+            "\n> > > Timestamp differences are saved as {file}.csv in "
+            "{path} < < <".format(
+                file=out_file_name,
+                path=path + "\delta_ts_data",
+            )
         )
-    )
+    else:
+        print("File wasn't generated. Check input parameters.")
 
 
 def delta_cp(
@@ -255,6 +261,7 @@ def delta_cp(
     rewrite: bool,
     range_left: int = -10e3,
     range_right: int = 10e3,
+    step: int = 1,
     same_y: bool = False,
 ):
     """Collect and plot timestamp differences from a '.csv' file.
@@ -308,7 +315,7 @@ def delta_cp(
         ):
             if rewrite is True:
                 print(
-                    "\n! ! ! Plot of timestamp differences already"
+                    "\n! ! ! Plot of timestamp differences already "
                     "exists and will be rewritten ! ! !\n"
                 )
             else:
@@ -366,10 +373,15 @@ def delta_cp(
             )
 
             try:
-                bins = np.linspace(
+                # bins = np.linspace(
+                #     np.min(data_to_plot),
+                #     np.max(data_to_plot),
+                #     100,
+                # )
+                bins = np.arange(
                     np.min(data_to_plot),
                     np.max(data_to_plot),
-                    100,
+                    17.857 * step,
                 )
             except ValueError:
                 print(
@@ -449,7 +461,7 @@ def delta_cp(
             plt.savefig("{name}_delta_t_grid.png".format(name=csv_file_name))
             os.chdir("../..")
     print(
-        "\n> > > Plot is saved as {file}.png in {path}< < <".format(
+        "\n> > > Plot is saved as {file} in {path}< < <".format(
             file=csv_file_name + "_delta_t_grid.png",
             path=path + "/results/delta_t",
         )

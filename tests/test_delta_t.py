@@ -11,14 +11,17 @@ class TestDeltasFull(unittest.TestCase):
     def setUp(self):
         # Set up test variables
         self.path = "tests/test_data"
-        self.pixels = [[x for x in range(10)], [x for x in range(10, 20)]]
+        self.pixels = [
+            [x for x in range(66, 70)],
+            [x for x in range(170, 178)],
+        ]
         self.board_number = "A5"
         self.fw_ver = "2212b"
-        self.timestamps = 200
-        self.delta_window = 10e3
+        self.timestamps = 300
+        self.delta_window = 20e3
         self.rewrite = True
-        self.range_left = -10e3
-        self.range_right = 10e3
+        self.range_left = -20e3
+        self.range_right = 20e3
         self.same_y = False
 
     def test_a_deltas_save_positive(self):
@@ -63,7 +66,7 @@ class TestDeltasFull(unittest.TestCase):
         os.chdir(r"{}".format(os.path.realpath(__file__) + "/../.."))
         delta_cp(
             path=self.path,
-            pixels=[0, 1, 2, 3, 10, 15, 16, 19],
+            pixels=[x for x in range(67, 69)] + [x for x in range(173, 175)],
             rewrite=self.rewrite,
             range_left=self.range_left,
             range_right=self.range_right,
@@ -78,28 +81,30 @@ class TestDeltasFull(unittest.TestCase):
         )
 
     # TODO: need larger data set to get more delta ts
-    # def test_d_fit_wg_positive(self):
-    #     # Test with valid input
-    #     os.chdir(r"{}".format(os.path.realpath(__file__) + "/../.."))
-    #     pix_pair = [2, 4]
-    #     window = 5e3
-    #     step = 1
+    def test_d_fit_wg_positive(self):
+        # Test with valid input
+        os.chdir(r"{}".format(os.path.realpath(__file__) + "/../.."))
+        pix_pair = [67, 174]
+        window = 20e3
+        step = 5
 
-    #     # Call the function
-    #     fit_wg(self.path, pix_pair, window, step)
+        # Call the function
+        fit_wg(self.path, pix_pair, window, step)
 
-    #     # Assert that the function runs without raising any exceptions
-    #     self.assertTrue(
-    #         os.path.isfile(
-    #             "results/fits/test_data_2212b-test_data_2212b_pixels_2,4_fit.png"
-    #         )
-    #     )
+        # Assert that the function runs without raising any exceptions
+        self.assertTrue(
+            os.path.isfile(
+                "results/fits/test_data_2212b-test_data_2212b_pixels_{},{}_fit.png".format(
+                    pix_pair[0], pix_pair[1]
+                )
+            )
+        )
 
-    def tearDownClass():
-        # Clean up after tests
-        os.chdir(r"{}".format(os.path.realpath(__file__) + "/.."))
-        shutil.rmtree("test_data/delta_ts_data")
-        shutil.rmtree("test_data/results")
+    # def tearDownClass():
+    #     # Clean up after tests
+    #     os.chdir(r"{}".format(os.path.realpath(__file__) + "/.."))
+    #     shutil.rmtree("test_data/delta_ts_data")
+    #     shutil.rmtree("test_data/results")
 
 
 if __name__ == "__main__":
