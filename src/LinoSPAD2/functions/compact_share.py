@@ -1,3 +1,28 @@
+"""Module with scripts for sharing (and plotting) data in a compact form.
+
+The module provides a simple and memory-friendly way of sharing data - 
+that is processed '.dat' data in a form of a '.txt' file with number of
+timestamps collected by each pixel and a '.csv' file with timestamp
+differences. Additionally, function for plotting both the sensor
+population plot and the delta t histograms are provided.
+
+This file can also be imported as a module and contains the following
+functions:
+
+    * compact_share - unpacks all '.dat' files in the given folder,
+    collects the number of timestamps in each pixel and packs it into a
+    '.txt' file, calculates timestamp differences and packs them into a 
+    '.csv' file.
+    
+    * plot_shared - plots the sensor population plot from the '.txt'
+    file.
+    
+    * delta_cp_shared - plots the delta t histograms from the '.csv'
+    file.
+
+"""
+
+
 from LinoSPAD2.functions import unpack as f_up
 import os
 import sys
@@ -8,16 +33,20 @@ from math import ceil
 import pandas as pd
 from tqdm import tqdm
 from zipfile import ZipFile
+from matplotlib import pyplot as plt
 
 
 def compact_share(
     path: str,
     pixels: list,
     rewrite: bool,
-    board_number: str,
+    db_num: str,
+    mb_num: str,
     fw_ver: str,
     timestamps: int,
     delta_window: float = 50e3,
+    inc_offset: bool = True,
+    app_calib: bool = True,
 ):
     """Collect delta ts and sensor population to a zip file.
 
@@ -36,8 +65,10 @@ def compact_share(
         for peak vs. peak calculations.
     rewrite : bool
         Switch for rewriting the '.csv' file if it already exists.
-    board_number : str
-        The LinoSPAD2 daughterboard number.
+    db_num : str
+        LinoSPAD2 daughterboard number.
+    mb_num : str
+        LinoSPAD2 motherboard (FPGA) number.
     fw_ver: str
         LinoSPAD2 firmware version. Versions "2212s" (skip) and "2212b"
         (block) are recognized.
@@ -47,6 +78,12 @@ def compact_share(
     delta_window : float, optional
         Size of a window to which timestamp differences are compared.
         Differences in that window are saved. The default is 50e3 (50 ns).
+    inc_offset : bool, optional
+        Switch for applying offset calibration. The default is True.
+    app_calib : bool, optional
+        Switch for applying TDC and offset calibration. If set to 'True'
+        while inc_offset is set to 'False', only the TDC calibration is
+        applied. The default is True.
 
     Raises
     ------
@@ -69,10 +106,10 @@ def compact_share(
         raise TypeError("'fw_ver' should be string, '2212b' or '2208'")
     if isinstance(rewrite, bool) is False:
         raise TypeError("'rewrite' should be boolean")
-    if isinstance(board_number, str) is False:
-        raise TypeError(
-            "'board_number' should be string, either 'NL11' or 'A5'"
-        )
+    if isinstance(db_num, str) is False:
+        raise TypeError("'db_num' should be string, either 'NL11' or 'A5'")
+    if isinstance(mb_num, str) is False:
+        raise TypeError("'mb_num' should be string")
 
     os.chdir(path)
 
@@ -125,7 +162,7 @@ def compact_share(
         path_to_back = os.getcwd()
         path_to_mask = os.path.realpath(__file__) + "/../.." + "/params/masks"
         os.chdir(path_to_mask)
-        file_mask = glob.glob("*{}*".format(board_number))[0]
+        file_mask = glob.glob("*{}_{}*".format(db_num, mb_num))[0]
         mask = np.genfromtxt(file_mask).astype(int)
         os.chdir(path_to_back)
 
@@ -156,7 +193,9 @@ def compact_share(
             deltas_all = {}
 
             # Unpack data for the requested pixels into dictionary
-            data_all = f_up.unpack_bin(file, board_number, fw_ver, timestamps)
+            data_all = f_up.unpack_bin(
+                file, db_num, mb_num, fw_ver, timestamps, inc_offset, app_calib
+            )
 
             # Calculate and collect timestamp differences
             # for q in pixels:
@@ -225,17 +264,17 @@ def compact_share(
             except FileNotFoundError:
                 os.mkdir("compact_share")
                 os.chdir("compact_share")
-            csv_file = glob.glob("*deltas_{}.csv*".format(out_file_name))
+            csv_file = glob.glob("*{}.csv*".format(out_file_name))
             if csv_file != []:
                 data_for_plot_df.to_csv(
-                    "deltas_{}.csv".format(out_file_name),
+                    "{}.csv".format(out_file_name),
                     mode="a",
                     index=False,
                     header=False,
                 )
             else:
                 data_for_plot_df.to_csv(
-                    "deltas_{}.csv".format(out_file_name), index=False
+                    "{}.csv".format(out_file_name), index=False
                 )
             os.chdir("..")
 
@@ -244,7 +283,7 @@ def compact_share(
         # Create a ZipFile Object
         with ZipFile("{}.zip".format(out_file_name), "w") as zip_object:
             # Adding files that need to be zipped
-            zip_object.write("deltas_{}.csv".format(out_file_name))
+            zip_object.write("{}.csv".format(out_file_name))
             zip_object.write("sen_pop_{}.txt".format(out_file_name))
 
             print(
@@ -255,3 +294,263 @@ def compact_share(
                     path=path + "\delta_ts_data",
                 )
             )
+
+
+def plot_shared(
+    path,
+    db_num: str,
+    mb_num: str,
+    show_fig: bool = False,
+    app_mask: bool = True,
+    color: str = "salmon",
+):
+    """Plots sensor population from a '.txt' file.
+
+    Plots the sensor population plot fro ma '.txt' file that is saved
+    with the function above. Plot is saved in the
+    'results/sensor_population' folder, which is created in the case it
+    does not exist.
+
+    Parameters
+    ----------
+    path : str
+        Path to the '.txt' file with precompiled data.
+    db_num : str
+        The LinoSPAD2 daughterboard number.
+    mb_num : str
+        The LinoSPAD2 motherboard number.
+    show_fig : bool, optional
+        Switch for showing the plot. The default is False.
+    app_mask : bool, optional
+        Switch for applying the mask on warm/hot pixels. The default is
+        True.
+    color : str, optional
+        Color for the plot. The default is 'salmon'.
+
+    Raises
+    ------
+    IndexError
+        _description_
+    """
+    os.chdir(path)
+
+    try:
+        file = glob.glob("*.txt*")[0]
+    except IndexError:
+        raise IndexError(".txt file not found - check the folder")
+
+    file_name = file[:-4]
+
+    data = np.genfromtxt(file, delimiter="")
+
+    # Apply mask if requested
+    if app_mask is True:
+        path_to_back = os.getcwd()
+        path_to_mask = os.path.realpath(__file__) + "/../.." + "/params/masks"
+        os.chdir(path_to_mask)
+        file_mask = glob.glob("*{}_{}*".format(db_num, mb_num))[0]
+        mask = np.genfromtxt(file_mask).astype(int)
+        data[mask] = 0
+        os.chdir(path_to_back)
+
+    if show_fig is True:
+        plt.ion()
+    else:
+        plt.ioff()
+
+    plt.rcParams.update({"font.size": 22})
+    plt.figure(figsize=(16, 10))
+    plt.xlabel("Pixel [-]")
+    plt.ylabel("Counts [-]")
+    plt.plot(data, "o-", color=color)
+
+    try:
+        os.chdir("results/sensor_population")
+    except Exception:
+        os.makedirs("results/sensor_population")
+        os.chdir("results/sensor_population")
+    plt.savefig("{}.png".format(file_name))
+    os.chdir("..")
+
+
+def delta_cp_shared(
+    path,
+    pixels,
+    rewrite: bool,
+    range_left: int = -10e3,
+    range_right: int = 10e3,
+    step: int = 1,
+    same_y: bool = False,
+    color: str = "salmon",
+):
+    """Collect and plot timestamp differences from a '.csv' file.
+
+    Plots timestamp differences from a '.csv' file as a grid of histograms
+    and as a single plot. For plotting from the shared '.csv' files.
+
+    Parameters
+    ----------
+    path : str
+        Path to data files.
+    pixels : list
+        List of pixel numbers for which the timestamp differences
+        should be plotted.
+    rewrite : bool
+        Switch for rewriting the plot if it already exists.
+    range_left : int, optional
+        Lower limit for timestamp differences, lower values are not used.
+        The default is -10e3.
+    range_right : int, optional
+        Upper limit for timestamp differences, higher values are not used.
+        The default is 10e3.
+    step : int, optional
+        Histogram binning multiplier. The default is 1.
+    same_y : bool, optional
+        Switch for plotting the histograms with the same y-axis.
+        The default is False.
+    color : str, optional
+        Color for the plot. The default is 'salmon'.
+
+    Raises
+    ------
+    TypeError
+        Only boolean values of 'rewrite' are accepted. The error is
+        raised so that the plot does not accidentally gets rewritten.
+
+    Returns
+    -------
+    None.
+    """
+    # parameter type check
+    if isinstance(rewrite, bool) is not True:
+        raise TypeError("'rewrite' should be boolean")
+    plt.ioff()
+    os.chdir(path)
+
+    file = glob.glob("*.csv*")[0]
+    csv_file_name = file[:-4]
+
+    print(
+        "\n> > > Plotting timestamps differences as a grid of histograms < < <"
+    )
+
+    plt.rcParams.update({"font.size": 22})
+
+    if len(pixels) > 2:
+        fig, axs = plt.subplots(
+            len(pixels) - 1,
+            len(pixels) - 1,
+            figsize=(5.5 * len(pixels), 5.5 * len(pixels)),
+        )
+        for ax in axs:
+            for x in ax:
+                x.axes.set_axis_off()
+    else:
+        fig = plt.figure(figsize=(14, 14))
+
+    # check if the y limits of all plots should be the same
+    if same_y is True:
+        y_max_all = 0
+
+    for q in tqdm(range(len(pixels)), desc="Row in plot"):
+        for w in range(len(pixels)):
+            if w <= q:
+                continue
+            if len(pixels) > 2:
+                axs[q][w - 1].axes.set_axis_on()
+            try:
+                # keep only the required column in memory
+                data_to_plot = pd.read_csv(
+                    file,
+                    usecols=["{},{}".format(pixels[q], pixels[w])],
+                ).dropna()
+            except ValueError:
+                continue
+
+            # prepare the data for plot
+            data_to_plot = np.array(data_to_plot)
+            data_to_plot = np.delete(
+                data_to_plot, np.argwhere(data_to_plot < range_left)
+            )
+            data_to_plot = np.delete(
+                data_to_plot, np.argwhere(data_to_plot > range_right)
+            )
+
+            try:
+                bins = np.arange(
+                    np.min(data_to_plot),
+                    np.max(data_to_plot),
+                    17.857 * step,
+                )
+            except ValueError:
+                print(
+                    "\nCouldn't calculate bins for {q}-{w} pair: probably not "
+                    "enough delta ts.".format(q=q, w=w)
+                )
+                continue
+
+            if len(pixels) > 2:
+                axs[q][w - 1].set_xlabel("\u0394t [ps]")
+                axs[q][w - 1].set_ylabel("# of coincidences [-]")
+                n, b, p = axs[q][w - 1].hist(
+                    data_to_plot,
+                    bins=bins,
+                    color=chosen_color,
+                )
+            else:
+                plt.xlabel("\u0394t [ps]")
+                plt.ylabel("# of coincidences [-]")
+                n, b, p = plt.hist(
+                    data_to_plot,
+                    bins=bins,
+                    color=color,
+                )
+
+            try:
+                peak_max_pos = np.argmax(n).astype(np.intc)
+                # 2 ns window around peak
+                win = int(1000 / ((range_right - range_left) / 100))
+                peak_max = np.sum(n[peak_max_pos - win : peak_max_pos + win])
+            except ValueError:
+                peak_max = None
+
+            if same_y is True:
+                try:
+                    y_max = np.max(n)
+                except ValueError:
+                    y_max = 0
+                    print("\nCould not find maximum y value\n")
+                if y_max_all < y_max:
+                    y_max_all = y_max
+                if len(pixels) > 2:
+                    axs[q][w - 1].set_ylim(0, y_max + 4)
+                else:
+                    plt.ylim(0, y_max + 4)
+
+            if len(pixels) > 2:
+                axs[q][w - 1].set_xlim(range_left - 100, range_right + 100)
+                axs[q][w - 1].set_title(
+                    "Pixels {p1},{p2}\nPeak in 2 ns window: {pp}".format(
+                        p1=pixels[q], p2=pixels[w], pp=int(peak_max)
+                    )
+                )
+            else:
+                plt.xlim(range_left - 100, range_right + 100)
+                plt.title(
+                    "Pixels {p1},{p2}".format(p1=pixels[q], p2=pixels[w])
+                )
+
+            try:
+                os.chdir("results/delta_t")
+            except FileNotFoundError:
+                os.makedirs("results/delta_t")
+                os.chdir("results/delta_t")
+            fig.tight_layout()  # for perfect spacing between the plots
+            plt.savefig("{name}_delta_t_grid.png".format(name=csv_file_name))
+            os.chdir("../..")
+    print(
+        "\n> > > Plot is saved as {file} in {path}< < <".format(
+            file=csv_file_name + "_delta_t_grid.png",
+            path=path + "/results/delta_t",
+        )
+    )

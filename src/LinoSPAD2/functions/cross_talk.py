@@ -32,9 +32,12 @@ from LinoSPAD2.functions import unpack as f_up
 def collect_ct(
     path,
     pixels,
-    board_number: str,
+    db_num: str,
+    mb_num: str,
     timestamps: int = 512,
     delta_window: float = 10e3,
+    inc_offset: bool = True,
+    app_calib: bool = True,
 ):
     """Calculate cross-talk and save it to a '.csv' file.
 
@@ -51,14 +54,22 @@ def collect_ct(
         Path to datafiles.
     pixels : array-like
         Array of pixel numbers.
-    board_number : str
-        The LinoSPAD2 daughterboard number. Only "NL11" and "A5" values
-        are accepted.
+    db_num : str
+        LinoSPAD2 daughterboard number.
+    mb_num : str
+        LinoSPAD2 motherboard (FPGA) number.
     timestamps : int, optional
         Number of timestamps per pixel per cycle. The default is 512.
     delta_window : float, optional
         A width of a window in which the number of timestamp differences
         are counted. The default value is 10e3 (10ns).
+    inc_offset : bool, optional
+        Switch for applying offset calibration. The default is True.
+    app_calib : bool, optional
+        Switch for applying TDC and offset calibration. If set to 'True'
+        while inc_offset is set to 'False', only the TDC calibration is
+        applied. The default is True.
+
 
     Returns
     -------
@@ -66,10 +77,10 @@ def collect_ct(
 
     """
     # parameter type check
-    if isinstance(board_number, str) is not True:
-        raise TypeError(
-            "'board_number' should be string, either 'NL11' or 'A5'"
-        )
+    if isinstance(db_num, str) is not True:
+        raise TypeError("'db_num' should be string")
+    if isinstance(mb_num, str) is not True:
+        raise TypeError("'mb_num' should be string")
 
     print("\n> > > Collecting data for cross-talk analysis < < <\n")
     file_name_list = []
@@ -88,9 +99,11 @@ def collect_ct(
     for i, file in enumerate(tqdm(files)):
         data_all = f_up.unpack_bin(
             file,
-            board_number=board_number,
+            db_num=db_num,
+            mb_num=mb_num,
             fw_ver="2212b",
             timestamps=timestamps,
+            inc_offset=inc_offset,
         )
 
         tdc1, pix_c1 = np.argwhere(pix_coor == pixels[0])[0]

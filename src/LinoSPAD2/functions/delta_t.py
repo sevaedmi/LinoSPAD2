@@ -7,10 +7,10 @@ This file can also be imported as a module and contains the following
 functions:
 
     * deltas_save_numpy - unpacks the binary data, calculates timestamp
-    differences and saves into a .csv file. Works with firmware versions
+    differences and saves into a '.csv' file. Works with firmware versions
     '2208' and '2212b'.
 
-    * delta_cp - collect timestamps from a .csv file and plot them in
+    * delta_cp - collect timestamps from a '.csv' file and plot them in
     a grid.
 """
 import glob
@@ -31,15 +31,18 @@ def deltas_save(
     path,
     pixels: list,
     rewrite: bool,
-    board_number: str,
+    db_num: str,
+    mb_num: str,
     fw_ver: str,
     timestamps: int = 512,
     delta_window: float = 50e3,
+    inc_offset: bool = True,
+    app_calib: bool = True,
 ):
     """Calculate and save timestamp differences into '.csv' file.
 
     Unpacks data into a dictionary, calculates timestamp differences for
-    the requested pixels, and saves them into a '.csv' table. Works with
+    the requested pixels and saves them into a '.csv' table. Works with
     firmware version 2212. The plot is saved
     in the 'results' folder, which is created (if it does not already
     exist) in the same folder where data are.
@@ -50,12 +53,14 @@ def deltas_save(
         Path to data files.
     pixels : list
         List of pixel numbers for which the timestamp differences should
-        be calculate and saved or list of two lists with pixel numbers
+        be calculated and saved or list of two lists with pixel numbers
         for peak vs. peak calculations.
     rewrite : bool
         Switch for rewriting the '.csv' file if it already exists.
-    board_number : str
-        The LinoSPAD2 daughterboard number.
+    db_num : str
+        LinoSPAD2 daughterboard number.
+    mb_num : str
+        LinoSPAD2 motherboard (FPGA) number.
     fw_ver: str
         LinoSPAD2 firmware version. Versions "2212s" (skip) and "2212b"
         (block) are recognized.
@@ -65,14 +70,20 @@ def deltas_save(
     delta_window : float, optional
         Size of a window to which timestamp differences are compared.
         Differences in that window are saved. The default is 50e3 (50 ns).
+    inc_offset : bool, optional
+        Switch for applying offset calibration. The default is True.
+    app_calib : bool, optional
+        Switch for applying TDC and offset calibration. If set to 'True'
+        while inc_offset is set to 'False', only the TDC calibration is
+        applied. The default is True.
 
     Raises
     ------
     TypeError
-        Only boolean values of 'rewrite' and string values of 'fw_ver'
-        are accepted. First error is raised so that the plot does not
-        accidentally gets rewritten in the case no clear input was
-        given.
+        Only boolean values of 'rewrite' and string values of 'db_num',
+        'mb_num', and 'fw_ver' are accepted. The first error is raised
+        so that the plot does not accidentally get rewritten in the
+        case no clear input was given.
 
     Returns
     -------
@@ -87,10 +98,8 @@ def deltas_save(
         raise TypeError("'fw_ver' should be string, '2212b' or '2208'")
     if isinstance(rewrite, bool) is False:
         raise TypeError("'rewrite' should be boolean")
-    if isinstance(board_number, str) is False:
-        raise TypeError(
-            "'board_number' should be string, either 'NL11' or 'A5'"
-        )
+    if isinstance(db_num, str) is False:
+        raise TypeError("'db_num' should be string, either 'NL11' or 'A5'")
 
     os.chdir(path)
 
@@ -141,7 +150,7 @@ def deltas_save(
     path_to_back = os.getcwd()
     path_to_mask = os.path.realpath(__file__) + "/../.." + "/params/masks"
     os.chdir(path_to_mask)
-    file_mask = glob.glob("*{}*".format(board_number))[0]
+    file_mask = glob.glob("*{}*".format(db_num))[0]
     mask = np.genfromtxt(file_mask).astype(int)
     os.chdir(path_to_back)
 
@@ -168,7 +177,9 @@ def deltas_save(
         deltas_all = {}
 
         # Unpack data for the requested pixels into dictionary
-        data_all = f_up.unpack_bin(file, board_number, fw_ver, timestamps)
+        data_all = f_up.unpack_bin(
+            file, db_num, mb_num, fw_ver, timestamps, inc_offset, app_calib
+        )
 
         # Calculate and collect timestamp differences
         # for q in pixels:
@@ -263,6 +274,7 @@ def delta_cp(
     range_right: int = 10e3,
     step: int = 1,
     same_y: bool = False,
+    color: str = "salmon",
 ):
     """Collect and plot timestamp differences from a '.csv' file.
 
@@ -284,15 +296,19 @@ def delta_cp(
     range_right : int, optional
         Upper limit for timestamp differences, higher values are not used.
         The default is 10e3.
+    step : int, optional
+        Histogram binning multiplier. The default is 1.
     same_y : bool, optional
         Switch for plotting the histograms with the same y-axis.
         The default is False.
+    color : str, optional
+        Color for the plot. The default is 'salmon'.
 
     Raises
     ------
     TypeError
         Only boolean values of 'rewrite' are accepted. The error is
-        raised so that the plot does not accidentally gets rewritten.
+        raised so that the plot does not accidentally get rewritten.
 
     Returns
     -------
@@ -373,11 +389,6 @@ def delta_cp(
             )
 
             try:
-                # bins = np.linspace(
-                #     np.min(data_to_plot),
-                #     np.max(data_to_plot),
-                #     100,
-                # )
                 bins = np.arange(
                     np.min(data_to_plot),
                     np.max(data_to_plot),
@@ -390,24 +401,13 @@ def delta_cp(
                 )
                 continue
 
-            if "Ne" and "540" in path:
-                chosen_color = "seagreen"
-            elif "Ne" and "656" in path:
-                chosen_color = "orangered"
-            elif "Ne" and "585" in path:
-                chosen_color = "goldenrod"
-            elif "Ar" in path:
-                chosen_color = "mediumslateblue"
-            else:
-                chosen_color = "salmon"
-
             if len(pixels) > 2:
                 axs[q][w - 1].set_xlabel("\u0394t [ps]")
                 axs[q][w - 1].set_ylabel("# of coincidences [-]")
                 n, b, p = axs[q][w - 1].hist(
                     data_to_plot,
                     bins=bins,
-                    color=chosen_color,
+                    color=color,
                 )
             else:
                 plt.xlabel("\u0394t [ps]")
@@ -415,7 +415,7 @@ def delta_cp(
                 n, b, p = plt.hist(
                     data_to_plot,
                     bins=bins,
-                    color=chosen_color,
+                    color=color,
                 )
 
             try:

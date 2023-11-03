@@ -100,11 +100,11 @@ class TestDeltasFull(unittest.TestCase):
             )
         )
 
-    # def tearDownClass():
-    #     # Clean up after tests
-    #     os.chdir(r"{}".format(os.path.realpath(__file__) + "/.."))
-    #     shutil.rmtree("test_data/delta_ts_data")
-    #     shutil.rmtree("test_data/results")
+    def tearDownClass():
+        # Clean up after tests
+        os.chdir(r"{}".format(os.path.realpath(__file__) + "/.."))
+        shutil.rmtree("test_data/delta_ts_data")
+        shutil.rmtree("test_data/results")
 
 
 if __name__ == "__main__":

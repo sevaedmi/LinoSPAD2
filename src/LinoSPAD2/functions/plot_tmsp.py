@@ -13,7 +13,7 @@ functions:
     * plot_sen_pop - plots the sensor population as a number of
     timestamps in each pixel. Works with the firmware version 2212 (both
     block and skip). Analyzes all data files in the given folder.
-    
+
     * plot_spdc - plot sensor population for SPDC data. Data files
     taken with background only (SPDC output is off) should be provided.
     The background is subtracted from the actual data for clearer
@@ -35,10 +35,13 @@ from LinoSPAD2.functions import unpack as f_up
 def plot_pixel_hist(
     path,
     pixels,
+    db_num: str,
+    mb_num: str,
     fw_ver: str,
-    board_number: str,
     timestamps: int = 512,
     show_fig: bool = False,
+    inc_offset: bool = True,
+    app_calib: bool = True,
 ):
     """Plot a histogram for each pixel in the given range.
 
@@ -53,13 +56,21 @@ def plot_pixel_hist(
         Array of pixels indices.
     fw_ver : str
         LinoSPAD2 firmware version.
-    board_number : str
+    db_num : str
         LinoSPAD2 daughterboard number.
+    mb_num : str
+        LinoSPAD2 motherboard (FPGA) number.
     timestamps : int, optional
         Number of timestamps per pixel per acquisition cycle. The
         default is 512.
     show_fig : bool, optional
         Switch for showing the output figure. The default is False.
+    inc_offset : bool, optional
+        Switch for applying offset calibration. The default is True.
+    app_calib : bool, optional
+        Switch for applying TDC and offset calibration. If set to 'True'
+        while inc_offset is set to 'False', only the TDC calibration is
+        applied. The default is True.
 
     Returns
     -------
@@ -69,6 +80,10 @@ def plot_pixel_hist(
     # parameter type check
     if isinstance(fw_ver, str) is not True:
         raise TypeError("'fw_ver' should be a string")
+    if isinstance(db_num, str) is not True:
+        raise TypeError("'db_num' should be a string")
+    if isinstance(mb_num, str) is not True:
+        raise TypeError("'mb_num' should be a string")
 
     if type(pixels) is int:
         pixels = [pixels]
@@ -89,7 +104,7 @@ def plot_pixel_hist(
         )
 
         data = f_up.unpack_bin(
-            num, board_number, fw_ver, timestamps=timestamps
+            num, db_num, mb_num, fw_ver, timestamps, inc_offset, app_calib
         )
 
         if pixels is None:
@@ -129,13 +144,17 @@ def plot_pixel_hist(
 
 def plot_sen_pop(
     path,
-    board_number: str,
+    db_num: str,
+    mb_num: str,
     fw_ver: str,
     timestamps: int = 512,
     scale: str = "linear",
     style: str = "-o",
     show_fig: bool = False,
     app_mask: bool = True,
+    inc_offset: bool = True,
+    app_calib: bool = True,
+    color: str = "salmon",
 ):
     """Plot number of timestamps in each pixel for all datafiles.
 
@@ -149,9 +168,11 @@ def plot_sen_pop(
     ----------
     path : str
         Path to the datafiles.
-    board_number : str
-        The LinoSPAD2 board number. Required for choosing the correct
-        calibration data.
+    db_num : str
+        The LinoSPAD2 daughterboard number. Required for choosing the
+        correct calibration data.
+    mb_num : str
+        The LinoSPAD2 motherboard number.
     fw_ver : str
         LinoSPAD2 firmware version. Versions '2212b' (block) or '2212s'
         (skip) are recognized.
@@ -168,6 +189,14 @@ def plot_sen_pop(
     app_mask : bool, optional
         Switch for applying the mask on warm/hot pixels. The default is
         True.
+    inc_offset : bool, optional
+        Switch for applying offset calibration. The default is True.
+    app_calib : bool, optional
+        Switch for applying TDC and offset calibration. If set to 'True'
+        while inc_offset is set to 'False', only the TDC calibration is
+        applied. The default is True.
+    color : str, optional
+        Color for the plot. The default is 'salmon'.
 
     Returns
     -------
@@ -177,8 +206,10 @@ def plot_sen_pop(
     # parameter type check
     if isinstance(fw_ver, str) is not True:
         raise TypeError("'fw_ver' should be string, '2212b' or '2212s'")
-    if isinstance(board_number, str) is not True:
-        raise TypeError("'board_number' should be string, 'NL11' or 'A5'")
+    if isinstance(db_num, str) is not True:
+        raise TypeError("'db_num' should be string, 'NL11' or 'A5'")
+    if isinstance(mb_num, str) is not True:
+        raise TypeError("'mb_num' should be string")
     if show_fig is True:
         plt.ion()
     else:
@@ -189,17 +220,6 @@ def plot_sen_pop(
     files = glob.glob("*.dat*")
 
     plot_name = files[0][:-4] + "-" + files[-1][:-4]
-
-    if "Ne" and "540" in path:
-        chosen_color = "seagreen"
-    elif "Ne" and "656" in path:
-        chosen_color = "orangered"
-    elif "Ne" and "585" in path:
-        chosen_color = "goldenrod"
-    elif "Ar" in path:
-        chosen_color = "mediumslateblue"
-    else:
-        chosen_color = "salmon"
 
     valid_per_pixel = np.zeros(256)
 
@@ -217,7 +237,9 @@ def plot_sen_pop(
             print("\nFirmware version is not recognized, exiting.")
             sys.exit()
 
-        data = f_up.unpack_bin(files[i], board_number, fw_ver, timestamps)
+        data = f_up.unpack_bin(
+            files[i], db_num, mb_num, fw_ver, timestamps, inc_offset, app_calib
+        )
         for i in range(256):
             tdc, pix = np.argwhere(pix_coor == i)[0]
             ind = np.where(data[tdc].T[0] == pix)[0]
@@ -230,14 +252,16 @@ def plot_sen_pop(
         path_to_back = os.getcwd()
         path_to_mask = os.path.realpath(__file__) + "/../.." + "/params/masks"
         os.chdir(path_to_mask)
-        file_mask = glob.glob("*{}*".format(board_number))[0]
+        file_mask = glob.glob("*{}_{}*".format(db_num, mb_num))[0]
         mask = np.genfromtxt(file_mask).astype(int)
         valid_per_pixel[mask] = 0
         os.chdir(path_to_back)
 
     plt.rcParams.update({"font.size": 22})
     fig = plt.figure(figsize=(16, 10))
-    plt.plot(valid_per_pixel, "-o", color=chosen_color)
+    if scale == "log":
+        plt.yscale("log")
+    plt.plot(valid_per_pixel, style, color=color)
     plt.xlabel("Pixel number [-]")
     plt.ylabel("Timestamps [-]")
 
@@ -257,7 +281,12 @@ def plot_sen_pop(
 
 
 def plot_spdc(
-    path, board_number: str, timestamps: int = 512, show_fig: bool = False
+    path,
+    db_num: str,
+    mb_num: str,
+    fw_ver: str,
+    timestamps: int = 512,
+    show_fig: bool = False,
 ):
     """Plot sensor population for SPDC data.
 
@@ -270,9 +299,11 @@ def plot_spdc(
     ----------
     path : str
         Path to data files.
-    board_number : str
+    db_num : str
         LinoSPAD2 daughterboard number. Either "A5" or "NL11" is
         accepted.
+    mb_num : str
+        LinoSPAD2 motherboard number.
     timestamps : int, optional
         Number of timestamps per pixel per acquisition cycle. The
         default is 512.
@@ -282,7 +313,7 @@ def plot_spdc(
     Raises
     ------
     TypeError
-        Raised when 'board_number' is not a string.
+        Raised when 'db_num' is not a string.
     ValueError
         Raised when the number of data files of SPDC data is different
         from the number of data files of background data.
@@ -293,10 +324,12 @@ def plot_spdc(
 
     """
     # parameter type check
-    if isinstance(board_number, str) is not True:
-        raise TypeError(
-            "'board_number' should be string, either 'NL11' or 'A5'"
-        )
+    if isinstance(db_num, str) is not True:
+        raise TypeError("'db_num' should be string, either 'NL11' or 'A5'")
+    if isinstance(fw_ver, str) is not True:
+        raise TypeError("'fw_ver' should be string")
+    if isinstance(mb_num, str) is not True:
+        raise TypeError("'db_num' should be string, either 'NL11' or 'A5'")
 
     if show_fig is True:
         plt.ion()
@@ -329,7 +362,7 @@ def plot_spdc(
     # Collect SPDC data
     for i in tqdm(range(len(files)), desc="Going through datafiles"):
         data_all = f_up.unpack_bin(
-            files[i], board_number="A5", fw_ver="2212b", timestamps=timestamps
+            files[i], db_num="A5", fw_ver="2212b", timestamps=timestamps
         )
 
         for i in np.arange(0, 256):
@@ -346,7 +379,8 @@ def plot_spdc(
     ):
         data_all_bckg = f_up.unpack_bin(
             files_bckg[i],
-            board_number="A5",
+            db_num="A5",
+            mb_num="34",
             fw_ver="2212b",
             timestamps=timestamps,
         )
@@ -364,7 +398,7 @@ def plot_spdc(
     path_to_back = os.getcwd()
     path_to_mask = os.path.realpath(__file__) + "/../.." + "/params/masks"
     os.chdir(path_to_mask)
-    file_mask = glob.glob("*{}*".format(board_number))[0]
+    file_mask = glob.glob("*{}_{}*".format(db_num, mb_num))[0]
     mask = np.genfromtxt(file_mask).astype(int)
     os.chdir(path_to_back)
 
