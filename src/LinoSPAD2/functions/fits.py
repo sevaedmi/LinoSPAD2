@@ -18,7 +18,14 @@ from matplotlib import pyplot as plt
 from scipy.optimize import curve_fit
 
 
-def fit_wg(path, pix_pair: list, window: float = 5e3, step: int = 1):
+def fit_wg(
+    path,
+    pix_pair: list,
+    window: float = 5e3,
+    step: int = 1,
+    color_d: str = "salmon",
+    color_f: str = "teal",
+):
     """Fit with Gaussian function and plot it.
 
     Fits timestamp differences of a pair of pixels with Gaussian
@@ -89,8 +96,8 @@ def fit_wg(path, pix_pair: list, window: float = 5e3, step: int = 1):
     data_to_plot = data_to_plot.dropna()
     data_to_plot = np.array(data_to_plot)
     # Use window of 40 ns for calculating histogram data
-    data_to_plot = np.delete(data_to_plot, np.argwhere(data_to_plot < -20e3))
-    data_to_plot = np.delete(data_to_plot, np.argwhere(data_to_plot > 20e3))
+    data_to_plot = np.delete(data_to_plot, np.argwhere(data_to_plot < -window))
+    data_to_plot = np.delete(data_to_plot, np.argwhere(data_to_plot > window))
 
     os.chdir("..")
     plt.rcParams.update({"font.size": 22})
@@ -126,7 +133,8 @@ def fit_wg(path, pix_pair: list, window: float = 5e3, step: int = 1):
 
     n, b = np.histogram(data_to_plot, bins)
 
-    b1 = (b - (b[-1] - b[-2]) / 2)[1:]
+    # b1 = (b - (b[-1] - b[-2]) / 2)[1:]
+    b1 = (b - 17.857 * step / 2)[1:]
 
     sigma = 150
 
@@ -142,24 +150,13 @@ def fit_wg(path, pix_pair: list, window: float = 5e3, step: int = 1):
     vis_er = par[0] / par[3] ** 2 * 100 * perr[-1]
     # fit_plot = gauss(to_fit_b, par[0], par[1], par[2], par[3])
 
-    if "Ne" and "540" in path:
-        chosen_color = "seagreen"
-    elif "Ne" and "656" in path:
-        chosen_color = "orangered"
-    elif "Ne" and "585" in path:
-        chosen_color = "goldenrod"
-    elif "Ar" in path:
-        chosen_color = "mediumslateblue"
-    else:
-        chosen_color = "salmon"
-
     plt.figure(figsize=(16, 10))
     plt.xlabel(r"$\Delta$t [ps]")
     plt.ylabel("# of coincidences [-]")
     plt.step(
         b[1:],
         n,
-        color=chosen_color,
+        color=color_d,
         label="data",
     )
     plt.plot(
@@ -168,7 +165,7 @@ def fit_wg(path, pix_pair: list, window: float = 5e3, step: int = 1):
         to_fit_b,
         to_fit_n,
         "-",
-        color="teal",
+        color=color_f,
         label="fit\n"
         "\u03C3={p1}\u00B1{pe1} ps\n"
         "\u03BC={p2}\u00B1{pe2} ps\n"

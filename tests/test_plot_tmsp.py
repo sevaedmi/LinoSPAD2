@@ -12,22 +12,25 @@ from LinoSPAD2.functions.plot_tmsp import (
 class TestPlotScripts(unittest.TestCase):
     def setUp(self):
         self.path = "tests/test_data"
-        self.board_number = "A5"
+        self.pix = 15
+        self.db_num = "NL11"
+        self.mb_num = "#33"
         self.fw_ver = "2212b"
-        self.timestamps = 200
+        self.timestamps = 300
+        self.inc_offset = False
 
     def test_a_plot_pixel_hist(self):
         # Positive test case
-        os.chdir(r"{}".format(os.path.realpath(__file__) + "/../.."))
+        os.chdir(r"{}".format(os.path.realpath(__file__) + "../../.."))
 
-        pix = 15
         plot_pixel_hist(
             self.path,
-            pix,
+            self.pix,
+            self.db_num,
+            self.mb_num,
             self.fw_ver,
-            self.board_number,
             self.timestamps,
-            show_fig=True,
+            inc_offset=self.inc_offset,
         )
         self.assertTrue(
             os.path.exists(
@@ -37,16 +40,18 @@ class TestPlotScripts(unittest.TestCase):
 
     def test_b_plot_sen_pop(self):
         # Positive test case
-        os.chdir(r"{}".format(os.path.realpath(__file__) + "/../.."))
+        os.chdir(r"{}".format(os.path.realpath(__file__) + "../../.."))
         plot_sen_pop(
             self.path,
-            self.board_number,
+            self.db_num,
+            self.mb_num,
             self.fw_ver,
             self.timestamps,
             scale="linear",
             style="-o",
             show_fig=True,
             app_mask=True,
+            inc_offset=self.inc_offset,
         )
         self.assertTrue(
             os.path.isfile(

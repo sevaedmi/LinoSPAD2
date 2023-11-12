@@ -15,7 +15,8 @@ class TestDeltasFull(unittest.TestCase):
             [x for x in range(66, 70)],
             [x for x in range(170, 178)],
         ]
-        self.board_number = "A5"
+        self.db_num = "NL11"
+        self.mb_num = "#33"
         self.fw_ver = "2212b"
         self.timestamps = 300
         self.delta_window = 20e3
@@ -32,7 +33,8 @@ class TestDeltasFull(unittest.TestCase):
             self.path,
             self.pixels,
             self.rewrite,
-            self.board_number,
+            self.db_num,
+            self.mb_num,
             self.fw_ver,
             self.timestamps,
             self.delta_window,
@@ -54,7 +56,8 @@ class TestDeltasFull(unittest.TestCase):
                 self.path,
                 self.pixels,
                 "2212",
-                self.board_number,
+                self.db_num,
+                self.mb_num,
                 self.fw_ver,
                 self.timestamps,
                 self.delta_window,

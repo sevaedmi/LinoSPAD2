@@ -14,11 +14,13 @@ class TestCTFull(unittest.TestCase):
         # Set up test variables
         self.path = "tests/test_data"
         self.pixels = np.arange(0, 20, 1)
-        self.board_number = "A5"
-        self.timestamps = 200
+        self.db_num = "NL11"
+        self.mb_num = "#33"
+        self.timestamps = 300
         self.delta_window = 10e3
         self.pix1 = 0
         self.scale = "linear"
+        self.inc_offset = False
 
     def test_a_collect_ct_positive(self):
         work_dir = r"{}".format(os.path.realpath(__file__) + "../../..")
@@ -27,9 +29,11 @@ class TestCTFull(unittest.TestCase):
         collect_ct(
             self.path,
             self.pixels,
-            self.board_number,
+            self.db_num,
+            self.mb_num,
             self.timestamps,
             self.delta_window,
+            self.inc_offset,
         )
         # Check if the output file is created and has the correct number of rows
         file = glob.glob("*CT_data_*.csv*")[0]
@@ -42,7 +46,12 @@ class TestCTFull(unittest.TestCase):
         # Test negative case of collect_ct function
         with self.assertRaises(TypeError):
             collect_ct(
-                self.path, self.pixels, 123, self.timestamps, self.delta_window
+                self.path,
+                self.pixels,
+                123,
+                22,
+                self.timestamps,
+                self.delta_window,
             )
 
     def test_c_plot_ct_positive(self):

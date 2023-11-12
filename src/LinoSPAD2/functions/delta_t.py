@@ -43,9 +43,7 @@ def deltas_save(
 
     Unpacks data into a dictionary, calculates timestamp differences for
     the requested pixels and saves them into a '.csv' table. Works with
-    firmware version 2212. The plot is saved
-    in the 'results' folder, which is created (if it does not already
-    exist) in the same folder where data are.
+    firmware version 2212.
 
     Parameters
     ----------
@@ -279,7 +277,9 @@ def delta_cp(
     """Collect and plot timestamp differences from a '.csv' file.
 
     Plots timestamp differences from a '.csv' file as a grid of histograms
-    and as a single plot.
+    and as a single plot. The plot is saved in the 'results/delta_t' folder,
+    which is created (if it does not already exist) in the same folder
+    where data are.
 
     Parameters
     ----------
