@@ -6,9 +6,13 @@ LinoSPAD2 binary data output.
 This file can also be imported as a module and contains the following
 functions:
 
-    * deltas_save_numpy - unpacks the binary data, calculates timestamp
+    * deltas_save - unpacks the binary data, calculates timestamp
     differences and saves into a '.csv' file. Works with firmware versions
     '2208' and '2212b'.
+    
+    * deltas_save_double - unpacks the binary data, calculates timestamp
+    differences and saves into a '.csv' file. Works with firmware versions
+    '2208' and '2212b'. Analyzes data from both sensor halves/both FPGAs.
 
     * delta_cp - collect timestamps from a '.csv' file and plot them in
     a grid.
@@ -36,6 +40,7 @@ def deltas_save(
     fw_ver: str,
     timestamps: int = 512,
     delta_window: float = 50e3,
+    app_mask: bool = True,
     inc_offset: bool = True,
     app_calib: bool = True,
 ):
@@ -68,6 +73,8 @@ def deltas_save(
     delta_window : float, optional
         Size of a window to which timestamp differences are compared.
         Differences in that window are saved. The default is 50e3 (50 ns).
+    app_mask : bool, optional
+        Switch for applying the mask for hot pixels. The default is True.
     inc_offset : bool, optional
         Switch for applying offset calibration. The default is True.
     app_calib : bool, optional
@@ -145,12 +152,13 @@ def deltas_save(
         sys.exit()
 
     # Mask the hot/warm pixels
-    path_to_back = os.getcwd()
-    path_to_mask = os.path.realpath(__file__) + "/../.." + "/params/masks"
-    os.chdir(path_to_mask)
-    file_mask = glob.glob("*{}*".format(db_num))[0]
-    mask = np.genfromtxt(file_mask).astype(int)
-    os.chdir(path_to_back)
+    if app_mask is True:
+        path_to_back = os.getcwd()
+        path_to_mask = os.path.realpath(__file__) + "/../.." + "/params/masks"
+        os.chdir(path_to_mask)
+        file_mask = glob.glob("*{}_{}*".format(db_num, mb_num))[0]
+        mask = np.genfromtxt(file_mask).astype(int)
+        os.chdir(path_to_back)
 
     # Check if 'pixels' is one or two peaks, swap their positions if
     # needed
@@ -186,7 +194,7 @@ def deltas_save(
             for w in pixels_right:
                 if w <= q:
                     continue
-                if q in mask or w in mask:
+                if app_mask is True and (q in mask or w in mask):
                     continue
                 deltas_all["{},{}".format(q, w)] = []
                 # find end of cycles
@@ -264,6 +272,251 @@ def deltas_save(
         print("File wasn't generated. Check input parameters.")
 
 
+def delta_save_double(
+    path,
+    pixels: list,
+    rewrite: bool,
+    db_num: str,
+    mb_num1: str,
+    mb_num2: str,
+    fw_ver: str,
+    timestamps: int = 512,
+    delta_window: float = 50e3,
+    app_mask: bool = True,
+    inc_offset: bool = True,
+    app_calib: bool = True,
+):
+    """Calculate and save timestamp differences into '.csv' file.
+
+    Unpacks data into a dictionary, calculates timestamp differences for
+    the requested pixels and saves them into a '.csv' table. Works with
+    firmware version 2212. Analyzes data from both sensor halves/both
+    FPGAs, hence the two input parameters for LinoSPAD2 motherboards.
+
+    Parameters
+    ----------
+    path : str
+        Path to where two folders with data from both motherboards
+        are. The folders should be named after the motherboards.
+    pixels : list
+        List of two pixels, one from each sensor half.
+    rewrite : bool
+        Switch for rewriting the '.csv' file if it already exists.
+    db_num : str
+        LinoSPAD2 daughterboard number.
+    mb_num : str
+        First LinoSPAD2 motherboard (FPGA) number.
+    mb_num2 : str
+        Second LinoSPAD2 motherboard (FPGA) number.
+    fw_ver: str
+        LinoSPAD2 firmware version. Versions "2212s" (skip) and "2212b"
+        (block) are recognized.
+    timestamps : int, optional
+        Number of timestamps per acquisition cycle per pixel. The default
+        is 512.
+    delta_window : float, optional
+        Size of a window to which timestamp differences are compared.
+        Differences in that window are saved. The default is 50e3 (50 ns).
+    app_mask : bool, optional
+        Switch for applying the mask for hot pixels. The default is True.
+    inc_offset : bool, optional
+        Switch for applying offset calibration. The default is True.
+    app_calib : bool, optional
+        Switch for applying TDC and offset calibration. If set to 'True'
+        while inc_offset is set to 'False', only the TDC calibration is
+        applied. The default is True.
+
+    Raises
+    ------
+    FileNotFoundError
+        Raised if data from the first LinoSPAD2 motherboard were not
+        found.
+    FileNotFoundError
+        Raised if data from the second LinoSPAD2 motherboard were not
+        found.
+    """
+    os.chdir(path)
+
+    try:
+        os.chdir("{}".format(mb_num1))
+    except FileNotFoundError:
+        raise FileNotFoundError("Data from {} not found".format(mb_num1))
+    files_all1 = glob.glob("*.dat*")
+    out_file_name = files_all1[0][:-4]
+    os.chdir("..")
+    try:
+        os.chdir("{}".format(mb_num2))
+    except FileNotFoundError:
+        raise FileNotFoundError("Data from {} not found".format(mb_num2))
+    files_all2 = glob.glob("*.dat*")
+    out_file_name = out_file_name + "-" + files_all2[-1][:-4]
+    os.chdir("..")
+
+    if fw_ver == "2212s":
+        # for transforming pixel number into TDC number + pixel
+        # coordinates in that TDC
+        pix_coor = np.arange(256).reshape(4, 64).T
+    elif fw_ver == "2212b":
+        pix_coor = np.arange(256).reshape(64, 4)
+    else:
+        print("\nFirmware version is not recognized.")
+        sys.exit()
+
+        # check if plot exists and if it should be rewrited
+    try:
+        os.chdir("results/delta_t")
+        if os.path.isfile(
+            "{name}_delta_t_grid.png".format(name=out_file_name)
+        ):
+            if rewrite is True:
+                print(
+                    "\n! ! ! Plot of timestamp differences already "
+                    "exists and will be rewritten ! ! !\n"
+                )
+            else:
+                sys.exit(
+                    "\nPlot already exists, 'rewrite' set to 'False', exiting."
+                )
+        os.chdir("../..")
+    except FileNotFoundError:
+        pass
+
+    # # Mask the hot/warm pixels
+    # if app_mask is True:
+    #     path_to_back = os.getcwd()
+    #     path_to_mask = os.path.realpath(__file__) + "/../.." + "/params/masks"
+    #     os.chdir(path_to_mask)
+    #     file_mask1 = glob.glob("*{}_{}*".format(db_num, mb_num1))[0]
+    #     mask1 = np.genfromtxt(file_mask1).astype(int)
+    #     file_mask2 = glob.glob("*{}_{}*".format(db_num, mb_num2))[0]
+    #     mask2 = np.genfromtxt(file_mask2).astype(int)
+    #     os.chdir(path_to_back)
+
+    for i in tqdm(range(ceil(len(files_all1))), desc="Collecting data"):
+        deltas_all = {}
+        # First board
+        os.chdir("{}".format(mb_num1))
+        file = files_all1[i]
+        data_all1 = f_up.unpack_bin(
+            file, db_num, mb_num1, fw_ver, timestamps, inc_offset, app_calib
+        )
+        cycle_ends1 = np.where(data_all1[0].T[1] == -2)[0]
+        cyc1 = np.argmin(
+            np.abs(cycle_ends1 - np.where(data_all1[:].T[1] > 0)[0].min())
+        )
+        if cycle_ends1[cyc1] > np.where(data_all1[:].T[1] > 0)[0].min():
+            cycle_start1 = cycle_ends1[cyc1 - 1]
+        else:
+            cycle_start1 = cycle_ends1[cyc1]
+
+        os.chdir("..")
+
+        # Second board
+        os.chdir("{}".format(mb_num2))
+        file = files_all2[i]
+        data_all2 = f_up.unpack_bin(
+            file, db_num, mb_num2, fw_ver, timestamps, inc_offset, app_calib
+        )
+        cycle_ends2 = np.where(data_all2[0].T[1] == -2)[0]
+        cyc2 = np.argmin(
+            np.abs(cycle_ends2 - np.where(data_all2[:].T[1] > 0)[0].min())
+        )
+        if cycle_ends2[cyc2] > np.where(data_all2[:].T[1] > 0)[0].min():
+            cycle_start2 = cycle_ends2[cyc2 - 1]
+        else:
+            cycle_start2 = cycle_ends2[cyc2]
+
+        os.chdir("..")
+
+        deltas_all["{},{}".format(pixels[0], pixels[1])] = []
+        tdc1, pix_c1 = np.argwhere(pix_coor == pixels[0])[0]
+        pix1 = np.where(data_all1[tdc1].T[0] == pix_c1)[0]
+        tdc2, pix_c2 = np.argwhere(pix_coor == pixels[1])[0]
+        pix2 = np.where(data_all2[tdc2].T[0] == pix_c2)[0]
+
+        if cycle_start1 > cycle_start2:
+            cyc = len(data_all1[0].T[1]) - cycle_start1 + cycle_start2
+            cycle_ends1 = cycle_ends1[cycle_ends1 > cycle_start1]
+            cycle_ends2 = np.intersect1d(
+                cycle_ends2[cycle_ends2 > cycle_start2],
+                cycle_ends2[cycle_ends2 < cyc],
+            )
+        else:
+            cyc = len(data_all1[0].T[1]) - cycle_start2 + cycle_start1
+            cycle_ends2 = cycle_ends2[cycle_ends2 > cycle_start2]
+            cycle_ends1 = np.intersect1d(
+                cycle_ends1[cycle_ends1 > cycle_start1],
+                cycle_ends1[cycle_ends1 < cyc],
+            )
+        # get timestamp for both pixels in the given cycle
+        for cyc in range(len(cycle_ends1) - 1):
+            pix1_ = pix1[
+                np.logical_and(
+                    pix1 > cycle_ends1[cyc], pix1 < cycle_ends1[cyc + 1]
+                )
+            ]
+            if not np.any(pix1_):
+                continue
+            pix2_ = pix2[
+                np.logical_and(
+                    pix2 > cycle_ends2[cyc], pix2 < cycle_ends2[cyc + 1]
+                )
+            ]
+
+            if not np.any(pix2_):
+                continue
+            # calculate delta t
+            tmsp1 = data_all1[tdc1].T[1][
+                pix1_[np.where(data_all1[tdc1].T[1][pix1_] > 0)[0]]
+            ]
+            tmsp2 = data_all2[tdc2].T[1][
+                pix2_[np.where(data_all2[tdc2].T[1][pix2_] > 0)[0]]
+            ]
+            for t1 in tmsp1:
+                deltas = tmsp2 - t1
+                ind = np.where(np.abs(deltas) < delta_window)[0]
+                deltas_all["{},{}".format(pixels[0], pixels[1])].extend(
+                    deltas[ind]
+                )
+        # Save data as a .csv file in a cycle so data is not lost
+        # in the case of failure close to the end
+        data_for_plot_df = pd.DataFrame.from_dict(deltas_all, orient="index")
+        del deltas_all
+        data_for_plot_df = data_for_plot_df.T
+        try:
+            os.chdir("delta_ts_data")
+        except FileNotFoundError:
+            os.mkdir("delta_ts_data")
+            os.chdir("delta_ts_data")
+        csv_file = glob.glob("*{}.csv*".format(out_file_name))
+        if csv_file != []:
+            data_for_plot_df.to_csv(
+                "{}.csv".format(out_file_name),
+                mode="a",
+                index=False,
+                header=False,
+            )
+        else:
+            data_for_plot_df.to_csv(
+                "{}.csv".format(out_file_name), index=False
+            )
+        os.chdir("..")
+
+    if (
+        os.path.isfile(path + "/delta_ts_data/{}.csv".format(out_file_name))
+        is True
+    ):
+        print(
+            "\n> > > Timestamp differences are saved as {file}.csv in "
+            "{path} < < <".format(
+                file=out_file_name,
+                path=path + "\delta_ts_data",
+            )
+        )
+    else:
+        print("File wasn't generated. Check input parameters.")
+
+
 def delta_cp(
     path,
     pixels,
@@ -273,6 +526,7 @@ def delta_cp(
     step: int = 1,
     same_y: bool = False,
     color: str = "salmon",
+    synchro: bool = False,
 ):
     """Collect and plot timestamp differences from a '.csv' file.
 
@@ -319,9 +573,18 @@ def delta_cp(
         raise TypeError("'rewrite' should be boolean")
     plt.ioff()
     os.chdir(path)
-
-    files_all = glob.glob("*.dat*")
-    csv_file_name = files_all[0][:-4] + "-" + files_all[-1][:-4]
+    if synchro is False:
+        files_all = glob.glob("*.dat*")
+        csv_file_name = files_all[0][:-4] + "-" + files_all[-1][:-4]
+    else:
+        folders = glob.glob("*#*")
+        os.chdir(folders[0])
+        files_all = glob.glob("*.dat*")
+        csv_file_name = files_all[0][:-4] + "-"
+        os.chdir("../{}".format(folders[1]))
+        files_all = glob.glob("*.dat*")
+        csv_file_name += files_all[-1][:-4]
+        os.chdir("..")
 
     # check if plot exists and if it should be rewrited
     try:
@@ -424,7 +687,7 @@ def delta_cp(
                 win = int(1000 / ((range_right - range_left) / 100))
                 peak_max = np.sum(n[peak_max_pos - win : peak_max_pos + win])
             except ValueError:
-                peak_max = None
+                peak_max = 0
 
             if same_y is True:
                 try:
@@ -448,9 +711,16 @@ def delta_cp(
                 )
             else:
                 plt.xlim(range_left - 100, range_right + 100)
-                plt.title(
-                    "Pixels {p1},{p2}".format(p1=pixels[q], p2=pixels[w])
-                )
+                if synchro is False:
+                    plt.title(
+                        "Pixels {p1},{p2}".format(p1=pixels[q], p2=pixels[w])
+                    )
+                else:
+                    plt.title(
+                        "Pixels {p1},{p2}".format(
+                            p1=pixels[0], p2=256 + 256 - pixels[1]
+                        )
+                    )
 
             try:
                 os.chdir("results/delta_t")

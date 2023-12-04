@@ -25,6 +25,7 @@ def fit_wg(
     step: int = 1,
     color_d: str = "salmon",
     color_f: str = "teal",
+    title_on: bool = True,
 ):
     """Fit with Gaussian function and plot it.
 
@@ -45,6 +46,13 @@ def fit_wg(
     step : int, optional
         Bins of delta t histogram should be in units of 17.857 (average
         LinoSPAD2 TDC bin width). Default is 1.
+    color_d : str, optional
+        For changing the color of the data. The default is "salmon".
+    color_f : str, optional
+        For changing the color of the fit. The default is "teal".
+    title_on : bool, optional
+        Switch for turning on/off the title of the plot, the title
+        shows the pixels for which the fit is done. The default is True.
 
     Raises
     ------
@@ -95,8 +103,7 @@ def fit_wg(
 
     data_to_plot = data_to_plot.dropna()
     data_to_plot = np.array(data_to_plot)
-    # Use window of 40 ns for calculating histogram data
-    data_to_plot = np.delete(data_to_plot, np.argwhere(data_to_plot < -window))
+    # Use te given window for trimming the data for fitting    data_to_plot = np.delete(data_to_plot, np.argwhere(data_to_plot < -window))
     data_to_plot = np.delete(data_to_plot, np.argwhere(data_to_plot > window))
 
     os.chdir("..")
@@ -184,6 +191,12 @@ def fit_wg(
         ),
     )
     plt.legend(loc="best")
+    if title_on is True:
+        plt.title(
+            "Gaussian fit of delta t histogram, pixels {}, {}".format(
+                pix_pair[0], pix_pair[1]
+            )
+        )
 
     try:
         os.chdir("results/fits")

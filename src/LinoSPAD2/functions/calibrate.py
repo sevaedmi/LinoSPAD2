@@ -42,9 +42,15 @@ def calib_TDC_save(
 
     Parameters
     ----------
-    #TODO
     path : str
         Path to the data file.
+    db_num : str
+        LinoSPAD2 daughterboard number.
+    mb_num : str
+        LinoSPAD2 motherboard number.
+    fw_ver : str
+        LinoSPAD2 firmware version. Versions "2208", "2212s" (skip), and
+        "2212b" (block) are recognized.
     timestamps : int, optional
         Number of timestamps per acquisition cycle per pixel. The
         default is 512.
@@ -60,7 +66,7 @@ def calib_TDC_save(
     if isinstance(mb_num, str) is not True:
         raise TypeError("'mb_num' should be string")
     if isinstance(fw_ver, str) is not True:
-        raise TypeError("'fw_ver' should be string, '2208' or '2212b'")
+        raise TypeError("'fw_ver' should be string, '2208', '2212b' or '2212s")
 
     os.chdir(path)
     filename = glob.glob("*.dat*")[0]
@@ -98,7 +104,7 @@ def calib_TDC_save(
             )
         )
 
-    elif fw_ver == "2212b":
+    elif fw_ver == "2212b" or fw_ver == "2212s":
         # read data by 32 bit words
         rawFile = np.fromfile(filename, dtype=np.uint32)
         # lowest 28 bits are the timestamp; convert to ps
@@ -133,7 +139,10 @@ def calib_TDC_save(
         cal_mat = np.zeros((256, 140))
         bins = np.arange(0, 141, 1)
 
-        pix_coor = np.arange(256).reshape(64, 4)
+        if fw_ver == "2212b":
+            pix_coor = np.arange(256).reshape(64, 4)
+        else:
+            pix_coor = np.arange(256).reshape(4, 64).T
 
         for i in range(256):
             # transform pixel number to TDC number and pixel coordinates in
