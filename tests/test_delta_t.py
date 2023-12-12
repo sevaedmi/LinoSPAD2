@@ -1,10 +1,14 @@
-import unittest
-import numpy as np
 import os
 import shutil
+import unittest
 
-from LinoSPAD2.functions.delta_t import deltas_save, delta_cp
-from LinoSPAD2.functions.fits import fit_wg
+import numpy as np
+
+from LinoSPAD2.functions.delta_t import (
+    calculate_and_save_timestamp_differences,
+    collect_and_plot_timestamp_differences,
+)
+from LinoSPAD2.functions.fits import fit_with_gaussian
 
 
 class TestDeltasFull(unittest.TestCase):
@@ -15,34 +19,40 @@ class TestDeltasFull(unittest.TestCase):
             [x for x in range(66, 70)],
             [x for x in range(170, 178)],
         ]
-        self.db_num = "NL11"
-        self.mb_num = "#33"
-        self.fw_ver = "2212b"
+        self.daughterboard_number = "NL11"
+        self.motherboard_number = "#33"
+        self.firmware_version = "2212b"
         self.timestamps = 300
         self.delta_window = 20e3
         self.rewrite = True
         self.range_left = -20e3
         self.range_right = 20e3
         self.same_y = False
+        self.app_mask = True
+        self.include_offset = False
 
     def test_a_deltas_save_positive(self):
         # Test positive case for deltas_save function
         work_dir = r"{}".format(os.path.realpath(__file__) + "../../..")
         os.chdir(work_dir)
-        deltas_save(
+        calculate_and_save_timestamp_differences(
             self.path,
             self.pixels,
             self.rewrite,
-            self.db_num,
-            self.mb_num,
-            self.fw_ver,
+            self.daughterboard_number,
+            self.motherboard_number,
+            self.firmware_version,
             self.timestamps,
             self.delta_window,
+            self.app_mask,
+            self.include_offset,
         )
 
         # Check if the csv file is created
         self.assertTrue(
-            os.path.isfile("delta_ts_data/test_data_2212b-test_data_2212b.csv")
+            os.path.isfile(
+                "delta_ts_data/test_data_2212b-test_data_2212b.feather"
+            )
         )
 
     # Negative test case
@@ -52,13 +62,13 @@ class TestDeltasFull(unittest.TestCase):
         os.chdir(work_dir)
         # Test negative case for deltas_save function
         with self.assertRaises(TypeError):
-            deltas_save(
+            calculate_and_save_timestamp_differences(
                 self.path,
                 self.pixels,
                 "2212",
-                self.db_num,
-                self.mb_num,
-                self.fw_ver,
+                self.daughterboard_number,
+                self.motherboard_number,
+                self.firmware_version,
                 self.timestamps,
                 self.delta_window,
             )
@@ -67,7 +77,7 @@ class TestDeltasFull(unittest.TestCase):
         # Test case for delta_cp function
         # Positive test case
         os.chdir(r"{}".format(os.path.realpath(__file__) + "/../.."))
-        delta_cp(
+        collect_and_plot_timestamp_differences(
             path=self.path,
             pixels=[x for x in range(67, 69)] + [x for x in range(173, 175)],
             rewrite=self.rewrite,
@@ -92,7 +102,7 @@ class TestDeltasFull(unittest.TestCase):
         step = 5
 
         # Call the function
-        fit_wg(self.path, pix_pair, window, step)
+        fit_with_gaussian(self.path, pix_pair, window, step)
 
         # Assert that the function runs without raising any exceptions
         self.assertTrue(

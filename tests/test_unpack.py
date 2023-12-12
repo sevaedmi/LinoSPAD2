@@ -1,9 +1,9 @@
-import unittest
 import os
+import unittest
 
 import numpy as np
 
-from LinoSPAD2.functions.unpack import unpack_bin
+from LinoSPAD2.functions.unpack import unpack_binary_data
 
 
 class TestUnpackBin(unittest.TestCase):
@@ -12,14 +12,19 @@ class TestUnpackBin(unittest.TestCase):
         work_dir = r"{}".format(os.path.realpath(__file__) + "../../..")
         os.chdir(work_dir)
         file = r"tests/test_data/test_data_2212b.dat"
-        db_num = "NL11"
-        mb_num = "#33"
+        daughterboard_number = "NL11"
+        motherboard_number = "#33"
         timestamps = 300
-        fw_ver = "2212b"
-        inc_offset = False
+        firmware_version = "2212b"
+        include_offset = False
 
-        data_all = unpack_bin(
-            file, db_num, mb_num, fw_ver, timestamps, inc_offset
+        data_all = unpack_binary_data(
+            file,
+            daughterboard_number,
+            motherboard_number,
+            firmware_version,
+            timestamps,
+            include_offset,
         )
 
         # Assert the shape of the output data

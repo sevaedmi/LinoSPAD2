@@ -6,16 +6,17 @@ LinoSPAD2 binary data output.
 This file can also be imported as a module and contains the following
 functions:
 
-    * deltas_save - unpacks the binary data, calculates timestamp
-    differences and saves into a '.csv' file. Works with firmware versions
-    '2208' and '2212b'.
+    * calculate_and_save_timestamp_differences - unpacks the binary data,
+    calculates timestamp differences and saves into a '.csv' file. Works
+    with firmware versions '2208' and '2212b'.
     
-    * deltas_save_double - unpacks the binary data, calculates timestamp
-    differences and saves into a '.csv' file. Works with firmware versions
-    '2208' and '2212b'. Analyzes data from both sensor halves/both FPGAs.
+    * calculate_and_save_timestamp_differences_full_sensor - unpacks the
+    binary data, calculates timestamp differences and saves into a '.csv'
+    file. Works with firmware versions '2208' and '2212b'. Analyzes data
+    from both sensor halves/both FPGAs.
 
-    * delta_cp - collect timestamps from a '.csv' file and plot them in
-    a grid.
+    * collect_and_plot_timestamp_differences - collect timestamps from a
+    '.csv' file and plot them in a grid.
 """
 import glob
 import os
@@ -25,29 +26,31 @@ from math import ceil
 
 import numpy as np
 import pandas as pd
+import pyarrow.feather as feather
 from matplotlib import pyplot as plt
 from tqdm import tqdm
 
 from LinoSPAD2.functions import unpack as f_up
+from LinoSPAD2.functions import utils
 
 
-def deltas_save(
-    path,
+def calculate_and_save_timestamp_differences(
+    path: str,
     pixels: list,
     rewrite: bool,
-    db_num: str,
-    mb_num: str,
-    fw_ver: str,
+    daughterboard_number: str,
+    motherboard_number: str,
+    firmware_version: str,
     timestamps: int = 512,
     delta_window: float = 50e3,
     app_mask: bool = True,
-    inc_offset: bool = True,
-    app_calib: bool = True,
+    include_offset: bool = True,
+    apply_calibration: bool = True,
 ):
     """Calculate and save timestamp differences into '.csv' file.
 
     Unpacks data into a dictionary, calculates timestamp differences for
-    the requested pixels and saves them into a '.csv' table. Works with
+    the requested pixels, and saves them into a '.csv' table. Works with
     firmware version 2212.
 
     Parameters
@@ -60,11 +63,11 @@ def deltas_save(
         for peak vs. peak calculations.
     rewrite : bool
         Switch for rewriting the '.csv' file if it already exists.
-    db_num : str
+    daughterboard_number : str
         LinoSPAD2 daughterboard number.
-    mb_num : str
+    motherboard_number : str
         LinoSPAD2 motherboard (FPGA) number.
-    fw_ver: str
+    firmware_version: str
         LinoSPAD2 firmware version. Versions "2212s" (skip) and "2212b"
         (block) are recognized.
     timestamps : int, optional
@@ -73,22 +76,22 @@ def deltas_save(
     delta_window : float, optional
         Size of a window to which timestamp differences are compared.
         Differences in that window are saved. The default is 50e3 (50 ns).
-    app_mask : bool, optional
+    apply_mask : bool, optional
         Switch for applying the mask for hot pixels. The default is True.
-    inc_offset : bool, optional
+    apply_offset_calibration : bool, optional
         Switch for applying offset calibration. The default is True.
-    app_calib : bool, optional
+    apply_tdc_and_offset_calibration : bool, optional
         Switch for applying TDC and offset calibration. If set to 'True'
-        while inc_offset is set to 'False', only the TDC calibration is
-        applied. The default is True.
+        while apply_offset_calibration is set to 'False', only the TDC
+        calibration is applied. The default is True.
 
     Raises
     ------
     TypeError
-        Only boolean values of 'rewrite' and string values of 'db_num',
-        'mb_num', and 'fw_ver' are accepted. The first error is raised
-        so that the plot does not accidentally get rewritten in the
-        case no clear input was given.
+        Only boolean values of 'rewrite' and string values of
+        'daughterboard_number', 'motherboard_number', and 'firmware_version'
+        are accepted. The first error is raised so that the plot does not
+        accidentally get rewritten in the case no clear input was given.
 
     Returns
     -------
@@ -99,12 +102,16 @@ def deltas_save(
         raise TypeError(
             "'pixels' should be a list of integers or a list of two lists"
         )
-    if isinstance(fw_ver, str) is False:
-        raise TypeError("'fw_ver' should be string, '2212b' or '2208'")
+    if isinstance(firmware_version, str) is False:
+        raise TypeError(
+            "'firmware_version' should be string, '2212b' or '2208'"
+        )
     if isinstance(rewrite, bool) is False:
         raise TypeError("'rewrite' should be boolean")
-    if isinstance(db_num, str) is False:
-        raise TypeError("'db_num' should be string, either 'NL11' or 'A5'")
+    if isinstance(daughterboard_number, str) is False:
+        raise TypeError(
+            "'daughterboard_number' should be string, either 'NL11' or 'A5'"
+        )
 
     os.chdir(path)
 
@@ -112,13 +119,16 @@ def deltas_save(
 
     out_file_name = files_all[0][:-4] + "-" + files_all[-1][:-4]
 
-    # check if csv file exists and if it should be rewrited
+    # check if the feather file exists and if it should be rewrited
+
+    feather_file = f"{out_file_name}.feather"
+
     try:
         os.chdir("delta_ts_data")
-        if os.path.isfile("{name}.csv".format(name=out_file_name)):
+        if os.path.isfile(feather_file):
             if rewrite is True:
                 print(
-                    "\n! ! ! csv file with timestamps differences already "
+                    "\n! ! ! Feather file with timestamps differences already "
                     "exists and will be rewritten ! ! !\n"
                 )
                 for i in range(5):
@@ -126,10 +136,10 @@ def deltas_save(
                         "\n! ! ! Deleting the file in {} ! ! !\n".format(5 - i)
                     )
                     time.sleep(1)
-                os.remove("{}.csv".format(out_file_name))
+                os.remove(feather_file)
             else:
                 sys.exit(
-                    "\n csv file already exists, 'rewrite' set to"
+                    "\n Feather file already exists, 'rewrite' set to"
                     "'False', exiting."
                 )
         os.chdir("..")
@@ -141,11 +151,11 @@ def deltas_save(
         "\n> > > Collecting data for delta t plot for the requested "
         "pixels and saving it to .csv in a cycle < < <\n"
     )
-    if fw_ver == "2212s":
+    if firmware_version == "2212s":
         # for transforming pixel number into TDC number + pixel
         # coordinates in that TDC
         pix_coor = np.arange(256).reshape(4, 64).T
-    elif fw_ver == "2212b":
+    elif firmware_version == "2212b":
         pix_coor = np.arange(256).reshape(64, 4)
     else:
         print("\nFirmware version is not recognized.")
@@ -153,12 +163,7 @@ def deltas_save(
 
     # Mask the hot/warm pixels
     if app_mask is True:
-        path_to_back = os.getcwd()
-        path_to_mask = os.path.realpath(__file__) + "/../.." + "/params/masks"
-        os.chdir(path_to_mask)
-        file_mask = glob.glob("*{}_{}*".format(db_num, mb_num))[0]
-        mask = np.genfromtxt(file_mask).astype(int)
-        os.chdir(path_to_back)
+        mask = utils.apply_mask(daughterboard_number, motherboard_number)
 
     # Check if 'pixels' is one or two peaks, swap their positions if
     # needed
@@ -183,8 +188,14 @@ def deltas_save(
         deltas_all = {}
 
         # Unpack data for the requested pixels into dictionary
-        data_all = f_up.unpack_bin(
-            file, db_num, mb_num, fw_ver, timestamps, inc_offset, app_calib
+        data_all = f_up.unpack_binary_data(
+            file,
+            daughterboard_number,
+            motherboard_number,
+            firmware_version,
+            timestamps,
+            include_offset,
+            apply_calibration,
         )
 
         # Calculate and collect timestamp differences
@@ -243,48 +254,67 @@ def deltas_save(
         except FileNotFoundError:
             os.mkdir("delta_ts_data")
             os.chdir("delta_ts_data")
-        csv_file = glob.glob("*{}.csv*".format(out_file_name))
-        if csv_file != []:
-            data_for_plot_df.to_csv(
-                "{}.csv".format(out_file_name),
-                mode="a",
-                index=False,
-                header=False,
+
+        # Version for saving to a csv, left for debugging purposes
+        # csv_file = glob.glob("*{}.csv*".format(out_file_name))
+        # if csv_file != []:
+        #     data_for_plot_df.to_csv(
+        #         "{}.csv".format(out_file_name),
+        #         mode="a",
+        #         index=False,
+        #         header=False,
+        #     )
+        # else:
+        #     data_for_plot_df.to_csv(
+        #         "{}.csv".format(out_file_name), index=False
+        #     )
+
+        # Check if feather file exists
+        feather_file = f"{out_file_name}.feather"
+        if os.path.isfile(feather_file):
+            # Load existing feather file
+            existing_data = feather.read_feather(feather_file)
+
+            # Append new data to the existing feather file
+            combined_data = pd.concat(
+                [existing_data, data_for_plot_df], axis=0
             )
+            feather.write_feather(combined_data, feather_file)
+
         else:
-            data_for_plot_df.to_csv(
-                "{}.csv".format(out_file_name), index=False
-            )
+            # Save as a new feather file
+            feather.write_feather(data_for_plot_df, feather_file)
         os.chdir("..")
 
-    if (
-        os.path.isfile(path + "/delta_ts_data/{}.csv".format(out_file_name))
-        is True
-    ):
-        print(
-            "\n> > > Timestamp differences are saved as {file}.csv in "
-            "{path} < < <".format(
-                file=out_file_name,
-                path=path + "\delta_ts_data",
-            )
-        )
-    else:
-        print("File wasn't generated. Check input parameters.")
+    # TODO
+    # if (
+    #     os.path.isfile(path + "/delta_ts_data/{}.csv".format(out_file_name))
+    #     is True
+    # ):
+    #     print(
+    #         "\n> > > Timestamp differences are saved as {file}.csv in "
+    #         "{path} < < <".format(
+    #             file=out_file_name,
+    #             path=path + "\delta_ts_data",
+    #         )
+    #     )
+    # else:
+    #     print("File wasn't generated. Check input parameters.")
 
 
-def delta_save_double(
+def calculate_and_save_timestamp_differences_full_sensor(
     path,
     pixels: list,
     rewrite: bool,
-    db_num: str,
+    daughterboard_number: str,
     mb_num1: str,
     mb_num2: str,
-    fw_ver: str,
+    firmware_version: str,
     timestamps: int = 512,
     delta_window: float = 50e3,
     app_mask: bool = True,
-    inc_offset: bool = True,
-    app_calib: bool = True,
+    include_offset: bool = True,
+    apply_calibration: bool = True,
 ):
     """Calculate and save timestamp differences into '.csv' file.
 
@@ -302,13 +332,13 @@ def delta_save_double(
         List of two pixels, one from each sensor half.
     rewrite : bool
         Switch for rewriting the '.csv' file if it already exists.
-    db_num : str
+    daughterboard_number : str
         LinoSPAD2 daughterboard number.
-    mb_num : str
+    motherboard_number : str
         First LinoSPAD2 motherboard (FPGA) number.
     mb_num2 : str
         Second LinoSPAD2 motherboard (FPGA) number.
-    fw_ver: str
+    firmware_version: str
         LinoSPAD2 firmware version. Versions "2212s" (skip) and "2212b"
         (block) are recognized.
     timestamps : int, optional
@@ -319,11 +349,11 @@ def delta_save_double(
         Differences in that window are saved. The default is 50e3 (50 ns).
     app_mask : bool, optional
         Switch for applying the mask for hot pixels. The default is True.
-    inc_offset : bool, optional
+    include_offset : bool, optional
         Switch for applying offset calibration. The default is True.
-    app_calib : bool, optional
+    apply_calibration : bool, optional
         Switch for applying TDC and offset calibration. If set to 'True'
-        while inc_offset is set to 'False', only the TDC calibration is
+        while include_offset is set to 'False', only the TDC calibration is
         applied. The default is True.
 
     Raises
@@ -352,11 +382,11 @@ def delta_save_double(
     out_file_name = out_file_name + "-" + files_all2[-1][:-4]
     os.chdir("..")
 
-    if fw_ver == "2212s":
+    if firmware_version == "2212s":
         # for transforming pixel number into TDC number + pixel
         # coordinates in that TDC
         pix_coor = np.arange(256).reshape(4, 64).T
-    elif fw_ver == "2212b":
+    elif firmware_version == "2212b":
         pix_coor = np.arange(256).reshape(64, 4)
     else:
         print("\nFirmware version is not recognized.")
@@ -386,9 +416,9 @@ def delta_save_double(
     #     path_to_back = os.getcwd()
     #     path_to_mask = os.path.realpath(__file__) + "/../.." + "/params/masks"
     #     os.chdir(path_to_mask)
-    #     file_mask1 = glob.glob("*{}_{}*".format(db_num, mb_num1))[0]
+    #     file_mask1 = glob.glob("*{}_{}*".format(daughterboard_number, mb_num1))[0]
     #     mask1 = np.genfromtxt(file_mask1).astype(int)
-    #     file_mask2 = glob.glob("*{}_{}*".format(db_num, mb_num2))[0]
+    #     file_mask2 = glob.glob("*{}_{}*".format(daughterboard_number, mb_num2))[0]
     #     mask2 = np.genfromtxt(file_mask2).astype(int)
     #     os.chdir(path_to_back)
 
@@ -398,7 +428,13 @@ def delta_save_double(
         os.chdir("{}".format(mb_num1))
         file = files_all1[i]
         data_all1 = f_up.unpack_bin(
-            file, db_num, mb_num1, fw_ver, timestamps, inc_offset, app_calib
+            file,
+            daughterboard_number,
+            mb_num1,
+            firmware_version,
+            timestamps,
+            include_offset,
+            apply_calibration,
         )
         cycle_ends1 = np.where(data_all1[0].T[1] == -2)[0]
         cyc1 = np.argmin(
@@ -415,7 +451,13 @@ def delta_save_double(
         os.chdir("{}".format(mb_num2))
         file = files_all2[i]
         data_all2 = f_up.unpack_bin(
-            file, db_num, mb_num2, fw_ver, timestamps, inc_offset, app_calib
+            file,
+            daughterboard_number,
+            mb_num2,
+            firmware_version,
+            timestamps,
+            include_offset,
+            apply_calibration,
         )
         cycle_ends2 = np.where(data_all2[0].T[1] == -2)[0]
         cyc2 = np.argmin(
@@ -517,7 +559,228 @@ def delta_save_double(
         print("File wasn't generated. Check input parameters.")
 
 
-def delta_cp(
+# def collect_and_plot_timestamp_differences(
+#     path,
+#     pixels,
+#     rewrite: bool,
+#     range_left: int = -10e3,
+#     range_right: int = 10e3,
+#     step: int = 1,
+#     same_y: bool = False,
+#     color: str = "salmon",
+#     synchro: bool = False,
+# ):
+#     """Collect and plot timestamp differences from a '.csv' file.
+
+#     Plots timestamp differences from a '.csv' file as a grid of histograms
+#     and as a single plot. The plot is saved in the 'results/delta_t' folder,
+#     which is created (if it does not already exist) in the same folder
+#     where data are.
+
+#     Parameters
+#     ----------
+#     path : str
+#         Path to data files.
+#     pixels : list
+#         List of pixel numbers for which the timestamp differences
+#         should be plotted.
+#     rewrite : bool
+#         Switch for rewriting the plot if it already exists.
+#     range_left : int, optional
+#         Lower limit for timestamp differences, lower values are not used.
+#         The default is -10e3.
+#     range_right : int, optional
+#         Upper limit for timestamp differences, higher values are not used.
+#         The default is 10e3.
+#     step : int, optional
+#         Histogram binning multiplier. The default is 1.
+#     same_y : bool, optional
+#         Switch for plotting the histograms with the same y-axis.
+#         The default is False.
+#     color : str, optional
+#         Color for the plot. The default is 'salmon'.
+
+#     Raises
+#     ------
+#     TypeError
+#         Only boolean values of 'rewrite' are accepted. The error is
+#         raised so that the plot does not accidentally get rewritten.
+
+#     Returns
+#     -------
+#     None.
+#     """
+#     # parameter type check
+#     if isinstance(rewrite, bool) is not True:
+#         raise TypeError("'rewrite' should be boolean")
+#     plt.ioff()
+#     os.chdir(path)
+#     if synchro is False:
+#         files_all = glob.glob("*.dat*")
+#         csv_file_name = files_all[0][:-4] + "-" + files_all[-1][:-4]
+#     else:
+#         folders = glob.glob("*#*")
+#         os.chdir(folders[0])
+#         files_all = glob.glob("*.dat*")
+#         csv_file_name = files_all[0][:-4] + "-"
+#         os.chdir("../{}".format(folders[1]))
+#         files_all = glob.glob("*.dat*")
+#         csv_file_name += files_all[-1][:-4]
+#         os.chdir("..")
+
+#     # check if plot exists and if it should be rewrited
+#     try:
+#         os.chdir("results/delta_t")
+#         if os.path.isfile(
+#             "{name}_delta_t_grid.png".format(name=csv_file_name)
+#         ):
+#             if rewrite is True:
+#                 print(
+#                     "\n! ! ! Plot of timestamp differences already "
+#                     "exists and will be rewritten ! ! !\n"
+#                 )
+#             else:
+#                 sys.exit(
+#                     "\nPlot already exists, 'rewrite' set to 'False', exiting."
+#                 )
+#         os.chdir("../..")
+#     except FileNotFoundError:
+#         pass
+
+#     print(
+#         "\n> > > Plotting timestamps differences as a grid of histograms < < <"
+#     )
+
+#     plt.rcParams.update({"font.size": 22})
+
+#     if len(pixels) > 2:
+#         fig, axs = plt.subplots(
+#             len(pixels) - 1,
+#             len(pixels) - 1,
+#             figsize=(5.5 * len(pixels), 5.5 * len(pixels)),
+#         )
+#         for ax in axs:
+#             for x in ax:
+#                 x.axes.set_axis_off()
+#     else:
+#         fig = plt.figure(figsize=(14, 14))
+
+#     # check if the y limits of all plots should be the same
+#     if same_y is True:
+#         y_max_all = 0
+
+#     for q in tqdm(range(len(pixels)), desc="Row in plot"):
+#         for w in range(len(pixels)):
+#             if w <= q:
+#                 continue
+#             if len(pixels) > 2:
+#                 axs[q][w - 1].axes.set_axis_on()
+#             try:
+#                 # keep only the required column in memory
+#                 data_to_plot = pd.read_csv(
+#                     "delta_ts_data/{}.csv".format(csv_file_name),
+#                     usecols=["{},{}".format(pixels[q], pixels[w])],
+#                 ).dropna()
+#             except ValueError:
+#                 continue
+
+#             # prepare the data for plot
+#             data_to_plot = np.array(data_to_plot)
+#             data_to_plot = np.delete(
+#                 data_to_plot, np.argwhere(data_to_plot < range_left)
+#             )
+#             data_to_plot = np.delete(
+#                 data_to_plot, np.argwhere(data_to_plot > range_right)
+#             )
+
+#             try:
+#                 bins = np.arange(
+#                     np.min(data_to_plot),
+#                     np.max(data_to_plot),
+#                     17.857 * step,
+#                 )
+#             except ValueError:
+#                 print(
+#                     "\nCouldn't calculate bins for {q}-{w} pair: probably not "
+#                     "enough delta ts.".format(q=q, w=w)
+#                 )
+#                 continue
+
+#             if len(pixels) > 2:
+#                 axs[q][w - 1].set_xlabel("\u0394t [ps]")
+#                 axs[q][w - 1].set_ylabel("# of coincidences [-]")
+#                 n, b, p = axs[q][w - 1].hist(
+#                     data_to_plot,
+#                     bins=bins,
+#                     color=color,
+#                 )
+#             else:
+#                 plt.xlabel("\u0394t [ps]")
+#                 plt.ylabel("# of coincidences [-]")
+#                 n, b, p = plt.hist(
+#                     data_to_plot,
+#                     bins=bins,
+#                     color=color,
+#                 )
+
+#             try:
+#                 peak_max_pos = np.argmax(n).astype(np.intc)
+#                 # 2 ns window around peak
+#                 win = int(1000 / ((range_right - range_left) / 100))
+#                 peak_max = np.sum(n[peak_max_pos - win : peak_max_pos + win])
+#             except ValueError:
+#                 peak_max = 0
+
+#             if same_y is True:
+#                 try:
+#                     y_max = np.max(n)
+#                 except ValueError:
+#                     y_max = 0
+#                     print("\nCould not find maximum y value\n")
+#                 if y_max_all < y_max:
+#                     y_max_all = y_max
+#                 if len(pixels) > 2:
+#                     axs[q][w - 1].set_ylim(0, y_max + 4)
+#                 else:
+#                     plt.ylim(0, y_max + 4)
+
+#             if len(pixels) > 2:
+#                 axs[q][w - 1].set_xlim(range_left - 100, range_right + 100)
+#                 axs[q][w - 1].set_title(
+#                     "Pixels {p1},{p2}\nPeak in 2 ns window: {pp}".format(
+#                         p1=pixels[q], p2=pixels[w], pp=int(peak_max)
+#                     )
+#                 )
+#             else:
+#                 plt.xlim(range_left - 100, range_right + 100)
+#                 if synchro is False:
+#                     plt.title(
+#                         "Pixels {p1},{p2}".format(p1=pixels[q], p2=pixels[w])
+#                     )
+#                 else:
+#                     plt.title(
+#                         "Pixels {p1},{p2}".format(
+#                             p1=pixels[0], p2=256 + 256 - pixels[1]
+#                         )
+#                     )
+
+#             try:
+#                 os.chdir("results/delta_t")
+#             except FileNotFoundError:
+#                 os.makedirs("results/delta_t")
+#                 os.chdir("results/delta_t")
+#             fig.tight_layout()  # for perfect spacing between the plots
+#             plt.savefig("{name}_delta_t_grid.png".format(name=csv_file_name))
+#             os.chdir("../..")
+#     print(
+#         "\n> > > Plot is saved as {file} in {path}< < <".format(
+#             file=csv_file_name + "_delta_t_grid.png",
+#             path=path + "/results/delta_t",
+#         )
+#     )
+
+
+def collect_and_plot_timestamp_differences(
     path,
     pixels,
     rewrite: bool,
@@ -586,7 +849,7 @@ def delta_cp(
         csv_file_name += files_all[-1][:-4]
         os.chdir("..")
 
-    # check if plot exists and if it should be rewrited
+    # Check if plot exists and if it should be rewritten
     try:
         os.chdir("results/delta_t")
         if os.path.isfile(
@@ -594,7 +857,7 @@ def delta_cp(
         ):
             if rewrite is True:
                 print(
-                    "\n! ! ! Plot of timestamp differences already "
+                    "\n! ! ! Plot of timestamp differences already"
                     "exists and will be rewritten ! ! !\n"
                 )
             else:
@@ -623,7 +886,7 @@ def delta_cp(
     else:
         fig = plt.figure(figsize=(14, 14))
 
-    # check if the y limits of all plots should be the same
+    # Check if the y limits of all plots should be the same
     if same_y is True:
         y_max_all = 0
 
@@ -633,16 +896,19 @@ def delta_cp(
                 continue
             if len(pixels) > 2:
                 axs[q][w - 1].axes.set_axis_on()
+
+            print(os.getcwd())
+
+            # Read data from Feather file
             try:
-                # keep only the required column in memory
-                data_to_plot = pd.read_csv(
-                    "delta_ts_data/{}.csv".format(csv_file_name),
-                    usecols=["{},{}".format(pixels[q], pixels[w])],
+                data_to_plot = feather.read_feather(
+                    "delta_ts_data/{name}.feather".format(name=csv_file_name),
+                    columns=["{},{}".format(pixels[q], pixels[w])],
                 ).dropna()
             except ValueError:
                 continue
 
-            # prepare the data for plot
+            # Prepare the data for plot
             data_to_plot = np.array(data_to_plot)
             data_to_plot = np.delete(
                 data_to_plot, np.argwhere(data_to_plot < range_left)
@@ -722,6 +988,7 @@ def delta_cp(
                         )
                     )
 
+            # Save the figure
             try:
                 os.chdir("results/delta_t")
             except FileNotFoundError:
@@ -730,6 +997,7 @@ def delta_cp(
             fig.tight_layout()  # for perfect spacing between the plots
             plt.savefig("{name}_delta_t_grid.png".format(name=csv_file_name))
             os.chdir("../..")
+
     print(
         "\n> > > Plot is saved as {file} in {path}< < <".format(
             file=csv_file_name + "_delta_t_grid.png",

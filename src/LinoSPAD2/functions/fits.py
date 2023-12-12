@@ -3,28 +3,30 @@
 This file can also be imported as a module and contains the following
 functions:
 
-    * fit_wg - fit timestamp differences of a pair of pixels with a
-    gaussian function and plot both a histogram of timestamp
+    * fit_with_gaussian - fit timestamp differences of a pair of pixels
+    with a gaussian function and plot both a histogram of timestamp
     differences and the fit in a single figure.
 
 """
 
 import glob
 import os
+from typing import List
 
 import numpy as np
-import pandas as pd
+import pyarrow.feather as feather
 from matplotlib import pyplot as plt
-from scipy.optimize import curve_fit
+
+from LinoSPAD2.functions.utils import *
 
 
-def fit_wg(
+def fit_with_gaussian(
     path,
-    pix_pair: list,
+    pix_pair: List[int],
     window: float = 5e3,
     step: int = 1,
-    color_d: str = "salmon",
-    color_f: str = "teal",
+    color_data: str = "salmon",
+    color_fit: str = "teal",
     title_on: bool = True,
 ):
     """Fit with Gaussian function and plot it.
@@ -45,10 +47,11 @@ def fit_wg(
         default is 5e3.
     step : int, optional
         Bins of delta t histogram should be in units of 17.857 (average
-        LinoSPAD2 TDC bin width). Default is 1.
-    color_d : str, optional
+        LinoSPAD2 TDC bin width), this parameter helps with changing the
+        bin size while maintaining that rule. Default is 1.
+    color_data : str, optional
         For changing the color of the data. The default is "salmon".
-    color_f : str, optional
+    color_fit : str, optional
         For changing the color of the fit. The default is "teal".
     title_on : bool, optional
         Switch for turning on/off the title of the plot, the title
@@ -59,10 +62,10 @@ def fit_wg(
     FileNotFoundError
         Raised when no '.dat' data files are found.
     FileNotFoundError
-        Raised when no '.csv' file with timestamp differences is found.
+        Raised when no '.feather' file with timestamp differences is found.
     ValueError
         Raised when no data for the requested pair of pixels was found
-        in the '.csv' file.
+        in the '.feather' file.
 
     Returns
     -------
@@ -71,8 +74,8 @@ def fit_wg(
     """
     plt.ion()
 
-    def gauss(x, A, x0, sigma, C):
-        return A * np.exp(-((x - x0) ** 2) / (2 * sigma**2)) + C
+    # def gaussian(x, A, x0, sigma, C):
+    #     return A * np.exp(-((x - x0) ** 2) / (2 * sigma**2)) + C
 
     os.chdir(path)
 
@@ -84,26 +87,39 @@ def fit_wg(
     except FileNotFoundError:
         raise ("\nFile with data not found")
 
-    csv_file_name = glob.glob("*{}*".format(file_name))[0]
-    if csv_file_name == []:
+    # Version using csv files instead of feather ones.
+    # Left for debugging.
+    # csv_file_name = glob.glob("*{}*".format(file_name))[0]
+    # if csv_file_name == []:
+    #     raise FileNotFoundError("\nFile with data not found")
+
+    # data = pd.read_csv(
+    #     "{}".format(csv_file_name),
+    #     usecols=["{},{}".format(pix_pair[0], pix_pair[1])],
+    # )
+    # try:
+    #     data_to_plot = data["{},{}".format(pix_pair[0], pix_pair[1])]
+    # except KeyError:
+    #     print("\nThe requested pixel pair is not found")
+    # del data
+
+    feather_file_name = glob.glob("*{}.feather*".format(file_name))[0]
+    if not feather_file_name:
         raise FileNotFoundError("\nFile with data not found")
 
-    data = pd.read_csv(
-        "{}".format(csv_file_name),
-        usecols=["{},{}".format(pix_pair[0], pix_pair[1])],
-    )
-    try:
-        data_to_plot = data["{},{}".format(pix_pair[0], pix_pair[1])]
-    except KeyError:
-        print("\nThe requested pixel pair is not found")
-    del data
+    data_to_plot = feather.read_feather(
+        "{}".format(feather_file_name),
+        columns=["{},{}".format(pix_pair[0], pix_pair[1])],
+    ).dropna()
+
     # Check if there any finite values
     if not np.any(~np.isnan(data_to_plot)):
         raise ValueError("\nNo data for the requested pixel pair available")
 
     data_to_plot = data_to_plot.dropna()
     data_to_plot = np.array(data_to_plot)
-    # Use te given window for trimming the data for fitting    data_to_plot = np.delete(data_to_plot, np.argwhere(data_to_plot < -window))
+    # Use the given window for trimming the data for fitting
+    data_to_plot = np.delete(data_to_plot, np.argwhere(data_to_plot < -window))
     data_to_plot = np.delete(data_to_plot, np.argwhere(data_to_plot > window))
 
     os.chdir("..")
@@ -114,8 +130,6 @@ def fit_wg(
 
     # Calculate histogram of timestamp differences for primary guess
     # of fit parameters and selecting a narrower window for the fit
-    # n, b, p = plt.hist(data_to_plot, bins=bins, color="teal")
-    # plt.close("all")
     n, b = np.histogram(data_to_plot, bins)
 
     #
@@ -135,27 +149,20 @@ def fit_wg(
     # bins must be in units of 17.857 ps
     bins = np.arange(np.min(data_to_plot), np.max(data_to_plot), 17.857 * step)
 
-    # n, b, p = plt.hist(data_to_plot, bins=bins, color="teal")
-    # plt.close("all")
-
     n, b = np.histogram(data_to_plot, bins)
 
-    # b1 = (b - (b[-1] - b[-2]) / 2)[1:]
-    b1 = (b - 17.857 * step / 2)[1:]
+    bin_centers = (b - 17.857 * step / 2)[1:]
 
-    sigma = 150
-
-    av_bkg = np.average(n)
-
-    par, pcov = curve_fit(gauss, b1, n, p0=[max(n), cp_pos, sigma, av_bkg])
+    par, pcov = fit_gaussian(bin_centers, n)
 
     # interpolate for smoother fit plot
-    to_fit_b = np.linspace(np.min(b1), np.max(b1), len(b1) * 100)
-    to_fit_n = gauss(to_fit_b, par[0], par[1], par[2], par[3])
+    to_fit_b = np.linspace(
+        np.min(bin_centers), np.max(bin_centers), len(bin_centers) * 100
+    )
+    to_fit_n = gaussian(to_fit_b, par[0], par[1], par[2], par[3])
 
     perr = np.sqrt(np.diag(pcov))
     vis_er = par[0] / par[3] ** 2 * 100 * perr[-1]
-    # fit_plot = gauss(to_fit_b, par[0], par[1], par[2], par[3])
 
     plt.figure(figsize=(16, 10))
     plt.xlabel(r"$\Delta$t [ps]")
@@ -163,22 +170,19 @@ def fit_wg(
     plt.step(
         b[1:],
         n,
-        color=color_d,
+        color=color_data,
         label="data",
     )
     plt.plot(
-        # b,
-        # fit_plot,
         to_fit_b,
         to_fit_n,
         "-",
-        color=color_f,
+        color=color_fit,
         label="fit\n"
         "\u03C3={p1}\u00B1{pe1} ps\n"
         "\u03BC={p2}\u00B1{pe2} ps\n"
         "vis={vis}\u00B1{vis_er} %\n"
         "bkg={bkg}\u00B1{bkg_er}".format(
-            # "\u03C3_s={p3} ps".format(
             p1=format(par[2], ".1f"),
             p2=format(par[1], ".1f"),
             pe1=format(perr[2], ".1f"),
@@ -186,8 +190,7 @@ def fit_wg(
             bkg=format(par[3], ".1f"),
             bkg_er=format(perr[3], ".1f"),
             vis=format(par[0] / par[3] * 100, ".1f"),
-            vis_er=format(vis_er, ".1f")
-            # p3=format(st_dev, ".2f"),
+            vis_er=format(vis_er, ".1f"),
         ),
     )
     plt.legend(loc="best")

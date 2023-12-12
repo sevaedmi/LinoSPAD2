@@ -1,4 +1,5 @@
-"""Module with scripts for plotting the LinoSPAD2 sensor population.
+"""
+Module with scripts for plotting the LinoSPAD2 sensor population.
 
 This script utilizes an unpacking module used specifically for the
 LinoSPAD2 data output.
@@ -6,43 +7,115 @@ LinoSPAD2 data output.
 This file can also be imported as a module and contains the following
 functions:
 
-    * plot_pixel_hist - plots a histogram of timestamps for a single
-    pixel. The function can be used mainly for checking the
-    homogeneity of the LinoSPAD2 output.
-
-    * plot_sen_pop - plots the sensor population as a number of
-    timestamps in each pixel. Works with the firmware version 2212 (both
-    block and skip). Analyzes all data files in the given folder.
-
-    * plot_spdc - plot sensor population for SPDC data. Data files
-    taken with background only (SPDC output is off) should be provided.
-    The background is subtracted from the actual data for clearer
-    plot of the SPDC signal.
-
+    * collect_data_and_apply_mask - Collect data from files and apply
+    mask to the valid pixel count.
+    
+    * plot_single_pix_hist - Plot a histogram for each pixel in the given
+    range.
+    
+    * plot_sensor_population - Plot number of timestamps in each pixel
+    for all data files.
+    
+    * plot_sensor_population_spdc - Plot sensor population for SPDC data.
+    
+    * plot_sensor_population_full_sensor - Plot the number of timestamps
+    in each pixel for all data files from two different FPGAs/sensor
+    halves.
 """
+
 
 import glob
 import os
+import pickle
 import sys
+from typing import List
 
 import numpy as np
 from matplotlib import pyplot as plt
-from tqdm import tqdm
 from scipy.optimize import curve_fit
+from scipy.signal import find_peaks
+from tqdm import tqdm
 
 from LinoSPAD2.functions import unpack as f_up
+from LinoSPAD2.functions import utils
 
 
-def plot_pixel_hist(
+def collect_data_and_apply_mask(
+    files: List[str],
+    daughterboard_number: str,
+    motherboard_number: str,
+    firmware_version: str,
+    timestamps: int,
+    include_offset: bool,
+    apply_calibration: bool,
+    valid_per_pixel: np.ndarray,
+    app_mask: bool = True,
+) -> None:
+    """Collect data from files and apply mask to the valid pixel count.
+
+    Parameters
+    ----------
+    files : List[str]
+        List of data file paths.
+    daughterboard_number : str
+        The LinoSPAD2 daughterboard number.
+    motherboard_number : str
+        The LinoSPAD2 motherboard number.
+    firmware_version : str
+        LinoSPAD2 firmware version.
+    timestamps : int
+        Number of timestamps per pixel per acquisition cycle.
+    include_offset : bool
+        Switch for applying offset calibration.
+    apply_calibration : bool
+        Switch for applying TDC and offset calibration.
+    valid_per_pixel : np.ndarray
+        Array to store the valid pixel count.
+    app_mask : bool, optional
+        Switch for applying the mask on warm/hot pixels. Default is True.
+
+    Returns
+    -------
+    None
+    """
+    pix_coor = (
+        np.arange(256).reshape(64, 4)
+        if firmware_version == "2212b"
+        else np.arange(256).reshape(4, 64).T
+    )
+
+    for i in tqdm(range(len(files)), desc="Collecting data"):
+        data = f_up.unpack_binary_data(
+            files[i],
+            daughterboard_number,
+            motherboard_number,
+            firmware_version,
+            timestamps,
+            include_offset,
+            apply_calibration,
+        )
+        for i in range(256):
+            tdc, pix = np.argwhere(pix_coor == i)[0]
+            ind = np.where(data[tdc].T[0] == pix)[0]
+            ind1 = np.where(data[tdc].T[1][ind] > 0)[0]
+            valid_per_pixel[i] += len(data[tdc].T[1][ind[ind1]])
+
+    # Apply mask if requested
+    if app_mask:
+        mask = utils.apply_mask(daughterboard_number, motherboard_number)
+        valid_per_pixel[mask] = 0
+
+
+def plot_single_pix_hist(
     path,
     pixels,
-    db_num: str,
-    mb_num: str,
-    fw_ver: str,
+    daughterboard_number: str,
+    motherboard_number: str,
+    firmware_version: str,
     timestamps: int = 512,
     show_fig: bool = False,
-    inc_offset: bool = True,
-    app_calib: bool = True,
+    include_offset: bool = True,
+    apply_calibration: bool = True,
     fit_average: bool = False,
     color: str = "teal",
 ):
@@ -57,22 +130,22 @@ def plot_pixel_hist(
         Path to data file.
     pixels : array-like, list
         Array of pixels indices.
-    db_num : str
+    daughterboard_number : str
         LinoSPAD2 daughterboard number.
-    mb_num : str
+    motherboard_number : str
         LinoSPAD2 motherboard (FPGA) number.
-    fw_ver : str
+    firmware_version : str
         LinoSPAD2 firmware version.
     timestamps : int, optional
         Number of timestamps per pixel per acquisition cycle. The
         default is 512.
     show_fig : bool, optional
         Switch for showing the output figure. The default is False.
-    inc_offset : bool, optional
+    include_offset : bool, optional
         Switch for applying offset calibration. The default is True.
-    app_calib : bool, optional
+    apply_calibration : bool, optional
         Switch for applying TDC and offset calibration. If set to 'True'
-        while inc_offset is set to 'False', only the TDC calibration is
+        while include_offset is set to 'False', only the TDC calibration is
         applied. The default is True.
     fit_average : int, optional
         Switch for fitting averages of histogram counts in windows of
@@ -86,12 +159,12 @@ def plot_pixel_hist(
 
     """
     # parameter type check
-    if isinstance(fw_ver, str) is not True:
-        raise TypeError("'fw_ver' should be a string")
-    if isinstance(db_num, str) is not True:
-        raise TypeError("'db_num' should be a string")
-    if isinstance(mb_num, str) is not True:
-        raise TypeError("'mb_num' should be a string")
+    if isinstance(firmware_version, str) is not True:
+        raise TypeError("'firmware_version' should be a string")
+    if isinstance(daughterboard_number, str) is not True:
+        raise TypeError("'daughterboard_number' should be a string")
+    if isinstance(motherboard_number, str) is not True:
+        raise TypeError("'motherboard_number' should be a string")
 
     def lin_fit(x, a, b):
         return a * x + b
@@ -114,8 +187,14 @@ def plot_pixel_hist(
             )
         )
 
-        data = f_up.unpack_bin(
-            num, db_num, mb_num, fw_ver, timestamps, inc_offset, app_calib
+        data = f_up.unpack_binary_data(
+            num,
+            daughterboard_number,
+            motherboard_number,
+            firmware_version,
+            timestamps,
+            include_offset,
+            apply_calibration,
         )
 
         bins = np.arange(0, 4e9, 17.867 * 1e6)  # bin size of 17.867 us
@@ -126,9 +205,9 @@ def plot_pixel_hist(
         for i in range(len(pixels)):
             plt.figure(figsize=(16, 10))
             plt.rcParams.update({"font.size": 22})
-            if fw_ver == "2212s":
+            if firmware_version == "2212s":
                 pix_coor = np.arange(256).reshape(4, 64).T
-            elif fw_ver == "2212b":
+            elif firmware_version == "2212b":
                 pix_coor = np.arange(256).reshape(64, 4)
             else:
                 print("\nFirmware version is not recognized, exiting.")
@@ -172,20 +251,24 @@ def plot_pixel_hist(
             os.chdir("../..")
 
 
-def plot_sen_pop(
-    path,
-    db_num: str,
-    mb_num: str,
-    fw_ver: str,
+def plot_sensor_population(
+    path: str,
+    daughterboard_number: str,
+    motherboard_number: str,
+    firmware_version: str,
     timestamps: int = 512,
     scale: str = "linear",
     style: str = "-o",
     show_fig: bool = False,
     app_mask: bool = True,
-    inc_offset: bool = True,
-    app_calib: bool = True,
+    include_offset: bool = True,
+    apply_calibration: bool = True,
     color: str = "salmon",
-):
+    correct_pixel_addressing: bool = False,
+    fit_peaks: bool = False,
+    threshold_multiplier: int = 10,
+    pickle_fig: bool = False,
+) -> None:
     """Plot number of timestamps in each pixel for all datafiles.
 
     Plot sensor population as number of timestamps vs. pixel number.
@@ -198,12 +281,12 @@ def plot_sen_pop(
     ----------
     path : str
         Path to the datafiles.
-    db_num : str
+    daughterboard_number : str
         The LinoSPAD2 daughterboard number. Required for choosing the
         correct calibration data.
-    mb_num : str
+    motherboard_number : str
         The LinoSPAD2 motherboard number.
-    fw_ver : str
+    firmware_version : str
         LinoSPAD2 firmware version. Versions '2212b' (block) or '2212s'
         (skip) are recognized.
     timestamps : int, optional
@@ -219,28 +302,44 @@ def plot_sen_pop(
     app_mask : bool, optional
         Switch for applying the mask on warm/hot pixels. The default is
         True.
-    inc_offset : bool, optional
+    include_offset : bool, optional
         Switch for applying offset calibration. The default is True.
-    app_calib : bool, optional
+    apply_calibration : bool, optional
         Switch for applying TDC and offset calibration. If set to 'True'
-        while inc_offset is set to 'False', only the TDC calibration is
+        while include_offset is set to 'False', only the TDC calibration is
         applied. The default is True.
     color : str, optional
         Color for the plot. The default is 'salmon'.
+    correct_pixel_addressing : bool, optional
+        Switch for correcting pixel addressing for the faulty firmware
+        version for the 23 side of the daughterboard. The default is
+        False.
+    fit_peaks : bool, optional
+        Switch for finding the highest peaks and fitting them with a
+        Gaussian to provide their position. The default is False.
+    threshold_multiplier : int, optional
+        Threshold multiplier for setting threshold for finding peaks.
+        The default is 10.
+    pickle_fig : bool, optional
+        Switch for pickling the figure. Can be used when plotting takes
+        a lot of time. The default is False.
 
     Returns
     -------
     None.
-
     """
     # parameter type check
-    if isinstance(fw_ver, str) is not True:
-        raise TypeError("'fw_ver' should be string, '2212b' or '2212s'")
-    if isinstance(db_num, str) is not True:
-        raise TypeError("'db_num' should be string, 'NL11' or 'A5'")
-    if isinstance(mb_num, str) is not True:
-        raise TypeError("'mb_num' should be string")
-    if show_fig is True:
+    if not isinstance(firmware_version, str):
+        raise TypeError(
+            "'firmware_version' should be a string, '2212b' or '2212s'"
+        )
+    if not isinstance(daughterboard_number, str):
+        raise TypeError(
+            "'daughterboard_number' should be a string, 'NL11' or 'A5'"
+        )
+    if not isinstance(motherboard_number, str):
+        raise TypeError("'motherboard_number' should be a string")
+    if show_fig:
         plt.ion()
     else:
         plt.ioff()
@@ -258,35 +357,27 @@ def plot_sen_pop(
         "Working in {} < < <\n".format(path)
     )
 
-    for i in tqdm(range(len(files)), desc="Collecting data"):
-        if fw_ver == "2212s":
-            pix_coor = np.arange(256).reshape(4, 64).T
-        elif fw_ver == "2212b":
-            pix_coor = np.arange(256).reshape(64, 4)
-        else:
-            print("\nFirmware version is not recognized, exiting.")
-            sys.exit()
+    collect_data_and_apply_mask(
+        files,
+        daughterboard_number,
+        motherboard_number,
+        firmware_version,
+        timestamps,
+        include_offset,
+        apply_calibration,
+        valid_per_pixel,
+        app_mask,
+    )
 
-        data = f_up.unpack_bin(
-            files[i], db_num, mb_num, fw_ver, timestamps, inc_offset, app_calib
-        )
-        for i in range(256):
-            tdc, pix = np.argwhere(pix_coor == i)[0]
-            ind = np.where(data[tdc].T[0] == pix)[0]
-            ind1 = np.where(data[tdc].T[1][ind] > 0)[0]
-            valid_per_pixel[i] += len(data[tdc].T[1][ind[ind1]])
+    if correct_pixel_addressing:
+        fix = np.zeros(len(valid_per_pixel))
+        fix[:128] = valid_per_pixel[128:]
+        fix[128:] = np.flip(valid_per_pixel[:128])
+        valid_per_pixel = fix
+        del fix
 
+    # Plotting
     print("\n> > > Plotting < < <\n")
-    # Apply mask if requested
-    if app_mask is True:
-        path_to_back = os.getcwd()
-        path_to_mask = os.path.realpath(__file__) + "/../.." + "/params/masks"
-        os.chdir(path_to_mask)
-        file_mask = glob.glob("*{}_{}*".format(db_num, mb_num))[0]
-        mask = np.genfromtxt(file_mask).astype(int)
-        valid_per_pixel[mask] = 0
-        os.chdir(path_to_back)
-
     plt.rcParams.update({"font.size": 22})
     fig = plt.figure(figsize=(16, 10))
     if scale == "log":
@@ -295,6 +386,40 @@ def plot_sen_pop(
     plt.xlabel("Pixel number [-]")
     plt.ylabel("Timestamps [-]")
 
+    # Find and fit peaks if fit_peaks is True
+    if fit_peaks:
+        threshold = np.median(valid_per_pixel) * threshold_multiplier
+        fit_width = 10
+        peaks, _ = find_peaks(valid_per_pixel, height=threshold)
+        peaks = np.unique(peaks)
+
+        valid_per_pixel_tmp = np.zeros(256)
+
+        for peak_index in tqdm(peaks, desc="Fitting Gaussians"):
+            ind = peaks - peak_index
+            valid_per_pixel_tmp[ind] = np.median(valid_per_pixel)
+            x_fit = np.arange(
+                peak_index - fit_width, peak_index + fit_width + 1
+            )
+            y_fit = valid_per_pixel_tmp[x_fit]
+            try:
+                params, _ = utils.fit_gaussian(x_fit, y_fit)
+            except Exception:
+                continue
+
+            # amplitude, position, width = params
+            # position = np.clip(int(position), 0, 255)
+
+            plt.plot(
+                x_fit,
+                utils.gaussian(x_fit, *params),
+                "--",
+                label=f"Peak at {peak_index}",
+            )
+
+        plt.legend()
+
+    # Save the figure
     try:
         os.chdir("results/sensor_population")
     except FileNotFoundError:
@@ -307,14 +432,17 @@ def plot_sen_pop(
             file=plot_name, path=os.getcwd()
         )
     )
+    if pickle_fig:
+        pickle.dump(fig, open(f"{plot_name}.pickle", "wb"))
+
     os.chdir("../..")
 
 
-def plot_spdc(
+def plot_sensor_population_spdc(
     path,
-    db_num: str,
-    mb_num: str,
-    fw_ver: str,
+    daughterboard_number: str,
+    motherboard_number: str,
+    firmware_version: str,
     timestamps: int = 512,
     show_fig: bool = False,
 ):
@@ -329,10 +457,10 @@ def plot_spdc(
     ----------
     path : str
         Path to data files.
-    db_num : str
+    daughterboard_number : str
         LinoSPAD2 daughterboard number. Either "A5" or "NL11" is
         accepted.
-    mb_num : str
+    motherboard_number : str
         LinoSPAD2 motherboard number.
     timestamps : int, optional
         Number of timestamps per pixel per acquisition cycle. The
@@ -343,7 +471,7 @@ def plot_spdc(
     Raises
     ------
     TypeError
-        Raised when 'db_num' is not a string.
+        Raised when 'daughterboard_number' is not a string.
     ValueError
         Raised when the number of data files of SPDC data is different
         from the number of data files of background data.
@@ -354,12 +482,16 @@ def plot_spdc(
 
     """
     # parameter type check
-    if isinstance(db_num, str) is not True:
-        raise TypeError("'db_num' should be string, either 'NL11' or 'A5'")
-    if isinstance(fw_ver, str) is not True:
-        raise TypeError("'fw_ver' should be string")
-    if isinstance(mb_num, str) is not True:
-        raise TypeError("'db_num' should be string, either 'NL11' or 'A5'")
+    if isinstance(daughterboard_number, str) is not True:
+        raise TypeError(
+            "'daughterboard_number' should be string, either 'NL11' or 'A5'"
+        )
+    if isinstance(firmware_version, str) is not True:
+        raise TypeError("'firmware_version' should be string")
+    if isinstance(motherboard_number, str) is not True:
+        raise TypeError(
+            "'daughterboard_number' should be string, either 'NL11' or 'A5'"
+        )
 
     if show_fig is True:
         plt.ion()
@@ -391,8 +523,11 @@ def plot_spdc(
 
     # Collect SPDC data
     for i in tqdm(range(len(files)), desc="Going through datafiles"):
-        data_all = f_up.unpack_bin(
-            files[i], db_num="A5", fw_ver="2212b", timestamps=timestamps
+        data_all = f_up.unpack_binary_data(
+            files[i],
+            daughterboard_number="A5",
+            firmware_version="2212b",
+            timestamps=timestamps,
         )
 
         for i in np.arange(0, 256):
@@ -407,11 +542,11 @@ def plot_spdc(
     for i in tqdm(
         range(len(files_bckg)), desc="Going through background datafiles"
     ):
-        data_all_bckg = f_up.unpack_bin(
+        data_all_bckg = f_up.unpack_binary_data(
             files_bckg[i],
-            db_num="A5",
-            mb_num="34",
-            fw_ver="2212b",
+            daughterboard_number="A5",
+            motherboard_number="34",
+            firmware_version="2212b",
             timestamps=timestamps,
         )
 
@@ -428,7 +563,9 @@ def plot_spdc(
     path_to_back = os.getcwd()
     path_to_mask = os.path.realpath(__file__) + "/../.." + "/params/masks"
     os.chdir(path_to_mask)
-    file_mask = glob.glob("*{}_{}*".format(db_num, mb_num))[0]
+    file_mask = glob.glob(
+        "*{}_{}*".format(daughterboard_number, motherboard_number)
+    )[0]
     mask = np.genfromtxt(file_mask).astype(int)
     os.chdir(path_to_back)
 
@@ -454,26 +591,27 @@ def plot_spdc(
     os.chdir("../..")
 
 
-def plot_sen_pop_fs(
-    path1,
-    path2,
-    db_num: str,
-    mb_num1: str,
-    mb_num2: str,
-    fw_ver: str,
+def plot_sensor_population_full_sensor(
+    path,
+    daughterboard_number: str,
+    motherboard_number1: str,
+    motherboard_number2: str,
+    firmware_version: str,
     timestamps: int = 512,
     scale: str = "linear",
     style: str = "-o",
     show_fig: bool = False,
     app_mask: bool = True,
-    inc_offset: bool = True,
-    app_calib: bool = True,
+    include_offset: bool = True,
+    apply_calibration: bool = True,
     color: str = "salmon",
+    fit_peaks: bool = False,
+    threshold_multiplier: int = 10,
+    pickle_fig: bool = False,
 ):
-    # TODO
-    """Plot number of timestamps in each pixel for all datafiles.
+    """Plot the number of timestamps in each pixel for all datafiles.
 
-    Plot sensor population as number of timestamps vs. pixel number.
+    Plot sensor population as the number of timestamps vs. pixel number.
     Analyzes all data files in the given folder. The output figure is saved
     in the "results" folder, which is created if it does not exist, in
     the same folder where datafiles are. Works with the firmware version
@@ -483,12 +621,14 @@ def plot_sen_pop_fs(
     ----------
     path : str
         Path to the datafiles.
-    db_num : str
+    daughterboard_number : str
         The LinoSPAD2 daughterboard number. Required for choosing the
         correct calibration data.
-    mb_num : str
-        The LinoSPAD2 motherboard number.
-    fw_ver : str
+    motherboard_number1 : str
+        The LinoSPAD2 motherboard number for the first board.
+    motherboard_number2 : str
+        The LinoSPAD2 motherboard number for the second board.
+    firmware_version : str
         LinoSPAD2 firmware version. Versions '2212b' (block) or '2212s'
         (skip) are recognized.
     timestamps : int, optional
@@ -504,30 +644,42 @@ def plot_sen_pop_fs(
     app_mask : bool, optional
         Switch for applying the mask on warm/hot pixels. The default is
         True.
-    inc_offset : bool, optional
+    include_offset : bool, optional
         Switch for applying offset calibration. The default is True.
-    app_calib : bool, optional
+    apply_calibration : bool, optional
         Switch for applying TDC and offset calibration. If set to 'True'
-        while inc_offset is set to 'False', only the TDC calibration is
+        while include_offset is set to 'False', only the TDC calibration is
         applied. The default is True.
     color : str, optional
         Color for the plot. The default is 'salmon'.
+    fit_peaks : bool, optional
+        Switch for finding the highest peaks and fitting them with a
+        Gaussian to provide their position. The default is False.
+    threshold_multiplier : int, optional
+        Threshold multiplier for setting the threshold for finding peaks.
+        The default is 10.
+    pickle_fig : bool, optional
+        Switch for pickling the figure. Can be used when plotting takes
+        a lot of time. The default is False.
 
     Returns
     -------
     None.
-
     """
     # parameter type check
-    if isinstance(fw_ver, str) is not True:
-        raise TypeError("'fw_ver' should be string, '2212b' or '2212s'")
-    if isinstance(db_num, str) is not True:
-        raise TypeError("'db_num' should be string, 'NL11' or 'A5'")
-    if isinstance(mb_num1, str) is not True:
-        raise TypeError("'mb_num' should be string")
-    if isinstance(mb_num2, str) is not True:
-        raise TypeError("'mb_num' should be string")
-    if show_fig is True:
+    if not isinstance(firmware_version, str):
+        raise TypeError(
+            "'firmware_version' should be a string, '2212b' or '2212s'"
+        )
+    if not isinstance(daughterboard_number, str):
+        raise TypeError(
+            "'daughterboard_number' should be a string, 'NL11' or 'A5'"
+        )
+    if not isinstance(motherboard_number1, str):
+        raise TypeError("'motherboard_number1' should be a string")
+    if not isinstance(motherboard_number2, str):
+        raise TypeError("'motherboard_number2' should be a string")
+    if show_fig:
         plt.ion()
     else:
         plt.ioff()
@@ -535,106 +687,67 @@ def plot_sen_pop_fs(
     valid_per_pixel1 = np.zeros(256)
     valid_per_pixel2 = np.zeros(256)
 
+    # Get the two folders with data from both FPGAs/sensor halves
+    os.chdir(path)
+    path1 = glob.glob("*{}*".format(motherboard_number1))[0]
+    path2 = glob.glob("*{}*".format(motherboard_number2))[0]
+
     # First motherboard / half of the sensor
-
     os.chdir(path1)
+    files1 = glob.glob("*.dat*")
+    plot_name1 = files1[0][:-4] + "-"
 
-    files = glob.glob("*.dat*")
-
-    plot_name1 = files[0][:-4] + "-"
     print(
         "\n> > > Collecting data for sensor population plot,"
         "Working in {} < < <\n".format(path1)
     )
+    collect_data_and_apply_mask(
+        files1,
+        daughterboard_number,
+        motherboard_number1,
+        firmware_version,
+        timestamps,
+        include_offset,
+        apply_calibration,
+        valid_per_pixel1,
+        app_mask,
+    )
 
-    for i in tqdm(range(len(files)), desc="Collecting data"):
-        if fw_ver == "2212s":
-            pix_coor = np.arange(256).reshape(4, 64).T
-        elif fw_ver == "2212b":
-            pix_coor = np.arange(256).reshape(64, 4)
-        else:
-            print("\nFirmware version is not recognized, exiting.")
-            sys.exit()
+    os.chdir("..")
 
-        data = f_up.unpack_bin(
-            files[i],
-            db_num,
-            mb_num1,
-            fw_ver,
-            timestamps,
-            inc_offset,
-            app_calib,
-        )
-        for i in range(256):
-            tdc, pix = np.argwhere(pix_coor == i)[0]
-            ind = np.where(data[tdc].T[0] == pix)[0]
-            ind1 = np.where(data[tdc].T[1][ind] > 0)[0]
-            valid_per_pixel1[i] += len(data[tdc].T[1][ind[ind1]])
-
-    print("\n> > > Plotting < < <\n")
-    # Apply mask if requested
-    if app_mask is True:
-        path_to_back = os.getcwd()
-        path_to_mask = os.path.realpath(__file__) + "/../.." + "/params/masks"
-        os.chdir(path_to_mask)
-        file_mask = glob.glob("*{}_{}*".format(db_num, mb_num1))[0]
-        mask = np.genfromtxt(file_mask).astype(int)
-        valid_per_pixel1[mask] = 0
-        os.chdir(path_to_back)
-
-    # Second motherbaord / half of the sensor
-
+    # Second motherboard / half of the sensor
     os.chdir(path2)
-
-    files = glob.glob("*.dat*")
-
-    plot_name2 = files[-1][:-4]
+    files2 = glob.glob("*.dat*")
+    plot_name2 = files2[-1][:-4]
 
     print(
         "\n> > > Collecting data for sensor population plot,"
         "Working in {} < < <\n".format(path2)
     )
-
-    for i in tqdm(range(len(files)), desc="Collecting data"):
-        if fw_ver == "2212s":
-            pix_coor = np.arange(256).reshape(4, 64).T
-        elif fw_ver == "2212b":
-            pix_coor = np.arange(256).reshape(64, 4)
-        else:
-            print("\nFirmware version is not recognized, exiting.")
-            sys.exit()
-
-        data = f_up.unpack_bin(
-            files[i],
-            db_num,
-            mb_num2,
-            fw_ver,
-            timestamps,
-            inc_offset,
-            app_calib,
-        )
-        for i in range(256):
-            tdc, pix = np.argwhere(pix_coor == i)[0]
-            ind = np.where(data[tdc].T[0] == pix)[0]
-            ind1 = np.where(data[tdc].T[1][ind] > 0)[0]
-            valid_per_pixel2[i] += len(data[tdc].T[1][ind[ind1]])
-
-    print("\n> > > Plotting < < <\n")
-    # Apply mask if requested
-    if app_mask is True:
-        path_to_back = os.getcwd()
-        path_to_mask = os.path.realpath(__file__) + "/../.." + "/params/masks"
-        os.chdir(path_to_mask)
-        file_mask = glob.glob("*{}_{}*".format(db_num, mb_num2))[0]
-        mask = np.genfromtxt(file_mask).astype(int)
-        valid_per_pixel2[mask] = 0
-        os.chdir(path_to_back)
-
-    valid_per_pixel = np.concatenate(
-        [valid_per_pixel1, np.flip(valid_per_pixel2)]
+    collect_data_and_apply_mask(
+        files2,
+        daughterboard_number,
+        motherboard_number2,
+        firmware_version,
+        timestamps,
+        include_offset,
+        apply_calibration,
+        valid_per_pixel2,
+        app_mask,
     )
 
+    # Fix pixel addressing for the second board
+    fix = np.zeros(len(valid_per_pixel2))
+    fix[:128] = valid_per_pixel2[128:]
+    fix[128:] = np.flip(valid_per_pixel2[:128])
+    valid_per_pixel2 = fix
+    del fix
+
+    # Concatenate and plot
+    valid_per_pixel = np.concatenate([valid_per_pixel1, valid_per_pixel2])
     plot_name = plot_name1 + plot_name2
+
+    print("\n> > > Plotting < < <\n")
 
     plt.rcParams.update({"font.size": 22})
     fig = plt.figure(figsize=(16, 10))
@@ -643,6 +756,35 @@ def plot_sen_pop_fs(
     plt.plot(valid_per_pixel, style, color=color)
     plt.xlabel("Pixel number [-]")
     plt.ylabel("Timestamps [-]")
+
+    # Find and fit peaks if fit_peaks is True
+    if fit_peaks:
+        threshold = np.median(valid_per_pixel) * threshold_multiplier
+        fit_width = 10
+        peaks, _ = find_peaks(valid_per_pixel, height=threshold)
+        peaks = np.unique(peaks)
+
+        for peak_index in tqdm(peaks, desc="Fitting Gaussians"):
+            x_fit = np.arange(
+                peak_index - fit_width, peak_index + fit_width + 1
+            )
+            y_fit = valid_per_pixel[x_fit]
+            try:
+                params, _ = utils.fit_gaussian(x_fit, y_fit)
+            except Exception:
+                continue
+
+            # amplitude, position, width = params
+            # position = np.clip(int(position), 0, 255)
+
+            plt.plot(
+                x_fit,
+                utils.gaussian(x_fit, *params),
+                "--",
+                label=f"Peak at {peak_index}",
+            )
+
+        plt.legend()
 
     os.chdir("..")
 
@@ -658,4 +800,5 @@ def plot_sen_pop_fs(
             file=plot_name, path=os.getcwd()
         )
     )
-    os.chdir("../..")
+    if pickle_fig:
+        pickle.dump(fig, open(f"{plot_name}.pickle", "wb"))

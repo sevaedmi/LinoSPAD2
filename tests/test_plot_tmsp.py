@@ -1,11 +1,10 @@
-import unittest
 import os
 import shutil
+import unittest
 
 from LinoSPAD2.functions.plot_tmsp import (
-    plot_pixel_hist,
-    plot_sen_pop,
-    plot_spdc,
+    plot_sensor_population,
+    plot_single_pix_hist,
 )
 
 
@@ -13,24 +12,24 @@ class TestPlotScripts(unittest.TestCase):
     def setUp(self):
         self.path = "tests/test_data"
         self.pix = 15
-        self.db_num = "NL11"
-        self.mb_num = "#33"
-        self.fw_ver = "2212b"
+        self.daughterboard_number = "NL11"
+        self.motherboard_number = "#33"
+        self.firmware_version = "2212b"
         self.timestamps = 300
-        self.inc_offset = False
+        self.include_offset = False
 
     def test_a_plot_pixel_hist(self):
         # Positive test case
         os.chdir(r"{}".format(os.path.realpath(__file__) + "../../.."))
 
-        plot_pixel_hist(
+        plot_single_pix_hist(
             self.path,
             self.pix,
-            self.db_num,
-            self.mb_num,
-            self.fw_ver,
+            self.daughterboard_number,
+            self.motherboard_number,
+            self.firmware_version,
             self.timestamps,
-            inc_offset=self.inc_offset,
+            include_offset=self.include_offset,
         )
         self.assertTrue(
             os.path.exists(
@@ -41,17 +40,17 @@ class TestPlotScripts(unittest.TestCase):
     def test_b_plot_sen_pop(self):
         # Positive test case
         os.chdir(r"{}".format(os.path.realpath(__file__) + "../../.."))
-        plot_sen_pop(
+        plot_sensor_population(
             self.path,
-            self.db_num,
-            self.mb_num,
-            self.fw_ver,
+            self.daughterboard_number,
+            self.motherboard_number,
+            self.firmware_version,
             self.timestamps,
             scale="linear",
             style="-o",
             show_fig=True,
             app_mask=True,
-            inc_offset=self.inc_offset,
+            include_offset=self.include_offset,
         )
         self.assertTrue(
             os.path.isfile(

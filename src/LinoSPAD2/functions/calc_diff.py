@@ -7,15 +7,17 @@ and returned as a list.
 This file can also be imported as a module and contains the following
 functions:
 
-    * calc_diff_2212 - calculate timestamp differences for the given
-    pair of pixels. Works only with firmware version '2212'.
+    * calculate_differences_2212 - calculate timestamp differences for
+    the given pair of pixels. Works only with firmware version '2212'.
 
 """
 
 import numpy as np
 
 
-def calc_diff_2212(data1, data2, cycle_ends, delta_window: float = 10e3):
+def calculate_differences_2212(
+    data1, data2, cycle_ends, delta_window: float = 10e3
+):
     """Calculate timestamp differences for firmware 2212.
 
     Calculate timestamp differences for two given pixels and LinoSPAD2

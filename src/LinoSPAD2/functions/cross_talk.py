@@ -27,19 +27,20 @@ from tqdm import tqdm
 
 from LinoSPAD2.functions import calc_diff as cd
 from LinoSPAD2.functions import unpack as f_up
+from LinoSPAD2.functions import utils
 
 
-def collect_ct(
+def collect_cross_talk(
     path,
     pixels,
-    db_num: str,
-    mb_num: str,
-    fw_ver: str,
+    daughterboard_number: str,
+    motherboard_number: str,
+    firmware_version: str,
     timestamps: int = 512,
     delta_window: float = 10e3,
     step: int = 1,
-    inc_offset: bool = True,
-    app_calib: bool = True,
+    include_offset: bool = True,
+    apply_calibration: bool = True,
 ):
     """Calculate cross-talk and save it to a '.csv' file.
 
@@ -56,35 +57,35 @@ def collect_ct(
         Path to datafiles.
     pixels : array-like
         Array of pixel numbers.
-    db_num : str
+    daughterboard_number : str
         LinoSPAD2 daughterboard number.
-    mb_num : str
+    motherboard_number : str
         LinoSPAD2 motherboard (FPGA) number.
-    fw_ver : str
+    firmware_version : str
         LinoSPAD2 firmware version.
     timestamps : int, optional
         Number of timestamps per pixel per cycle. The default is 512.
     delta_window : float, optional
         A width of a window in which the number of timestamp differences
         are counted. The default value is 10e3 (10ns).
-    inc_offset : bool, optional
+    step : int, optional
+        Step for the histogram bins. The default is 1.
+    include_offset : bool, optional
         Switch for applying offset calibration. The default is True.
-    app_calib : bool, optional
+    apply_calibration : bool, optional
         Switch for applying TDC and offset calibration. If set to 'True'
-        while inc_offset is set to 'False', only the TDC calibration is
+        while include_offset is set to 'False', only the TDC calibration is
         applied. The default is True.
-
 
     Returns
     -------
     None.
-
     """
-    # parameter type check
-    if isinstance(db_num, str) is not True:
-        raise TypeError("'db_num' should be string")
-    if isinstance(mb_num, str) is not True:
-        raise TypeError("'mb_num' should be string")
+    # Parameter type check
+    if not isinstance(daughterboard_number, str):
+        raise TypeError("'daughterboard_number' should be a string")
+    if not isinstance(motherboard_number, str):
+        raise TypeError("'motherboard_number' should be a string")
 
     print("\n> > > Collecting data for cross-talk analysis < < <\n")
     file_name_list = []
@@ -100,21 +101,21 @@ def collect_ct(
     files = glob.glob("*.dat*")
 
     for i, file in enumerate(tqdm(files)):
-        if fw_ver == "2212s":
+        if firmware_version == "2212s":
             pix_coor = np.arange(256).reshape(4, 64).T
-        elif fw_ver == "2212b":
+        elif firmware_version == "2212b":
             pix_coor = np.arange(256).reshape(64, 4)
         else:
             print("\nFirmware version is not recognized, exiting.")
             sys.exit()
-        data_all = f_up.unpack_bin(
+        data_all = f_up.unpack_binary_data(
             file,
-            db_num=db_num,
-            mb_num=mb_num,
-            fw_ver=fw_ver,
+            daughterboard_number=daughterboard_number,
+            motherboard_number=motherboard_number,
+            firmware_version=firmware_version,
             timestamps=timestamps,
-            inc_offset=inc_offset,
-            app_calib=app_calib,
+            include_offset=include_offset,
+            apply_calibration=apply_calibration,
         )
 
         tdc1, pix_c1 = np.argwhere(pix_coor == pixels[0])[0]
@@ -132,7 +133,9 @@ def collect_ct(
 
             data2 = data_all[tdc2].T[1][pix2]
 
-            deltas = cd.calc_diff_2212(data1, data2, cycle_ends, delta_window)
+            deltas = cd.calculate_differences_2212(
+                data1, data2, cycle_ends, delta_window
+            )
 
             timestamps_pix1 = len(np.where(data1 > 0)[0])
             if timestamps_pix1 == 0:
@@ -140,17 +143,17 @@ def collect_ct(
             timestamps_pix2 = len(np.where(data2 > 0)[0])
 
             # Plotting histograms to check CT peaks
-            bins = np.arange(
-                np.min(deltas),
-                np.max(deltas),
-                17.857 * step,
-            )
-            plt.ion()
-            plt.figure(figsize=(10, 7))
-            n, b, p = plt.hist(deltas, bins)
-            plt.show()
+            # bins = np.arange(
+            #     np.min(deltas),
+            #     np.max(deltas),
+            #     17.857 * step,
+            # )
+            # plt.ion()
+            # plt.figure(figsize=(10, 7))
+            # n, b, p = plt.hist(deltas, bins)
+            # plt.show()
 
-            print(np.std(deltas))
+            # print(np.std(deltas))
 
             ct = len(deltas) * 100 / (timestamps_pix1 + timestamps_pix2)
 
@@ -179,30 +182,27 @@ def collect_ct(
         "CT": ct_list,
     }
 
-    ct_data = pd.DataFrame(dic)
+    cross_talk_data = pd.DataFrame(dic)
 
     try:
         os.chdir("cross_talk_data")
     except FileNotFoundError:
         os.makedirs("{}".format("cross_talk_data"))
-
         os.chdir("cross_talk_data")
 
     if glob.glob("*CT_data_{}-{}.csv*".format(files[0], files[-1])) == []:
-        ct_data.to_csv(
+        cross_talk_data.to_csv(
             "CT_data_{}-{}.csv".format(files[0], files[-1]),
             index=False,
         )
     else:
-        ct_data.to_csv(
+        cross_talk_data.to_csv(
             "CT_data_{}-{}.csv".format(files[0], files[-1]),
-            # mode="a",
             index=False,
-            # header=False,
         )
 
 
-def plot_ct(path, pix1, scale: str = "linear"):
+def plot_cross_talk(path, pix1, scale: str = "linear"):
     """Plot cross-talk data from a '.csv' file.
 
     Plots cross-talk data from a '.csv' file as cross-talk values (in %)
@@ -294,8 +294,85 @@ def plot_ct(path, pix1, scale: str = "linear"):
     plt.savefig("{plot}_{pix}.png".format(plot=plot_name, pix=pix1))
 
 
-def calc_DCR(
-    path, db_num: str, mb_num: str, fw_ver: str, timestamps: int = 512
+# def calc_DCR(
+#     path, db_num: str, mb_num: str, fw_ver: str, timestamps: int = 512
+# ):
+#     """Calculate dark count rate.
+
+#     Calculate dark count rate for the given daughterboard and
+#     motherboard.
+
+#     Parameters
+#     ----------
+#     path : str
+#         Path to datafiles.
+#     db_num : str
+#         LinoSPAD2 daughterboard number.
+#     mb_num : str
+#         LinoSPAD2 motherboard (FPGA) number.
+#     fw_ver : str
+#         LinoSPAD2 firmware version.
+#     timestamps : int, optional
+#         Number of timestamps per acquisition cycle per TDC. The default
+#         is 512.
+
+#     Returns
+#     -------
+#     dcr : float
+#         The dark count rate number per pixel per data file.
+
+#     Raises
+#     ------
+#     TypeError
+#         Raised if the firmware version given is not recognized.
+#     TypeError
+#         Raised if the daughterboard number given is not recognized.
+#     TypeError
+#         Raised if the motherboard number given is not recognized.
+#     """
+#     # parameter type check
+#     if isinstance(fw_ver, str) is not True:
+#         raise TypeError("'fw_ver' should be string, '2212b' or '2212s'")
+#     if isinstance(db_num, str) is not True:
+#         raise TypeError("'db_num' should be string, 'NL11' or 'A5'")
+#     if isinstance(mb_num, str) is not True:
+#         raise TypeError("'mb_num' should be string")
+
+#     os.chdir(path)
+
+#     files = glob.glob("*.dat*")
+
+#     valid_per_pixel = np.zeros(256)
+
+#     for i in tqdm(range(len(files)), desc="Going through files"):
+#         if fw_ver == "2212s":
+#             pix_coor = np.arange(256).reshape(4, 64).T
+#         elif fw_ver == "2212b":
+#             pix_coor = np.arange(256).reshape(64, 4)
+#         else:
+#             print("\nFirmware version is not recognized, exiting.")
+#             sys.exit()
+
+#         data = f_up.unpack_bin(
+#             files[i], db_num, mb_num, fw_ver, timestamps, inc_offset=False
+#         )
+#         for i in range(256):
+#             tdc, pix = np.argwhere(pix_coor == i)[0]
+#             ind = np.where(data[tdc].T[0] == pix)[0]
+#             ind1 = np.where(data[tdc].T[1][ind] > 0)[0]
+#             valid_per_pixel[i] += len(data[tdc].T[1][ind[ind1]])
+
+#     dcr = np.average(valid_per_pixel) / len(files)
+
+#     return dcr
+
+
+def calculate_dark_count_rate(
+    path,
+    daughterboard_number: str,
+    motherboard_number: str,
+    firmware_version: str,
+    timestamps: int = 512,
 ):
     """Calculate dark count rate.
 
@@ -306,11 +383,11 @@ def calc_DCR(
     ----------
     path : str
         Path to datafiles.
-    db_num : str
+    daughterboard_number : str
         LinoSPAD2 daughterboard number.
-    mb_num : str
+    motherboard_number : str
         LinoSPAD2 motherboard (FPGA) number.
-    fw_ver : str
+    firmware_version : str
         LinoSPAD2 firmware version.
     timestamps : int, optional
         Number of timestamps per acquisition cycle per TDC. The default
@@ -330,13 +407,17 @@ def calc_DCR(
     TypeError
         Raised if the motherboard number given is not recognized.
     """
-    # parameter type check
-    if isinstance(fw_ver, str) is not True:
-        raise TypeError("'fw_ver' should be string, '2212b' or '2212s'")
-    if isinstance(db_num, str) is not True:
-        raise TypeError("'db_num' should be string, 'NL11' or 'A5'")
-    if isinstance(mb_num, str) is not True:
-        raise TypeError("'mb_num' should be string")
+    # Parameter type check
+    if not isinstance(firmware_version, str):
+        raise TypeError(
+            "'firmware_version' should be a string, '2212b' or '2212s'"
+        )
+    if not isinstance(daughterboard_number, str):
+        raise TypeError(
+            "'daughterboard_number' should be a string, 'NL11' or 'A5'"
+        )
+    if not isinstance(motherboard_number, str):
+        raise TypeError("'motherboard_number' should be a string")
 
     os.chdir(path)
 
@@ -345,16 +426,21 @@ def calc_DCR(
     valid_per_pixel = np.zeros(256)
 
     for i in tqdm(range(len(files)), desc="Going through files"):
-        if fw_ver == "2212s":
+        if firmware_version == "2212s":
             pix_coor = np.arange(256).reshape(4, 64).T
-        elif fw_ver == "2212b":
+        elif firmware_version == "2212b":
             pix_coor = np.arange(256).reshape(64, 4)
         else:
             print("\nFirmware version is not recognized, exiting.")
             sys.exit()
 
-        data = f_up.unpack_bin(
-            files[i], db_num, mb_num, fw_ver, timestamps, inc_offset=False
+        data = f_up.unpack_binary_data(
+            files[i],
+            daughterboard_number,
+            motherboard_number,
+            firmware_version,
+            timestamps,
+            include_offset=False,
         )
         for i in range(256):
             tdc, pix = np.argwhere(pix_coor == i)[0]
@@ -362,13 +448,8 @@ def calc_DCR(
             ind1 = np.where(data[tdc].T[1][ind] > 0)[0]
             valid_per_pixel[i] += len(data[tdc].T[1][ind[ind1]])
 
-    path_to_back = os.getcwd()
-    path_to_mask = os.path.realpath(__file__) + "/../.." + "/params/masks"
-    os.chdir(path_to_mask)
-    file_mask = glob.glob("*{}_{}*".format(db_num, mb_num))[0]
-    mask = np.genfromtxt(file_mask).astype(int)
+    mask = utils.apply_mask(daughterboard_number, motherboard_number)
     valid_per_pixel[mask] = 0
-    os.chdir(path_to_back)
 
     dcr = np.average(valid_per_pixel) / len(files)
 

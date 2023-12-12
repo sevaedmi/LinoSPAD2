@@ -6,7 +6,7 @@ import unittest
 import numpy as np
 import pandas as pd
 
-from LinoSPAD2.functions.cross_talk import collect_ct, plot_ct
+from LinoSPAD2.functions.cross_talk import collect_cross_talk, plot_cross_talk
 
 
 class TestCTFull(unittest.TestCase):
@@ -14,26 +14,30 @@ class TestCTFull(unittest.TestCase):
         # Set up test variables
         self.path = "tests/test_data"
         self.pixels = np.arange(0, 20, 1)
-        self.db_num = "NL11"
-        self.mb_num = "#33"
+        self.daughterboard_number = "NL11"
+        self.motherboard_number = "#33"
+        self.firmware_version = "2212b"
         self.timestamps = 300
         self.delta_window = 10e3
+        self.step = 1
         self.pix1 = 0
         self.scale = "linear"
-        self.inc_offset = False
+        self.include_offset = False
 
     def test_a_collect_ct_positive(self):
         work_dir = r"{}".format(os.path.realpath(__file__) + "../../..")
         os.chdir(work_dir)
         # Test positive case of collect_ct function
-        collect_ct(
+        collect_cross_talk(
             self.path,
             self.pixels,
-            self.db_num,
-            self.mb_num,
+            self.daughterboard_number,
+            self.motherboard_number,
+            self.firmware_version,
             self.timestamps,
             self.delta_window,
-            self.inc_offset,
+            self.step,
+            self.include_offset,
         )
         # Check if the output file is created and has the correct number of rows
         file = glob.glob("*CT_data_*.csv*")[0]
@@ -45,7 +49,7 @@ class TestCTFull(unittest.TestCase):
         os.chdir(work_dir)
         # Test negative case of collect_ct function
         with self.assertRaises(TypeError):
-            collect_ct(
+            collect_cross_talk(
                 self.path,
                 self.pixels,
                 123,
@@ -58,7 +62,7 @@ class TestCTFull(unittest.TestCase):
         # Test positive case of plot_ct function
         work_dir = r"{}".format(os.path.realpath(__file__) + "../../..")
         os.chdir(work_dir)
-        plot_ct(self.path, self.pix1, self.scale)
+        plot_cross_talk(self.path, self.pix1, self.scale)
         # Check if the plot file is created
         plot_name = "test_data_2212b.dat_test_data_2212b.dat"
         plot_file = "{plot}_{pix}.png".format(plot=plot_name, pix=self.pix1)
@@ -67,7 +71,7 @@ class TestCTFull(unittest.TestCase):
     def test_d_plot_ct_negative(self):
         # Test negative case of plot_ct function
         with self.assertRaises(FileNotFoundError):
-            plot_ct("nonexistent_folder", self.pix1, self.scale)
+            plot_cross_talk("nonexistent_folder", self.pix1, self.scale)
 
     def tearDownClass():
         # Clean up after tests
