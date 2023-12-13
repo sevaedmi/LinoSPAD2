@@ -100,66 +100,58 @@ def collect_cross_talk(
 
     files = glob.glob("*.dat*")
 
-    for i, file in enumerate(tqdm(files)):
-        if firmware_version == "2212s":
-            pix_coor = np.arange(256).reshape(4, 64).T
-        elif firmware_version == "2212b":
-            pix_coor = np.arange(256).reshape(64, 4)
-        else:
-            print("\nFirmware version is not recognized, exiting.")
-            sys.exit()
-        data_all = f_up.unpack_binary_data(
+    # Define matrix of pixel coordinates, where rows are numbers of TDCs
+    # and columns are the pixels that connected to these TDCs
+    if firmware_version == "2212s":
+        pix_coor = np.arange(256).reshape(4, 64).T
+    elif firmware_version == "2212b":
+        print(
+            "\nFor firmware version '2212b' cross-talk numbers "
+            "would be incorrect, try data collected with '2212s'"
+        )
+        sys.exit()
+    else:
+        print("\nFirmware version is not recognized.")
+        sys.exit()
+
+    for file in tqdm(files):
+        data = f_up.unpack_binary_data(
             file,
-            daughterboard_number=daughterboard_number,
-            motherboard_number=motherboard_number,
-            firmware_version=firmware_version,
-            timestamps=timestamps,
-            include_offset=include_offset,
-            apply_calibration=apply_calibration,
+            daughterboard_number,
+            motherboard_number,
+            firmware_version,
+            timestamps,
+            include_offset,
+            apply_calibration,
         )
 
-        tdc1, pix_c1 = np.argwhere(pix_coor == pixels[0])[0]
-        pix1 = np.where(data_all[tdc1].T[0] == pix_c1)[0]
-        data1 = data_all[tdc1].T[1][pix1]
+        timestamps_per_pixel = np.zeros(256)
 
-        cycle_ends = np.argwhere(data_all[0].T[0] == -2)
-        cycle_ends = np.insert(cycle_ends, 0, 0)
-        for j in range(1, len(pixels)):
-            if pixels[j] <= pixels[0]:
-                continue
+        for i in range(256):
+            tdc, pix = np.argwhere(pix_coor == i)[0]
+            ind = np.where(data[tdc].T[0] == pix)[0]
+            ind1 = np.where(data[tdc].T[1][ind] > 0)[0]
+            timestamps_per_pixel[i] += len(data[tdc].T[1][ind[ind1]])
 
-            tdc2, pix_c2 = np.argwhere(pix_coor == pixels[j])[0]
-            pix2 = np.where(data_all[tdc2].T[0] == pix_c2)[0]
+        pixels = [pixels[0], pixels[1:]]
+        deltas = cd.calculate_differences_2212(data, pixels, pix_coor)
 
-            data2 = data_all[tdc2].T[1][pix2]
+        timestamps_pix1 = timestamps_per_pixel[pixels[0]]
 
-            deltas = cd.calculate_differences_2212(
-                data1, data2, cycle_ends, delta_window
-            )
-
-            timestamps_pix1 = len(np.where(data1 > 0)[0])
+        for j in pixels[1]:
             if timestamps_pix1 == 0:
                 continue
-            timestamps_pix2 = len(np.where(data2 > 0)[0])
+            timestamps_pix2 = timestamps_per_pixel[j]
 
-            # Plotting histograms to check CT peaks
-            # bins = np.arange(
-            #     np.min(deltas),
-            #     np.max(deltas),
-            #     17.857 * step,
-            # )
-            # plt.ion()
-            # plt.figure(figsize=(10, 7))
-            # n, b, p = plt.hist(deltas, bins)
-            # plt.show()
-
-            # print(np.std(deltas))
-
-            ct = len(deltas) * 100 / (timestamps_pix1 + timestamps_pix2)
+            ct = (
+                len(deltas[f"{pixels[0]},{j}"])
+                * 100
+                / (timestamps_pix1 + timestamps_pix2)
+            )
 
             file_name_list.append(file)
             pix1_list.append(pixels[0])
-            pix2_list.append(pixels[j])
+            pix2_list.append(j)
             timestamps_list1.append(timestamps_pix1)
             timestamps_list2.append(timestamps_pix2)
             deltas_list.append(len(deltas))
@@ -294,79 +286,6 @@ def plot_cross_talk(path, pix1, scale: str = "linear"):
     plt.savefig("{plot}_{pix}.png".format(plot=plot_name, pix=pix1))
 
 
-# def calc_DCR(
-#     path, db_num: str, mb_num: str, fw_ver: str, timestamps: int = 512
-# ):
-#     """Calculate dark count rate.
-
-#     Calculate dark count rate for the given daughterboard and
-#     motherboard.
-
-#     Parameters
-#     ----------
-#     path : str
-#         Path to datafiles.
-#     db_num : str
-#         LinoSPAD2 daughterboard number.
-#     mb_num : str
-#         LinoSPAD2 motherboard (FPGA) number.
-#     fw_ver : str
-#         LinoSPAD2 firmware version.
-#     timestamps : int, optional
-#         Number of timestamps per acquisition cycle per TDC. The default
-#         is 512.
-
-#     Returns
-#     -------
-#     dcr : float
-#         The dark count rate number per pixel per data file.
-
-#     Raises
-#     ------
-#     TypeError
-#         Raised if the firmware version given is not recognized.
-#     TypeError
-#         Raised if the daughterboard number given is not recognized.
-#     TypeError
-#         Raised if the motherboard number given is not recognized.
-#     """
-#     # parameter type check
-#     if isinstance(fw_ver, str) is not True:
-#         raise TypeError("'fw_ver' should be string, '2212b' or '2212s'")
-#     if isinstance(db_num, str) is not True:
-#         raise TypeError("'db_num' should be string, 'NL11' or 'A5'")
-#     if isinstance(mb_num, str) is not True:
-#         raise TypeError("'mb_num' should be string")
-
-#     os.chdir(path)
-
-#     files = glob.glob("*.dat*")
-
-#     valid_per_pixel = np.zeros(256)
-
-#     for i in tqdm(range(len(files)), desc="Going through files"):
-#         if fw_ver == "2212s":
-#             pix_coor = np.arange(256).reshape(4, 64).T
-#         elif fw_ver == "2212b":
-#             pix_coor = np.arange(256).reshape(64, 4)
-#         else:
-#             print("\nFirmware version is not recognized, exiting.")
-#             sys.exit()
-
-#         data = f_up.unpack_bin(
-#             files[i], db_num, mb_num, fw_ver, timestamps, inc_offset=False
-#         )
-#         for i in range(256):
-#             tdc, pix = np.argwhere(pix_coor == i)[0]
-#             ind = np.where(data[tdc].T[0] == pix)[0]
-#             ind1 = np.where(data[tdc].T[1][ind] > 0)[0]
-#             valid_per_pixel[i] += len(data[tdc].T[1][ind[ind1]])
-
-#     dcr = np.average(valid_per_pixel) / len(files)
-
-#     return dcr
-
-
 def calculate_dark_count_rate(
     path,
     daughterboard_number: str,
@@ -426,12 +345,14 @@ def calculate_dark_count_rate(
     valid_per_pixel = np.zeros(256)
 
     for i in tqdm(range(len(files)), desc="Going through files"):
+        # Define matrix of pixel coordinates, where rows are numbers of TDCs
+        # and columns are the pixels that connected to these TDCs
         if firmware_version == "2212s":
             pix_coor = np.arange(256).reshape(4, 64).T
         elif firmware_version == "2212b":
             pix_coor = np.arange(256).reshape(64, 4)
         else:
-            print("\nFirmware version is not recognized, exiting.")
+            print("\nFirmware version is not recognized.")
             sys.exit()
 
         data = f_up.unpack_binary_data(

@@ -48,10 +48,13 @@ def collect_data_and_apply_mask(
     timestamps: int,
     include_offset: bool,
     apply_calibration: bool,
-    valid_per_pixel: np.ndarray,
     app_mask: bool = True,
-) -> None:
+) -> np.ndarray:
     """Collect data from files and apply mask to the valid pixel count.
+
+    Unpacks data and returns the number of timestamps in each pixel.
+    This function introduces modularity to the whole module and is
+    called multiple times here.
 
     Parameters
     ----------
@@ -69,20 +72,25 @@ def collect_data_and_apply_mask(
         Switch for applying offset calibration.
     apply_calibration : bool
         Switch for applying TDC and offset calibration.
-    valid_per_pixel : np.ndarray
-        Array to store the valid pixel count.
     app_mask : bool, optional
         Switch for applying the mask on warm/hot pixels. Default is True.
 
     Returns
     -------
-    None
+    np.ndarray
+        Array with the number of timestamps per pixel.
     """
-    pix_coor = (
-        np.arange(256).reshape(64, 4)
-        if firmware_version == "2212b"
-        else np.arange(256).reshape(4, 64).T
-    )
+    # Define matrix of pixel coordinates, where rows are numbers of TDCs
+    # and columns are the pixels that connected to these TDCs
+    if firmware_version == "2212s":
+        pix_coor = np.arange(256).reshape(4, 64).T
+    elif firmware_version == "2212b":
+        pix_coor = np.arange(256).reshape(64, 4)
+    else:
+        print("\nFirmware version is not recognized.")
+        sys.exit()
+
+    timestamps_per_pixel = np.zeros(256)
 
     for i in tqdm(range(len(files)), desc="Collecting data"):
         data = f_up.unpack_binary_data(
@@ -98,12 +106,14 @@ def collect_data_and_apply_mask(
             tdc, pix = np.argwhere(pix_coor == i)[0]
             ind = np.where(data[tdc].T[0] == pix)[0]
             ind1 = np.where(data[tdc].T[1][ind] > 0)[0]
-            valid_per_pixel[i] += len(data[tdc].T[1][ind[ind1]])
+            timestamps_per_pixel[i] += len(data[tdc].T[1][ind[ind1]])
 
     # Apply mask if requested
     if app_mask:
         mask = utils.apply_mask(daughterboard_number, motherboard_number)
-        valid_per_pixel[mask] = 0
+        timestamps_per_pixel[mask] = 0
+
+    return timestamps_per_pixel
 
 
 def plot_single_pix_hist(
@@ -205,12 +215,14 @@ def plot_single_pix_hist(
         for i in range(len(pixels)):
             plt.figure(figsize=(16, 10))
             plt.rcParams.update({"font.size": 22})
+            # Define matrix of pixel coordinates, where rows are numbers of TDCs
+            # and columns are the pixels that connected to these TDCs
             if firmware_version == "2212s":
                 pix_coor = np.arange(256).reshape(4, 64).T
             elif firmware_version == "2212b":
                 pix_coor = np.arange(256).reshape(64, 4)
             else:
-                print("\nFirmware version is not recognized, exiting.")
+                print("\nFirmware version is not recognized.")
                 sys.exit()
             tdc, pix = np.argwhere(pix_coor == pixels[i])[0]
             ind = np.where(data[tdc].T[0] == pix)[0]
@@ -350,14 +362,14 @@ def plot_sensor_population(
 
     plot_name = files[0][:-4] + "-" + files[-1][:-4]
 
-    valid_per_pixel = np.zeros(256)
+    # valid_per_pixel = np.zeros(256)
 
     print(
         "\n> > > Collecting data for sensor population plot,"
         "Working in {} < < <\n".format(path)
     )
 
-    collect_data_and_apply_mask(
+    timestamps_per_pixel = collect_data_and_apply_mask(
         files,
         daughterboard_number,
         motherboard_number,
@@ -365,15 +377,14 @@ def plot_sensor_population(
         timestamps,
         include_offset,
         apply_calibration,
-        valid_per_pixel,
         app_mask,
     )
 
     if correct_pixel_addressing:
-        fix = np.zeros(len(valid_per_pixel))
-        fix[:128] = valid_per_pixel[128:]
-        fix[128:] = np.flip(valid_per_pixel[:128])
-        valid_per_pixel = fix
+        fix = np.zeros(len(timestamps_per_pixel))
+        fix[:128] = timestamps_per_pixel[128:]
+        fix[128:] = np.flip(timestamps_per_pixel[:128])
+        timestamps_per_pixel = fix
         del fix
 
     # Plotting
@@ -382,22 +393,22 @@ def plot_sensor_population(
     fig = plt.figure(figsize=(16, 10))
     if scale == "log":
         plt.yscale("log")
-    plt.plot(valid_per_pixel, style, color=color)
+    plt.plot(timestamps_per_pixel, style, color=color)
     plt.xlabel("Pixel number [-]")
     plt.ylabel("Timestamps [-]")
 
     # Find and fit peaks if fit_peaks is True
     if fit_peaks:
-        threshold = np.median(valid_per_pixel) * threshold_multiplier
+        threshold = np.median(timestamps_per_pixel) * threshold_multiplier
         fit_width = 10
-        peaks, _ = find_peaks(valid_per_pixel, height=threshold)
+        peaks, _ = find_peaks(timestamps_per_pixel, height=threshold)
         peaks = np.unique(peaks)
 
         valid_per_pixel_tmp = np.zeros(256)
 
         for peak_index in tqdm(peaks, desc="Fitting Gaussians"):
             ind = peaks - peak_index
-            valid_per_pixel_tmp[ind] = np.median(valid_per_pixel)
+            valid_per_pixel_tmp[ind] = np.median(timestamps_per_pixel)
             x_fit = np.arange(
                 peak_index - fit_width, peak_index + fit_width + 1
             )
@@ -664,6 +675,8 @@ def plot_sensor_population_full_sensor(
 
     Returns
     -------
+
+    #TODO Note on the order of motherboards
     None.
     """
     # parameter type check

@@ -13,10 +13,10 @@ class TestCTFull(unittest.TestCase):
     def setUp(self):
         # Set up test variables
         self.path = "tests/test_data"
-        self.pixels = np.arange(0, 20, 1)
+        self.pixels = [x for x in range(0, 20)]
         self.daughterboard_number = "NL11"
         self.motherboard_number = "#33"
-        self.firmware_version = "2212b"
+        self.firmware_version = "2212s"
         self.timestamps = 300
         self.delta_window = 10e3
         self.step = 1

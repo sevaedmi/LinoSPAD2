@@ -2,6 +2,7 @@ import glob
 import os
 import pickle
 
+import matplotlib
 import numpy as np
 from scipy.optimize import curve_fit
 
@@ -34,7 +35,7 @@ def apply_mask(daughterboard_number: str, motherboard_number: str) -> None:
     return mask
 
 
-def unpickle_plot(path: str, type: str) -> None:
+def unpickle_plot(path: str, type: str, interactive: bool = True) -> None:
     """Unpickle and display a matplotlib figure.
 
     This function loads a previously pickled matplotlib figure from the
@@ -48,6 +49,9 @@ def unpickle_plot(path: str, type: str) -> None:
     type : str
         Type of the plot. Should be one of 'sensor_population', 'fits',
         or 'delta_t'.
+    interactive : bool, optional
+        Switch for making the plot interactive by using QtAgg matplotlib
+        backend. The default is True.
 
     Raises
     ------
@@ -70,6 +74,9 @@ def unpickle_plot(path: str, type: str) -> None:
     plot_name = files[0][:-4] + "-" + files[-1][:-4]
 
     os.chdir(f"results/{type}")
+
+    if interactive:
+        matplotlib.use("QtAgg")
 
     with open(f"{plot_name}.pickle", "rb") as file:
         fig = pickle.load(file)

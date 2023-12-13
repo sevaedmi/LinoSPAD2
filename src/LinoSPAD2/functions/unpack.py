@@ -20,7 +20,7 @@ from LinoSPAD2.functions.calibrate import load_calibration_data
 
 
 def unpack_binary_data(
-    file_path: str,
+    file: str,
     daughterboard_number: str,
     motherboard_number: str,
     firmware_version: str,
@@ -32,7 +32,7 @@ def unpack_binary_data(
 
     Parameters
     ----------
-    file_path : str
+    file : str
         Path to the binary data file.
     daughterboard_number : str
         LinoSPAD2 daughterboard number.
@@ -78,7 +78,7 @@ def unpack_binary_data(
         raise TypeError("'firmware_version' should be a string.")
 
     # Unpack binary data
-    raw_data = np.fromfile(file_path, dtype=np.uint32)
+    raw_data = np.fromfile(file, dtype=np.uint32)
     # Timestamps are stored in the lower 28 bits
     data_timestamps = (raw_data & 0xFFFFFFF).astype(np.longlong)
     # Pixel address in the given TDC is 2 bits above timestamp

@@ -30,6 +30,7 @@ import pyarrow.feather as feather
 from matplotlib import pyplot as plt
 from tqdm import tqdm
 
+from LinoSPAD2.functions import calc_diff as cd
 from LinoSPAD2.functions import unpack as f_up
 from LinoSPAD2.functions import utils
 
@@ -76,11 +77,11 @@ def calculate_and_save_timestamp_differences(
     delta_window : float, optional
         Size of a window to which timestamp differences are compared.
         Differences in that window are saved. The default is 50e3 (50 ns).
-    apply_mask : bool, optional
+    app_mask : bool, optional
         Switch for applying the mask for hot pixels. The default is True.
-    apply_offset_calibration : bool, optional
+    include_offset : bool, optional
         Switch for applying offset calibration. The default is True.
-    apply_tdc_and_offset_calibration : bool, optional
+    apply_calibration : bool, optional
         Switch for applying TDC and offset calibration. If set to 'True'
         while apply_offset_calibration is set to 'False', only the TDC
         calibration is applied. The default is True.
@@ -149,11 +150,11 @@ def calculate_and_save_timestamp_differences(
     # Collect the data for the required pixels
     print(
         "\n> > > Collecting data for delta t plot for the requested "
-        "pixels and saving it to .csv in a cycle < < <\n"
+        "pixels and saving it to .feather in a cycle < < <\n"
     )
+    # Define matrix of pixel coordinates, where rows are numbers of TDCs
+    # and columns are the pixels that connected to these TDCs
     if firmware_version == "2212s":
-        # for transforming pixel number into TDC number + pixel
-        # coordinates in that TDC
         pix_coor = np.arange(256).reshape(4, 64).T
     elif firmware_version == "2212b":
         pix_coor = np.arange(256).reshape(64, 4)
@@ -164,20 +165,22 @@ def calculate_and_save_timestamp_differences(
     # Mask the hot/warm pixels
     if app_mask is True:
         mask = utils.apply_mask(daughterboard_number, motherboard_number)
+        if isinstance(pixels[0], int) and isinstance(pixels[1], int):
+            pixels = [pix for pix in pixels if pix not in mask]
+        else:
+            pixels[0] = [pix for pix in pixels[0] if pix not in mask]
+            pixels[1] = [pix for pix in pixels[1] if pix not in mask]
 
     # Check if 'pixels' is one or two peaks, swap their positions if
-    # needed
-    if isinstance(pixels[0], list) is True:
-        pixels_left = pixels[0]
-        pixels_right = pixels[1]
-        # Check if pixels from first list are to the left of the right
-        # (peaks are not mixed up)
-        if pixels_left[-1] > pixels_right[0]:
-            plc_hld = pixels_left
-            pixels_left = pixels_right
-            pixels_right = plc_hld
-            del plc_hld
-    elif isinstance(pixels[0], int) is True:
+    # needed. All situations for pixel input are covered here.
+    # TODO modularity, pixel_handling
+    if isinstance(pixels[0], list) and isinstance(pixels[1], list) is True:
+        pixels_left, pixels_right = sorted(pixels)
+    elif isinstance(pixels[0], int) and isinstance(pixels[1], list) is True:
+        pixels_left, pixels_right = sorted([[pixels[0]], pixels[1]])
+    elif isinstance(pixels[0], list) and isinstance(pixels[1], int) is True:
+        pixels_left, pixels_right = sorted([pixels[0], [pixels[1]]])
+    elif isinstance(pixels[0], int) and isinstance(pixels[1], int) is True:
         pixels_left = pixels
         pixels_right = pixels
 
@@ -198,42 +201,41 @@ def calculate_and_save_timestamp_differences(
             apply_calibration,
         )
 
+        deltas_all = cd.calculate_differences_2212(data_all, pixels, pix_coor)
+
         # Calculate and collect timestamp differences
-        # for q in pixels:
         for q in pixels_left:
-            # for w in pixels:
             for w in pixels_right:
                 if w <= q:
                     continue
-                if app_mask is True and (q in mask or w in mask):
-                    continue
                 deltas_all["{},{}".format(q, w)] = []
-                # find end of cycles
-                cycler = np.argwhere(data_all[0].T[0] == -2)
-                cycler = np.insert(cycler, 0, 0)
-                # first pixel in the pair
+                # Find end of cycles
+                cycle_ends = np.argwhere(data_all[0].T[0] == -2)
+                cycle_ends = np.insert(cycle_ends, 0, 0)
+                # First pixel in the pair
                 tdc1, pix_c1 = np.argwhere(pix_coor == q)[0]
                 pix1 = np.where(data_all[tdc1].T[0] == pix_c1)[0]
-                # second pixel in the pair
+                # Second pixel in the pair
                 tdc2, pix_c2 = np.argwhere(pix_coor == w)[0]
                 pix2 = np.where(data_all[tdc2].T[0] == pix_c2)[0]
-                # get timestamp for both pixels in the given cycle
-                for cyc in range(len(cycler) - 1):
+                # Get timestamp for both pixels in the given cycle
+
+                for cyc in range(len(cycle_ends) - 1):
                     pix1_ = pix1[
                         np.logical_and(
-                            pix1 > cycler[cyc], pix1 < cycler[cyc + 1]
+                            pix1 >= cycle_ends[cyc], pix1 < cycle_ends[cyc + 1]
                         )
                     ]
                     if not np.any(pix1_):
                         continue
                     pix2_ = pix2[
                         np.logical_and(
-                            pix2 > cycler[cyc], pix2 < cycler[cyc + 1]
+                            pix2 >= cycle_ends[cyc], pix2 < cycle_ends[cyc + 1]
                         )
                     ]
                     if not np.any(pix2_):
                         continue
-                    # calculate delta t
+                    # Calculate delta t
                     tmsp1 = data_all[tdc1].T[1][
                         pix1_[np.where(data_all[tdc1].T[1][pix1_] > 0)[0]]
                     ]
@@ -244,7 +246,7 @@ def calculate_and_save_timestamp_differences(
                         deltas = tmsp2 - t1
                         ind = np.where(np.abs(deltas) < delta_window)[0]
                         deltas_all["{},{}".format(q, w)].extend(deltas[ind])
-        # Save data as a .csv file in a cycle so data is not lost
+        # Save data as a .feather file in a cycle so data is not lost
         # in the case of failure close to the end
         data_for_plot_df = pd.DataFrame.from_dict(deltas_all, orient="index")
         del deltas_all
@@ -287,19 +289,21 @@ def calculate_and_save_timestamp_differences(
         os.chdir("..")
 
     # TODO
-    # if (
-    #     os.path.isfile(path + "/delta_ts_data/{}.csv".format(out_file_name))
-    #     is True
-    # ):
-    #     print(
-    #         "\n> > > Timestamp differences are saved as {file}.csv in "
-    #         "{path} < < <".format(
-    #             file=out_file_name,
-    #             path=path + "\delta_ts_data",
-    #         )
-    #     )
-    # else:
-    #     print("File wasn't generated. Check input parameters.")
+    if (
+        os.path.isfile(
+            path + "/delta_ts_data/{}.feather".format(out_file_name)
+        )
+        is True
+    ):
+        print(
+            "\n> > > Timestamp differences are saved as {file}.feather in "
+            "{path} < < <".format(
+                file=out_file_name,
+                path=path + "\delta_ts_data",
+            )
+        )
+    else:
+        print("File wasn't generated. Check input parameters.")
 
 
 def calculate_and_save_timestamp_differences_full_sensor(
@@ -307,8 +311,8 @@ def calculate_and_save_timestamp_differences_full_sensor(
     pixels: list,
     rewrite: bool,
     daughterboard_number: str,
-    mb_num1: str,
-    mb_num2: str,
+    motherboard_number1: str,
+    motherboard_number2: str,
     firmware_version: str,
     timestamps: int = 512,
     delta_window: float = 50e3,
@@ -334,9 +338,9 @@ def calculate_and_save_timestamp_differences_full_sensor(
         Switch for rewriting the '.csv' file if it already exists.
     daughterboard_number : str
         LinoSPAD2 daughterboard number.
-    motherboard_number : str
+    motherboard_number1 : str
         First LinoSPAD2 motherboard (FPGA) number.
-    mb_num2 : str
+    motherboard_number2 : str
         Second LinoSPAD2 motherboard (FPGA) number.
     firmware_version: str
         LinoSPAD2 firmware version. Versions "2212s" (skip) and "2212b"
@@ -368,23 +372,27 @@ def calculate_and_save_timestamp_differences_full_sensor(
     os.chdir(path)
 
     try:
-        os.chdir("{}".format(mb_num1))
+        os.chdir("{}".format(motherboard_number1))
     except FileNotFoundError:
-        raise FileNotFoundError("Data from {} not found".format(mb_num1))
+        raise FileNotFoundError(
+            "Data from {} not found".format(motherboard_number1)
+        )
     files_all1 = glob.glob("*.dat*")
     out_file_name = files_all1[0][:-4]
     os.chdir("..")
     try:
-        os.chdir("{}".format(mb_num2))
+        os.chdir("{}".format(motherboard_number2))
     except FileNotFoundError:
-        raise FileNotFoundError("Data from {} not found".format(mb_num2))
+        raise FileNotFoundError(
+            "Data from {} not found".format(motherboard_number2)
+        )
     files_all2 = glob.glob("*.dat*")
     out_file_name = out_file_name + "-" + files_all2[-1][:-4]
     os.chdir("..")
 
+    # Define matrix of pixel coordinates, where rows are numbers of TDCs
+    # and columns are the pixels that connected to these TDCs
     if firmware_version == "2212s":
-        # for transforming pixel number into TDC number + pixel
-        # coordinates in that TDC
         pix_coor = np.arange(256).reshape(4, 64).T
     elif firmware_version == "2212b":
         pix_coor = np.arange(256).reshape(64, 4)
@@ -392,45 +400,52 @@ def calculate_and_save_timestamp_differences_full_sensor(
         print("\nFirmware version is not recognized.")
         sys.exit()
 
-        # check if plot exists and if it should be rewrited
+    # Check if '.feather' file with timestamps differences already
+    # exists
+    feather_file = f"{out_file_name}.feather"
+
     try:
-        os.chdir("results/delta_t")
-        if os.path.isfile(
-            "{name}_delta_t_grid.png".format(name=out_file_name)
-        ):
+        os.chdir("delta_ts_data")
+        if os.path.isfile(feather_file):
             if rewrite is True:
                 print(
-                    "\n! ! ! Plot of timestamp differences already "
+                    "\n! ! ! Feather file with timestamps differences already "
                     "exists and will be rewritten ! ! !\n"
                 )
+                for i in range(5):
+                    print(
+                        "\n! ! ! Deleting the file in {} ! ! !\n".format(5 - i)
+                    )
+                    time.sleep(1)
+                os.remove(feather_file)
             else:
                 sys.exit(
-                    "\nPlot already exists, 'rewrite' set to 'False', exiting."
+                    "\n Feather file already exists, 'rewrite' set to"
+                    "'False', exiting."
                 )
-        os.chdir("../..")
+        os.chdir("..")
     except FileNotFoundError:
         pass
 
-    # # Mask the hot/warm pixels
     # if app_mask is True:
     #     path_to_back = os.getcwd()
     #     path_to_mask = os.path.realpath(__file__) + "/../.." + "/params/masks"
     #     os.chdir(path_to_mask)
-    #     file_mask1 = glob.glob("*{}_{}*".format(daughterboard_number, mb_num1))[0]
+    #     file_mask1 = glob.glob("*{}_{}*".format(daughterboard_number, motherboard_number1))[0]
     #     mask1 = np.genfromtxt(file_mask1).astype(int)
-    #     file_mask2 = glob.glob("*{}_{}*".format(daughterboard_number, mb_num2))[0]
+    #     file_mask2 = glob.glob("*{}_{}*".format(daughterboard_number, motherboard_number2))[0]
     #     mask2 = np.genfromtxt(file_mask2).astype(int)
     #     os.chdir(path_to_back)
 
     for i in tqdm(range(ceil(len(files_all1))), desc="Collecting data"):
         deltas_all = {}
         # First board
-        os.chdir("{}".format(mb_num1))
+        os.chdir("{}".format(motherboard_number1))
         file = files_all1[i]
-        data_all1 = f_up.unpack_bin(
+        data_all1 = f_up.unpack_binary_data(
             file,
             daughterboard_number,
-            mb_num1,
+            motherboard_number1,
             firmware_version,
             timestamps,
             include_offset,
@@ -448,12 +463,12 @@ def calculate_and_save_timestamp_differences_full_sensor(
         os.chdir("..")
 
         # Second board
-        os.chdir("{}".format(mb_num2))
+        os.chdir("{}".format(motherboard_number2))
         file = files_all2[i]
-        data_all2 = f_up.unpack_bin(
+        data_all2 = f_up.unpack_binary_data(
             file,
             daughterboard_number,
-            mb_num2,
+            motherboard_number2,
             firmware_version,
             timestamps,
             include_offset,
@@ -470,44 +485,57 @@ def calculate_and_save_timestamp_differences_full_sensor(
 
         os.chdir("..")
 
+        # TODO note what's done here
+        if pixels[1] >= 256:
+            if pixels[1] > 256 + 127:
+                pixels[1] = 255 - (pixels[1] - 256)
+            else:
+                pixels[1] = pixels[1] - 256 + 128
+        elif pixels[1] > 127:
+            pixels[1] = 255 - pixels[1]
+        else:
+            pixels[1] = pixels[1] + 128
+
+        # TODO explanation
         deltas_all["{},{}".format(pixels[0], pixels[1])] = []
         tdc1, pix_c1 = np.argwhere(pix_coor == pixels[0])[0]
         pix1 = np.where(data_all1[tdc1].T[0] == pix_c1)[0]
         tdc2, pix_c2 = np.argwhere(pix_coor == pixels[1])[0]
         pix2 = np.where(data_all2[tdc2].T[0] == pix_c2)[0]
 
+        # TODO explain what's happening here
         if cycle_start1 > cycle_start2:
             cyc = len(data_all1[0].T[1]) - cycle_start1 + cycle_start2
-            cycle_ends1 = cycle_ends1[cycle_ends1 > cycle_start1]
+            cycle_ends1 = cycle_ends1[cycle_ends1 >= cycle_start1]
             cycle_ends2 = np.intersect1d(
-                cycle_ends2[cycle_ends2 > cycle_start2],
-                cycle_ends2[cycle_ends2 < cyc],
+                cycle_ends2[cycle_ends2 >= cycle_start2],
+                cycle_ends2[cycle_ends2 <= cyc],
             )
         else:
             cyc = len(data_all1[0].T[1]) - cycle_start2 + cycle_start1
-            cycle_ends2 = cycle_ends2[cycle_ends2 > cycle_start2]
+            cycle_ends2 = cycle_ends2[cycle_ends2 >= cycle_start2]
             cycle_ends1 = np.intersect1d(
-                cycle_ends1[cycle_ends1 > cycle_start1],
-                cycle_ends1[cycle_ends1 < cyc],
+                cycle_ends1[cycle_ends1 >= cycle_start1],
+                cycle_ends1[cycle_ends1 <= cyc],
             )
-        # get timestamp for both pixels in the given cycle
+        # Get timestamps for both pixels in the given cycle
         for cyc in range(len(cycle_ends1) - 1):
             pix1_ = pix1[
                 np.logical_and(
-                    pix1 > cycle_ends1[cyc], pix1 < cycle_ends1[cyc + 1]
+                    pix1 >= cycle_ends1[cyc], pix1 < cycle_ends1[cyc + 1]
                 )
             ]
             if not np.any(pix1_):
                 continue
             pix2_ = pix2[
                 np.logical_and(
-                    pix2 > cycle_ends2[cyc], pix2 < cycle_ends2[cyc + 1]
+                    pix2 >= cycle_ends2[cyc], pix2 < cycle_ends2[cyc + 1]
                 )
             ]
 
             if not np.any(pix2_):
                 continue
-            # calculate delta t
+            # Calculate delta t
             tmsp1 = data_all1[tdc1].T[1][
                 pix1_[np.where(data_all1[tdc1].T[1][pix1_] > 0)[0]]
             ]
@@ -520,36 +548,69 @@ def calculate_and_save_timestamp_differences_full_sensor(
                 deltas_all["{},{}".format(pixels[0], pixels[1])].extend(
                     deltas[ind]
                 )
-        # Save data as a .csv file in a cycle so data is not lost
+        # Version using csv files; left for debugging
+        # # Save data as a .csv file in a cycle so data is not lost
+        # # in the case of failure close to the end
+        # data_for_plot_df = pd.DataFrame.from_dict(deltas_all, orient="index")
+        # del deltas_all
+        # data_for_plot_df = data_for_plot_df.T
+        # try:
+        #     os.chdir("delta_ts_data")
+        # except FileNotFoundError:
+        #     os.mkdir("delta_ts_data")
+        #     os.chdir("delta_ts_data")
+        # csv_file = glob.glob("*{}.csv*".format(out_file_name))
+        # if csv_file != []:
+        #     data_for_plot_df.to_csv(
+        #         "{}.csv".format(out_file_name),
+        #         mode="a",
+        #         index=False,
+        #         header=False,
+        #     )
+        # else:
+        #     data_for_plot_df.to_csv(
+        #         "{}.csv".format(out_file_name), index=False
+        #     )
+        # os.chdir("..")
+
+        # Save data to a Feather file in a cycle so data is not lost
         # in the case of failure close to the end
         data_for_plot_df = pd.DataFrame.from_dict(deltas_all, orient="index")
         del deltas_all
         data_for_plot_df = data_for_plot_df.T
+
+        feather_file = f"{out_file_name}.feather"
+
         try:
             os.chdir("delta_ts_data")
         except FileNotFoundError:
             os.mkdir("delta_ts_data")
             os.chdir("delta_ts_data")
-        csv_file = glob.glob("*{}.csv*".format(out_file_name))
-        if csv_file != []:
-            data_for_plot_df.to_csv(
-                "{}.csv".format(out_file_name),
-                mode="a",
-                index=False,
-                header=False,
+
+        if os.path.isfile(feather_file):
+            # Load existing Feather file
+            existing_data = feather.read_feather(feather_file)
+
+            # Append new data to the existing Feather file
+            combined_data = pd.concat(
+                [existing_data, data_for_plot_df], axis=0
             )
+            feather.write_feather(combined_data, feather_file)
+
         else:
-            data_for_plot_df.to_csv(
-                "{}.csv".format(out_file_name), index=False
-            )
+            # Save as a new Feather file
+            feather.write_feather(data_for_plot_df, feather_file)
+
         os.chdir("..")
 
     if (
-        os.path.isfile(path + "/delta_ts_data/{}.csv".format(out_file_name))
+        os.path.isfile(
+            path + "/delta_ts_data/{}.feather".format(out_file_name)
+        )
         is True
     ):
         print(
-            "\n> > > Timestamp differences are saved as {file}.csv in "
+            "\n> > > Timestamp differences are saved as {file}.feather in "
             "{path} < < <".format(
                 file=out_file_name,
                 path=path + "\delta_ts_data",
@@ -557,227 +618,6 @@ def calculate_and_save_timestamp_differences_full_sensor(
         )
     else:
         print("File wasn't generated. Check input parameters.")
-
-
-# def collect_and_plot_timestamp_differences(
-#     path,
-#     pixels,
-#     rewrite: bool,
-#     range_left: int = -10e3,
-#     range_right: int = 10e3,
-#     step: int = 1,
-#     same_y: bool = False,
-#     color: str = "salmon",
-#     synchro: bool = False,
-# ):
-#     """Collect and plot timestamp differences from a '.csv' file.
-
-#     Plots timestamp differences from a '.csv' file as a grid of histograms
-#     and as a single plot. The plot is saved in the 'results/delta_t' folder,
-#     which is created (if it does not already exist) in the same folder
-#     where data are.
-
-#     Parameters
-#     ----------
-#     path : str
-#         Path to data files.
-#     pixels : list
-#         List of pixel numbers for which the timestamp differences
-#         should be plotted.
-#     rewrite : bool
-#         Switch for rewriting the plot if it already exists.
-#     range_left : int, optional
-#         Lower limit for timestamp differences, lower values are not used.
-#         The default is -10e3.
-#     range_right : int, optional
-#         Upper limit for timestamp differences, higher values are not used.
-#         The default is 10e3.
-#     step : int, optional
-#         Histogram binning multiplier. The default is 1.
-#     same_y : bool, optional
-#         Switch for plotting the histograms with the same y-axis.
-#         The default is False.
-#     color : str, optional
-#         Color for the plot. The default is 'salmon'.
-
-#     Raises
-#     ------
-#     TypeError
-#         Only boolean values of 'rewrite' are accepted. The error is
-#         raised so that the plot does not accidentally get rewritten.
-
-#     Returns
-#     -------
-#     None.
-#     """
-#     # parameter type check
-#     if isinstance(rewrite, bool) is not True:
-#         raise TypeError("'rewrite' should be boolean")
-#     plt.ioff()
-#     os.chdir(path)
-#     if synchro is False:
-#         files_all = glob.glob("*.dat*")
-#         csv_file_name = files_all[0][:-4] + "-" + files_all[-1][:-4]
-#     else:
-#         folders = glob.glob("*#*")
-#         os.chdir(folders[0])
-#         files_all = glob.glob("*.dat*")
-#         csv_file_name = files_all[0][:-4] + "-"
-#         os.chdir("../{}".format(folders[1]))
-#         files_all = glob.glob("*.dat*")
-#         csv_file_name += files_all[-1][:-4]
-#         os.chdir("..")
-
-#     # check if plot exists and if it should be rewrited
-#     try:
-#         os.chdir("results/delta_t")
-#         if os.path.isfile(
-#             "{name}_delta_t_grid.png".format(name=csv_file_name)
-#         ):
-#             if rewrite is True:
-#                 print(
-#                     "\n! ! ! Plot of timestamp differences already "
-#                     "exists and will be rewritten ! ! !\n"
-#                 )
-#             else:
-#                 sys.exit(
-#                     "\nPlot already exists, 'rewrite' set to 'False', exiting."
-#                 )
-#         os.chdir("../..")
-#     except FileNotFoundError:
-#         pass
-
-#     print(
-#         "\n> > > Plotting timestamps differences as a grid of histograms < < <"
-#     )
-
-#     plt.rcParams.update({"font.size": 22})
-
-#     if len(pixels) > 2:
-#         fig, axs = plt.subplots(
-#             len(pixels) - 1,
-#             len(pixels) - 1,
-#             figsize=(5.5 * len(pixels), 5.5 * len(pixels)),
-#         )
-#         for ax in axs:
-#             for x in ax:
-#                 x.axes.set_axis_off()
-#     else:
-#         fig = plt.figure(figsize=(14, 14))
-
-#     # check if the y limits of all plots should be the same
-#     if same_y is True:
-#         y_max_all = 0
-
-#     for q in tqdm(range(len(pixels)), desc="Row in plot"):
-#         for w in range(len(pixels)):
-#             if w <= q:
-#                 continue
-#             if len(pixels) > 2:
-#                 axs[q][w - 1].axes.set_axis_on()
-#             try:
-#                 # keep only the required column in memory
-#                 data_to_plot = pd.read_csv(
-#                     "delta_ts_data/{}.csv".format(csv_file_name),
-#                     usecols=["{},{}".format(pixels[q], pixels[w])],
-#                 ).dropna()
-#             except ValueError:
-#                 continue
-
-#             # prepare the data for plot
-#             data_to_plot = np.array(data_to_plot)
-#             data_to_plot = np.delete(
-#                 data_to_plot, np.argwhere(data_to_plot < range_left)
-#             )
-#             data_to_plot = np.delete(
-#                 data_to_plot, np.argwhere(data_to_plot > range_right)
-#             )
-
-#             try:
-#                 bins = np.arange(
-#                     np.min(data_to_plot),
-#                     np.max(data_to_plot),
-#                     17.857 * step,
-#                 )
-#             except ValueError:
-#                 print(
-#                     "\nCouldn't calculate bins for {q}-{w} pair: probably not "
-#                     "enough delta ts.".format(q=q, w=w)
-#                 )
-#                 continue
-
-#             if len(pixels) > 2:
-#                 axs[q][w - 1].set_xlabel("\u0394t [ps]")
-#                 axs[q][w - 1].set_ylabel("# of coincidences [-]")
-#                 n, b, p = axs[q][w - 1].hist(
-#                     data_to_plot,
-#                     bins=bins,
-#                     color=color,
-#                 )
-#             else:
-#                 plt.xlabel("\u0394t [ps]")
-#                 plt.ylabel("# of coincidences [-]")
-#                 n, b, p = plt.hist(
-#                     data_to_plot,
-#                     bins=bins,
-#                     color=color,
-#                 )
-
-#             try:
-#                 peak_max_pos = np.argmax(n).astype(np.intc)
-#                 # 2 ns window around peak
-#                 win = int(1000 / ((range_right - range_left) / 100))
-#                 peak_max = np.sum(n[peak_max_pos - win : peak_max_pos + win])
-#             except ValueError:
-#                 peak_max = 0
-
-#             if same_y is True:
-#                 try:
-#                     y_max = np.max(n)
-#                 except ValueError:
-#                     y_max = 0
-#                     print("\nCould not find maximum y value\n")
-#                 if y_max_all < y_max:
-#                     y_max_all = y_max
-#                 if len(pixels) > 2:
-#                     axs[q][w - 1].set_ylim(0, y_max + 4)
-#                 else:
-#                     plt.ylim(0, y_max + 4)
-
-#             if len(pixels) > 2:
-#                 axs[q][w - 1].set_xlim(range_left - 100, range_right + 100)
-#                 axs[q][w - 1].set_title(
-#                     "Pixels {p1},{p2}\nPeak in 2 ns window: {pp}".format(
-#                         p1=pixels[q], p2=pixels[w], pp=int(peak_max)
-#                     )
-#                 )
-#             else:
-#                 plt.xlim(range_left - 100, range_right + 100)
-#                 if synchro is False:
-#                     plt.title(
-#                         "Pixels {p1},{p2}".format(p1=pixels[q], p2=pixels[w])
-#                     )
-#                 else:
-#                     plt.title(
-#                         "Pixels {p1},{p2}".format(
-#                             p1=pixels[0], p2=256 + 256 - pixels[1]
-#                         )
-#                     )
-
-#             try:
-#                 os.chdir("results/delta_t")
-#             except FileNotFoundError:
-#                 os.makedirs("results/delta_t")
-#                 os.chdir("results/delta_t")
-#             fig.tight_layout()  # for perfect spacing between the plots
-#             plt.savefig("{name}_delta_t_grid.png".format(name=csv_file_name))
-#             os.chdir("../..")
-#     print(
-#         "\n> > > Plot is saved as {file} in {path}< < <".format(
-#             file=csv_file_name + "_delta_t_grid.png",
-#             path=path + "/results/delta_t",
-#         )
-#     )
 
 
 def collect_and_plot_timestamp_differences(
@@ -789,7 +629,6 @@ def collect_and_plot_timestamp_differences(
     step: int = 1,
     same_y: bool = False,
     color: str = "salmon",
-    synchro: bool = False,
 ):
     """Collect and plot timestamp differences from a '.csv' file.
 
@@ -836,18 +675,9 @@ def collect_and_plot_timestamp_differences(
         raise TypeError("'rewrite' should be boolean")
     plt.ioff()
     os.chdir(path)
-    if synchro is False:
-        files_all = glob.glob("*.dat*")
-        csv_file_name = files_all[0][:-4] + "-" + files_all[-1][:-4]
-    else:
-        folders = glob.glob("*#*")
-        os.chdir(folders[0])
-        files_all = glob.glob("*.dat*")
-        csv_file_name = files_all[0][:-4] + "-"
-        os.chdir("../{}".format(folders[1]))
-        files_all = glob.glob("*.dat*")
-        csv_file_name += files_all[-1][:-4]
-        os.chdir("..")
+
+    files_all = glob.glob("*.dat*")
+    csv_file_name = files_all[0][:-4] + "-" + files_all[-1][:-4]
 
     # Check if plot exists and if it should be rewritten
     try:
@@ -897,7 +727,42 @@ def collect_and_plot_timestamp_differences(
             if len(pixels) > 2:
                 axs[q][w - 1].axes.set_axis_on()
 
-            print(os.getcwd())
+            # Read data from csv file
+
+            # try:
+            #     os.path.isfile("delta_ts_data/{}.csv".format(csv_file_name))
+            #     csv_file = "delta_ts_data/{}.csv".format(csv_file_name)
+            # except FileNotFoundError:
+            #     try:
+            #         dash_position = csv_file.find("-")
+            #         csv_file_name = (
+            #             "delta_ts_data/"
+            #             + csv_file[dash_position + 1 : -4]
+            #             + "-"
+            #             + csv_file[14:dash_position]
+            #             + ".csv"
+            #         )
+            #     except FileNotFoundError:
+            #         raise FileNotFoundError(
+            #             "'.csv' file with timestamps"
+            #             "differences was not found"
+            #         )
+
+            # csv_file_path = "delta_ts_data/{}.csv".format(csv_file_name)
+            # if os.path.isfile(csv_file_path):
+            #     csv_file = csv_file_path
+            # else:
+            #     raise FileNotFoundError(
+            #         "'.csv' file with timestamps differences was not found"
+            #     )
+
+            # try:
+            #     data_to_plot = pd.read_csv(
+            #         csv_file,
+            #         usecols=["{},{}".format(pixels[q], pixels[w])],
+            #     ).dropna()
+            # except ValueError:
+            #     continue
 
             # Read data from Feather file
             try:
@@ -977,16 +842,284 @@ def collect_and_plot_timestamp_differences(
                 )
             else:
                 plt.xlim(range_left - 100, range_right + 100)
-                if synchro is False:
-                    plt.title(
-                        "Pixels {p1},{p2}".format(p1=pixels[q], p2=pixels[w])
-                    )
+
+                plt.title(
+                    "Pixels {p1},{p2}".format(p1=pixels[q], p2=pixels[w])
+                )
+
+            # Save the figure
+            try:
+                os.chdir("results/delta_t")
+            except FileNotFoundError:
+                os.makedirs("results/delta_t")
+                os.chdir("results/delta_t")
+            fig.tight_layout()  # for perfect spacing between the plots
+            plt.savefig("{name}_delta_t_grid.png".format(name=csv_file_name))
+            os.chdir("../..")
+
+    print(
+        "\n> > > Plot is saved as {file} in {path}< < <".format(
+            file=csv_file_name + "_delta_t_grid.png",
+            path=path + "/results/delta_t",
+        )
+    )
+
+
+def collect_and_plot_timestamp_differences_full_sensor(
+    path,
+    pixels,
+    rewrite: bool,
+    range_left: int = -10e3,
+    range_right: int = 10e3,
+    step: int = 1,
+    same_y: bool = False,
+    color: str = "salmon",
+):  # TODO
+    # TODO pixel_handling
+    """Collect and plot timestamp differences from a '.csv' file.
+
+    Plots timestamp differences from a '.csv' file as a grid of histograms
+    and as a single plot. The plot is saved in the 'results/delta_t' folder,
+    which is created (if it does not already exist) in the same folder
+    where data are.
+
+    Parameters
+    ----------
+    path : str
+        Path to data files.
+    pixels : list
+        List of pixel numbers for which the timestamp differences
+        should be plotted.
+    rewrite : bool
+        Switch for rewriting the plot if it already exists.
+    range_left : int, optional
+        Lower limit for timestamp differences, lower values are not used.
+        The default is -10e3.
+    range_right : int, optional
+        Upper limit for timestamp differences, higher values are not used.
+        The default is 10e3.
+    step : int, optional
+        Histogram binning multiplier. The default is 1.
+    same_y : bool, optional
+        Switch for plotting the histograms with the same y-axis.
+        The default is False.
+    color : str, optional
+        Color for the plot. The default is 'salmon'.
+
+    Raises
+    ------
+    TypeError
+        Only boolean values of 'rewrite' are accepted. The error is
+        raised so that the plot does not accidentally get rewritten.
+
+    Returns
+    -------
+    None.
+    """
+    # parameter type check
+    if isinstance(rewrite, bool) is not True:
+        raise TypeError("'rewrite' should be boolean")
+    plt.ioff()
+    os.chdir(path)
+
+    folders = glob.glob("*#*")
+    os.chdir(folders[0])
+    files_all = glob.glob("*.dat*")
+    csv_file_name1 = files_all[0][:-4] + "-"
+    csv_file_name2 = "-" + files_all[-1][:-4]
+    os.chdir("../{}".format(folders[1]))
+    files_all = glob.glob("*.dat*")
+    csv_file_name1 += files_all[-1][:-4]
+    csv_file_name2 = files_all[0][:-4] + csv_file_name2
+    os.chdir("..")
+
+    # Check if plot exists and if it should be rewritten
+    try:
+        os.chdir("results/delta_t")
+        if os.path.isfile(
+            "{name}_delta_t_grid.png".format(name=csv_file_name1)
+        ):
+            if rewrite is True:
+                print(
+                    "\n! ! ! Plot of timestamp differences already"
+                    "exists and will be rewritten ! ! !\n"
+                )
+            else:
+                sys.exit(
+                    "\nPlot already exists, 'rewrite' set to 'False', exiting."
+                )
+
+        elif os.path.isfile(
+            "{name}_delta_t_grid.png".format(name=csv_file_name2)
+        ):
+            if rewrite is True:
+                print(
+                    "\n! ! ! Plot of timestamp differences already"
+                    "exists and will be rewritten ! ! !\n"
+                )
+            else:
+                sys.exit(
+                    "\nPlot already exists, 'rewrite' set to 'False', exiting."
+                )
+
+        os.chdir("../..")
+    except FileNotFoundError:
+        pass
+
+    print(
+        "\n> > > Plotting timestamps differences as a grid of histograms < < <"
+    )
+
+    plt.rcParams.update({"font.size": 22})
+
+    if len(pixels) > 2:
+        fig, axs = plt.subplots(
+            len(pixels) - 1,
+            len(pixels) - 1,
+            figsize=(5.5 * len(pixels), 5.5 * len(pixels)),
+        )
+        for ax in axs:
+            for x in ax:
+                x.axes.set_axis_off()
+    else:
+        fig = plt.figure(figsize=(14, 14))
+
+    # Check if the y limits of all plots should be the same
+    if same_y is True:
+        y_max_all = 0
+
+    for q in tqdm(range(len(pixels)), desc="Row in plot"):
+        for w in range(len(pixels)):
+            if w <= q:
+                continue
+            if len(pixels) > 2:
+                axs[q][w - 1].axes.set_axis_on()
+
+            # Read data from csv file
+
+            # try:
+            #     os.path.isfile("delta_ts_data/{}.csv".format(csv_file_name))
+            #     csv_file = "delta_ts_data/{}.csv".format(csv_file_name)
+            # except FileNotFoundError:
+            #     try:
+            #         dash_position = csv_file.find("-")
+            #         csv_file_name = (
+            #             "delta_ts_data/"
+            #             + csv_file[dash_position + 1 : -4]
+            #             + "-"
+            #             + csv_file[14:dash_position]
+            #             + ".csv"
+            #         )
+            #     except FileNotFoundError:
+            #         raise FileNotFoundError(
+            #             "'.csv' file with timestamps"
+            #             "differences was not found"
+            #         )
+
+            csv_file_path1 = "delta_ts_data/{}.csv".format(csv_file_name1)
+            csv_file_path2 = "delta_ts_data/{}.csv".format(csv_file_name2)
+            csv_file, csv_file_name = (
+                (csv_file_path1, csv_file_name1)
+                if os.path.isfile(csv_file_path1)
+                else (csv_file_path2, csv_file_name2)
+            )
+            # print(csv_file)
+            if not os.path.isfile(csv_file):
+                raise FileNotFoundError(
+                    "'.csv' file with timestamps differences was not found"
+                )
+
+            # try:
+            #     data_to_plot = pd.read_csv(
+            #         csv_file,
+            #         usecols=["{},{}".format(pixels[q], pixels[w])],
+            #     ).dropna()
+            # except ValueError:
+            #     continue
+            # Read data from Feather file
+            try:
+                data_to_plot = feather.read_feather(
+                    "delta_ts_data/{name}.feather".format(name=csv_file_name),
+                    columns=["{},{}".format(pixels[q], pixels[w])],
+                ).dropna()
+            except ValueError:
+                continue
+
+            # Prepare the data for plot
+            data_to_plot = np.array(data_to_plot)
+            data_to_plot = np.delete(
+                data_to_plot, np.argwhere(data_to_plot < range_left)
+            )
+            data_to_plot = np.delete(
+                data_to_plot, np.argwhere(data_to_plot > range_right)
+            )
+
+            try:
+                bins = np.arange(
+                    np.min(data_to_plot),
+                    np.max(data_to_plot),
+                    17.857 * step,
+                )
+            except ValueError:
+                print(
+                    "\nCouldn't calculate bins for {q}-{w} pair: probably not "
+                    "enough delta ts.".format(q=q, w=w)
+                )
+                continue
+
+            if len(pixels) > 2:
+                axs[q][w - 1].set_xlabel("\u0394t [ps]")
+                axs[q][w - 1].set_ylabel("# of coincidences [-]")
+                n, b, p = axs[q][w - 1].hist(
+                    data_to_plot,
+                    bins=bins,
+                    color=color,
+                )
+            else:
+                plt.xlabel("\u0394t [ps]")
+                plt.ylabel("# of coincidences [-]")
+                n, b, p = plt.hist(
+                    data_to_plot,
+                    bins=bins,
+                    color=color,
+                )
+
+            try:
+                peak_max_pos = np.argmax(n).astype(np.intc)
+                # 2 ns window around peak
+                win = int(1000 / ((range_right - range_left) / 100))
+                peak_max = np.sum(n[peak_max_pos - win : peak_max_pos + win])
+            except ValueError:
+                peak_max = 0
+
+            if same_y is True:
+                try:
+                    y_max = np.max(n)
+                except ValueError:
+                    y_max = 0
+                    print("\nCould not find maximum y value\n")
+                if y_max_all < y_max:
+                    y_max_all = y_max
+                if len(pixels) > 2:
+                    axs[q][w - 1].set_ylim(0, y_max + 4)
                 else:
-                    plt.title(
-                        "Pixels {p1},{p2}".format(
-                            p1=pixels[0], p2=256 + 256 - pixels[1]
-                        )
+                    plt.ylim(0, y_max + 4)
+
+            if len(pixels) > 2:
+                axs[q][w - 1].set_xlim(range_left - 100, range_right + 100)
+                axs[q][w - 1].set_title(
+                    "Pixels {p1},{p2}\nPeak in 2 ns window: {pp}".format(
+                        p1=pixels[q], p2=pixels[w], pp=int(peak_max)
                     )
+                )
+            else:
+                plt.xlim(range_left - 100, range_right + 100)
+
+                plt.title(
+                    "Pixels {p1},{p2}".format(
+                        p1=pixels[0], p2=256 + 255 - pixels[1]
+                    )
+                )
 
             # Save the figure
             try:
