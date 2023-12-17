@@ -130,8 +130,16 @@ def unpack_binary_data(
     else:
         # Path to the calibration data
         pix_coordinates = np.arange(256).reshape(64, 4)
-        path_calibration_data = (
-            os.path.realpath(__file__) + "/../.." + "/params/calibration_data"
+        # path_calibration_data = (
+        #     os.path.realpath(__file__) + "/../.." + "/params/calibration_data"
+        # )
+
+        path_calibration_data = os.path.join(
+            os.path.dirname(os.path.realpath(__file__)),
+            "..",
+            "..",
+            "params",
+            "calibration_data",
         )
 
         try:
