@@ -24,7 +24,13 @@ def apply_mask(daughterboard_number: str, motherboard_number: str) -> None:
     None
     """
     path_to_back = os.getcwd()
-    path_to_mask = os.path.realpath(__file__) + "/../.." + "/params/masks"
+    # path_to_mask = os.path.realpath(__file__) + "/../.." + "/params/masks"
+    path_to_mask = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)),
+        "..",
+        "params",
+        "masks",
+    )
     os.chdir(path_to_mask)
     file_mask = glob.glob(
         "*{}_{}*".format(daughterboard_number, motherboard_number)
