@@ -400,7 +400,7 @@ def plot_sensor_population(
     # Find and fit peaks if fit_peaks is True
     if fit_peaks:
         threshold = np.median(timestamps_per_pixel) * threshold_multiplier
-        fit_width = 10
+        fit_width = 20
         peaks, _ = find_peaks(timestamps_per_pixel, height=threshold)
         peaks = np.unique(peaks)
 
@@ -412,7 +412,7 @@ def plot_sensor_population(
             x_fit = np.arange(
                 peak_index - fit_width, peak_index + fit_width + 1
             )
-            y_fit = valid_per_pixel_tmp[x_fit]
+            y_fit = timestamps_per_pixel[x_fit]
             try:
                 params, _ = utils.fit_gaussian(x_fit, y_fit)
             except Exception:

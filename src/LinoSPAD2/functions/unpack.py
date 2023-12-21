@@ -262,8 +262,12 @@ def unpack_binary_data_with_absolute_timestamps(
     # Unpack binary data
     raw_data = np.fromfile(file_path, dtype=np.uint32)
     # Timestamps are stored in the lower 28 bits
-    data_raw = (raw_data & 0xFFFFFFF).astype(np.longlong)
-    cycles = int(len(data_raw) / (timestamps * 65 + 2))
+    # data_raw = (raw_data & 0xFFFFFFF).astype(np.longlong)
+    data_timestamps_all = (raw_data & 0xFFFFFFF).astype(np.longlong)
+    # data_timestamps_all[np.where(raw_data < 0x80000000)] = -1
+    # data_pixels_all = ((raw_data >> 28) & 0x3).astype(np.longlong)
+    # cycles = int(len(data_raw) / (timestamps * 65 + 2))
+    cycles = int(len(data_timestamps_all) / (timestamps * 65 + 2))
 
     # List of indices of absolute timestamps
     ind = []
@@ -283,7 +287,8 @@ def unpack_binary_data_with_absolute_timestamps(
         )
 
     # Absolute timestamps only
-    data_absolute_timestamps = data_raw[ind].reshape(cycles, 2)
+    # data_absolute_timestamps = data_raw[ind].reshape(cycles, 2)
+    data_absolute_timestamps = data_timestamps_all[ind].reshape(cycles, 2)
 
     # Convert the absolute timestamps from binary to decimal (ps)
     for cyc in range(cycles):
@@ -294,12 +299,23 @@ def unpack_binary_data_with_absolute_timestamps(
             2,
         )
 
+    del data_absolute_timestamps
+
+    raw_data_cut = np.delete(raw_data, ind)
+
+    data_timestamps_cut = (raw_data_cut & 0xFFFFFFF).astype(np.longlong)
+    data_timestamps_cut[np.where(raw_data_cut < 0x80000000)] = -1
+    data_pixels = ((raw_data_cut >> 28) & 0x3).astype(np.longlong)
     # Standard data: everything besides the absolute timestamps
-    data_standard = np.delete(data_raw, ind)
+    # data_standard = np.delete(data_raw, ind)
+    # data_timestamps_cut = np.delete(data_timestamps_all, ind)
+    # data_pixels = np.delete(data_pixels_all, ind)
 
     # Pixel address in the given TDC is 2 bits above timestamp
-    data_pixels = ((data_standard >> 28) & 0x3).astype(np.longlong)
-    data_standard[np.where(data_standard < 0x80000000)] = -1
+    # data_pixels = ((data_standard >> 28) & 0x3).astype(np.longlong)
+    # data_standard[np.where(data_standard < 0x80000000)] = -1
+    # data_pixels = ((data_timestamps_cut >> 28) & 0x3).astype(np.longlong)
+    # data_timestamps_cut[np.where(raw_data < 0x80000000)] = -1
     # Number of acquisition cycles in each data file
 
     # Transform into matrix 65 by cycles*timestamps
@@ -310,7 +326,7 @@ def unpack_binary_data_with_absolute_timestamps(
     )
 
     data_matrix_timestamps = (
-        data_standard.reshape(cycles, 65, timestamps)
+        data_timestamps_cut.reshape(cycles, 65, timestamps)
         .transpose((1, 0, 2))
         .reshape(65, timestamps * cycles)
     )

@@ -6,10 +6,11 @@ cross-talk data for the given data sets.
 This file can also be imported as a module and contains the following
 functions:
 
-    * colect_ct - function for calculating and collecting the cross-talk
-    data into a '.csv' file. Works with firmware version '2212b'.
+    * collect_cross_talk - function for calculating and collecting the
+    cross-talk data into a '.csv' file. Works with firmware version
+    '2212s'.
 
-    * plot_ct - function for plotting the cross-talk data from the '.csv'
+    * plot_cross_talk - function for plotting the cross-talk data from the '.csv'
     file as the cross-talk vs. the distance between the two pixels, for
     which the cross-talk is calculated, in pixels.
 
@@ -46,7 +47,7 @@ def collect_cross_talk(
 
     Calculate timestamp differences for all pixels in the given range,
     where all timestamp differences are calculated for the first pixel
-    in the range. Works with firmware version "2212b". The
+    in the range. Works with firmware version "2212s only". The
     output is saved as a '.csv' file in the folder "/cross_talk_data",
     which is created if it does not exist, in the same folder where
     datafiles are located.
@@ -55,8 +56,9 @@ def collect_cross_talk(
     ----------
     path : str
         Path to datafiles.
-    pixels : array-like
-        Array of pixel numbers.
+    pixels : list
+        List of pixel numbers. The list should be constructed in such
+        way, the the first number is the aggressor pixel.
     daughterboard_number : str
         LinoSPAD2 daughterboard number.
     motherboard_number : str
@@ -80,6 +82,13 @@ def collect_cross_talk(
     Returns
     -------
     None.
+
+    Notes
+    -----
+    Cross-talk data should be collected with the '2212s' firmware version
+    as in '2212b' numbers don't fully represent reality. This is
+    mainly due to how pixels are connected to separate TDCs in the
+    '2212b' firmware version.
     """
     # Parameter type check
     if not isinstance(daughterboard_number, str):
@@ -87,6 +96,8 @@ def collect_cross_talk(
     if not isinstance(motherboard_number, str):
         raise TypeError("'motherboard_number' should be a string")
 
+    # Prepare lists for collecting everything required for cross-talk
+    # number calculation
     print("\n> > > Collecting data for cross-talk analysis < < <\n")
     file_name_list = []
     pix1_list = []
@@ -114,6 +125,10 @@ def collect_cross_talk(
         print("\nFirmware version is not recognized.")
         sys.exit()
 
+    # Break the given list of pixels into two: first one is the aggresor,
+    # second list - victims only
+    pixels = [pixels[0], pixels[1:]]
+
     for file in tqdm(files):
         data = f_up.unpack_binary_data(
             file,
@@ -133,16 +148,21 @@ def collect_cross_talk(
             ind1 = np.where(data[tdc].T[1][ind] > 0)[0]
             timestamps_per_pixel[i] += len(data[tdc].T[1][ind[ind1]])
 
-        pixels = [pixels[0], pixels[1:]]
-        deltas = cd.calculate_differences_2212(data, pixels, pix_coor)
-
+        # Population of the aggressor pixel
         timestamps_pix1 = timestamps_per_pixel[pixels[0]]
 
         for j in pixels[1]:
             if timestamps_pix1 == 0:
                 continue
+
+            # Population of the victim pixel
             timestamps_pix2 = timestamps_per_pixel[j]
 
+            deltas = cd.calculate_differences_2212(
+                data, [pixels[0], j], pix_coor
+            )
+
+            # The cross-talk number in %
             ct = (
                 len(deltas[f"{pixels[0]},{j}"])
                 * 100
@@ -154,7 +174,7 @@ def collect_cross_talk(
             pix2_list.append(j)
             timestamps_list1.append(timestamps_pix1)
             timestamps_list2.append(timestamps_pix2)
-            deltas_list.append(len(deltas))
+            deltas_list.append(len(deltas[f"{pixels[0]},{j}"]))
             ct_list.append(ct)
 
     print(
@@ -182,15 +202,30 @@ def collect_cross_talk(
         os.makedirs("{}".format("cross_talk_data"))
         os.chdir("cross_talk_data")
 
-    if glob.glob("*CT_data_{}-{}.csv*".format(files[0], files[-1])) == []:
+    # Check if the '.csv' file with cross-talk numbers for these
+    # data files already exists
+    if (
+        glob.glob(
+            "*CT_data_{}-{}_pixel_{}.csv*".format(
+                files[0], files[-1], pixels[0]
+            )
+        )
+        == []
+    ):
         cross_talk_data.to_csv(
-            "CT_data_{}-{}.csv".format(files[0], files[-1]),
+            "CT_data_{}-{}_pixel_{}.csv".format(
+                files[0], files[-1], pixels[0]
+            ),
             index=False,
         )
     else:
         cross_talk_data.to_csv(
-            "CT_data_{}-{}.csv".format(files[0], files[-1]),
+            "CT_data_{}-{}_pixel_{}.csv".format(
+                files[0], files[-1], pixels[0]
+            ),
+            mode="a",
             index=False,
+            header=False,
         )
 
 
@@ -209,7 +244,7 @@ def plot_cross_talk(path, pix1, scale: str = "linear"):
         located.
     pix1 : int
         Pixel number relative to which the cross-talk data should be
-        plotted.
+        plotted - the aggressor pixel.
     scale : str, optional
         Switch for plot scale: logarithmic or linear. Default is "linear".
 
@@ -227,7 +262,9 @@ def plot_cross_talk(path, pix1, scale: str = "linear"):
 
     os.chdir("cross_talk_data")
 
-    file = glob.glob("*CT_data_{}-{}.csv*".format(files[0], files[-1]))[0]
+    file = glob.glob(
+        "*CT_data_{}-{}_pixel_{}.csv*".format(files[0], files[-1], pix1)
+    )[0]
 
     plot_name = "{}_{}".format(files[0], files[-1])
 

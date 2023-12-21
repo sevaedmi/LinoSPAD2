@@ -7,16 +7,21 @@ This file can also be imported as a module and contains the following
 functions:
 
     * calculate_and_save_timestamp_differences - unpacks the binary data,
-    calculates timestamp differences and saves into a '.csv' file. Works
+    calculates timestamp differences and saves into a '.feather' file. Works
     with firmware versions '2208' and '2212b'.
     
     * calculate_and_save_timestamp_differences_full_sensor - unpacks the
-    binary data, calculates timestamp differences and saves into a '.csv'
+    binary data, calculates timestamp differences and saves into a '.feather'
     file. Works with firmware versions '2208' and '2212b'. Analyzes data
     from both sensor halves/both FPGAs.
 
     * collect_and_plot_timestamp_differences - collect timestamps from a
-    '.csv' file and plot them in a grid.
+    '.feather' file and plot them in a grid.
+    
+    * collect_and_plot_timestamp_differences_full_sensor - collect
+    timestamps from a '.feather' file and plot histograms of them
+    in a grid. This function should be used for the full sensor
+    setup.
 """
 import glob
 import os
@@ -48,10 +53,10 @@ def calculate_and_save_timestamp_differences(
     include_offset: bool = True,
     apply_calibration: bool = True,
 ):
-    """Calculate and save timestamp differences into '.csv' file.
+    """Calculate and save timestamp differences into '.feather' file.
 
     Unpacks data into a dictionary, calculates timestamp differences for
-    the requested pixels, and saves them into a '.csv' table. Works with
+    the requested pixels, and saves them into a '.feather' table. Works with
     firmware version 2212.
 
     Parameters
@@ -63,7 +68,7 @@ def calculate_and_save_timestamp_differences(
         be calculated and saved or list of two lists with pixel numbers
         for peak vs. peak calculations.
     rewrite : bool
-        Switch for rewriting the '.csv' file if it already exists.
+        Switch for rewriting the '.feather' file if it already exists.
     daughterboard_number : str
         LinoSPAD2 daughterboard number.
     motherboard_number : str
@@ -105,14 +110,12 @@ def calculate_and_save_timestamp_differences(
         )
     if isinstance(firmware_version, str) is False:
         raise TypeError(
-            "'firmware_version' should be string, '2212b' or '2208'"
+            "'firmware_version' should be string, '2212s', '2212b' or" "'2208'"
         )
     if isinstance(rewrite, bool) is False:
         raise TypeError("'rewrite' should be boolean")
     if isinstance(daughterboard_number, str) is False:
-        raise TypeError(
-            "'daughterboard_number' should be string, either 'NL11' or 'A5'"
-        )
+        raise TypeError("'daughterboard_number' should be string")
 
     os.chdir(path)
 
@@ -120,7 +123,7 @@ def calculate_and_save_timestamp_differences(
 
     out_file_name = files_all[0][:-4] + "-" + files_all[-1][:-4]
 
-    # check if the feather file exists and if it should be rewrited
+    # Check if the feather file exists and if it should be rewrited
 
     feather_file = f"{out_file_name}.feather"
 
@@ -220,6 +223,7 @@ def calculate_and_save_timestamp_differences(
                 pix2 = np.where(data_all[tdc2].T[0] == pix_c2)[0]
                 # Get timestamp for both pixels in the given cycle
 
+                # Take data from the appropriate cycle only
                 for cyc in range(len(cycle_ends) - 1):
                     pix1_ = pix1[
                         np.logical_and(
@@ -288,7 +292,7 @@ def calculate_and_save_timestamp_differences(
             feather.write_feather(data_for_plot_df, feather_file)
         os.chdir("..")
 
-    # TODO
+    # Check, if the file was created
     if (
         os.path.isfile(
             path + "/delta_ts_data/{}.feather".format(out_file_name)
@@ -319,11 +323,13 @@ def calculate_and_save_timestamp_differences_full_sensor(
     app_mask: bool = True,
     include_offset: bool = True,
     apply_calibration: bool = True,
-):
-    """Calculate and save timestamp differences into '.csv' file.
+    absolute_timestamps: bool = False,
+):  # TODO add option for collecting from more than just two pixels
+    # TODO use pixel handling function for modularity (if possible)
+    """Calculate and save timestamp differences into '.feather' file.
 
     Unpacks data into a dictionary, calculates timestamp differences for
-    the requested pixels and saves them into a '.csv' table. Works with
+    the requested pixels and saves them into a '.feather' table. Works with
     firmware version 2212. Analyzes data from both sensor halves/both
     FPGAs, hence the two input parameters for LinoSPAD2 motherboards.
 
@@ -335,7 +341,7 @@ def calculate_and_save_timestamp_differences_full_sensor(
     pixels : list
         List of two pixels, one from each sensor half.
     rewrite : bool
-        Switch for rewriting the '.csv' file if it already exists.
+        Switch for rewriting the '.feather' file if it already exists.
     daughterboard_number : str
         LinoSPAD2 daughterboard number.
     motherboard_number1 : str
@@ -359,9 +365,17 @@ def calculate_and_save_timestamp_differences_full_sensor(
         Switch for applying TDC and offset calibration. If set to 'True'
         while include_offset is set to 'False', only the TDC calibration is
         applied. The default is True.
+    absolute_timestamps : bool, optional
+        Switch for unpacking data that were collected together with
+        absolute timestamps. The default is False.
 
     Raises
     ------
+    TypeError
+        Only boolean values of 'rewrite' and string values of
+        'daughterboard_number', 'motherboard_number', and 'firmware_version'
+        are accepted. The first error is raised so that the plot does not
+        accidentally get rewritten in the case no clear input was given.
     FileNotFoundError
         Raised if data from the first LinoSPAD2 motherboard were not
         found.
@@ -369,8 +383,23 @@ def calculate_and_save_timestamp_differences_full_sensor(
         Raised if data from the second LinoSPAD2 motherboard were not
         found.
     """
+    # parameter type check
+    if isinstance(pixels, list) is False:
+        raise TypeError(
+            "'pixels' should be a list of integers or a list of two lists"
+        )
+    if isinstance(firmware_version, str) is False:
+        raise TypeError(
+            "'firmware_version' should be string, '2212s', '2212b' or" "'2208'"
+        )
+    if isinstance(rewrite, bool) is False:
+        raise TypeError("'rewrite' should be boolean")
+    if isinstance(daughterboard_number, str) is False:
+        raise TypeError("'daughterboard_number' should be string")
+
     os.chdir(path)
 
+    # Check the data from the first FPGA board
     try:
         os.chdir("{}".format(motherboard_number1))
     except FileNotFoundError:
@@ -380,6 +409,8 @@ def calculate_and_save_timestamp_differences_full_sensor(
     files_all1 = glob.glob("*.dat*")
     out_file_name = files_all1[0][:-4]
     os.chdir("..")
+
+    # Check the data from the second FPGA board
     try:
         os.chdir("{}".format(motherboard_number2))
     except FileNotFoundError:
@@ -427,6 +458,7 @@ def calculate_and_save_timestamp_differences_full_sensor(
     except FileNotFoundError:
         pass
 
+    # TODO add check for masked/noisy pixels
     # if app_mask is True:
     #     path_to_back = os.getcwd()
     #     path_to_mask = os.path.realpath(__file__) + "/../.." + "/params/masks"
@@ -439,18 +471,33 @@ def calculate_and_save_timestamp_differences_full_sensor(
 
     for i in tqdm(range(ceil(len(files_all1))), desc="Collecting data"):
         deltas_all = {}
-        # First board
+        # First board, unpack data
         os.chdir("{}".format(motherboard_number1))
         file = files_all1[i]
-        data_all1 = f_up.unpack_binary_data(
-            file,
-            daughterboard_number,
-            motherboard_number1,
-            firmware_version,
-            timestamps,
-            include_offset,
-            apply_calibration,
-        )
+        if not absolute_timestamps:
+            data_all1 = f_up.unpack_binary_data(
+                file,
+                daughterboard_number,
+                motherboard_number1,
+                firmware_version,
+                timestamps,
+                include_offset,
+                apply_calibration,
+            )
+        else:
+            (
+                data_all1,
+                abs_tmsp1,
+            ) = f_up.unpack_binary_data_with_absolute_timestamps(
+                file,
+                daughterboard_number,
+                motherboard_number1,
+                firmware_version,
+                timestamps,
+                include_offset,
+                apply_calibration,
+            )
+        # Collect indices of cycle ends (the '-2's)
         cycle_ends1 = np.where(data_all1[0].T[1] == -2)[0]
         cyc1 = np.argmin(
             np.abs(cycle_ends1 - np.where(data_all1[:].T[1] > 0)[0].min())
@@ -462,18 +509,34 @@ def calculate_and_save_timestamp_differences_full_sensor(
 
         os.chdir("..")
 
-        # Second board
+        # Second board, unpack data
         os.chdir("{}".format(motherboard_number2))
         file = files_all2[i]
-        data_all2 = f_up.unpack_binary_data(
-            file,
-            daughterboard_number,
-            motherboard_number2,
-            firmware_version,
-            timestamps,
-            include_offset,
-            apply_calibration,
-        )
+        if not absolute_timestamps:
+            data_all2 = f_up.unpack_binary_data(
+                file,
+                daughterboard_number,
+                motherboard_number2,
+                firmware_version,
+                timestamps,
+                include_offset,
+                apply_calibration,
+            )
+        else:
+            (
+                data_all2,
+                abs_tmsp2,
+            ) = f_up.unpack_binary_data_with_absolute_timestamps(
+                file,
+                daughterboard_number,
+                motherboard_number2,
+                firmware_version,
+                timestamps,
+                include_offset,
+                apply_calibration,
+            )
+
+        # Collect indices of cycle ends (the '-2's)
         cycle_ends2 = np.where(data_all2[0].T[1] == -2)[0]
         cyc2 = np.argmin(
             np.abs(cycle_ends2 - np.where(data_all2[:].T[1] > 0)[0].min())
@@ -485,7 +548,9 @@ def calculate_and_save_timestamp_differences_full_sensor(
 
         os.chdir("..")
 
-        # TODO note what's done here
+        # The following piece of code take any value for the pixel from
+        # the second motherboard, either in terms of full sensor (so
+        # a value >=256) or in terms of single sensor half
         if pixels[1] >= 256:
             if pixels[1] > 256 + 127:
                 pixels[1] = 255 - (pixels[1] - 256)
@@ -496,14 +561,15 @@ def calculate_and_save_timestamp_differences_full_sensor(
         else:
             pixels[1] = pixels[1] + 128
 
-        # TODO explanation
+        # Get the data from the requested pixel only
         deltas_all["{},{}".format(pixels[0], pixels[1])] = []
         tdc1, pix_c1 = np.argwhere(pix_coor == pixels[0])[0]
         pix1 = np.where(data_all1[tdc1].T[0] == pix_c1)[0]
         tdc2, pix_c2 = np.argwhere(pix_coor == pixels[1])[0]
         pix2 = np.where(data_all2[tdc2].T[0] == pix_c2)[0]
 
-        # TODO explain what's happening here
+        # Data from one of the board should be shifted as data collection
+        # on one of the board is started later
         if cycle_start1 > cycle_start2:
             cyc = len(data_all1[0].T[1]) - cycle_start1 + cycle_start2
             cycle_ends1 = cycle_ends1[cycle_ends1 >= cycle_start1]
@@ -573,7 +639,7 @@ def calculate_and_save_timestamp_differences_full_sensor(
         #     )
         # os.chdir("..")
 
-        # Save data to a Feather file in a cycle so data is not lost
+        # Save data to a feather file in a cycle so data is not lost
         # in the case of failure close to the end
         data_for_plot_df = pd.DataFrame.from_dict(deltas_all, orient="index")
         del deltas_all
@@ -603,6 +669,7 @@ def calculate_and_save_timestamp_differences_full_sensor(
 
         os.chdir("..")
 
+    # Check if the file with the results was created
     if (
         os.path.isfile(
             path + "/delta_ts_data/{}.feather".format(out_file_name)
@@ -630,9 +697,9 @@ def collect_and_plot_timestamp_differences(
     same_y: bool = False,
     color: str = "salmon",
 ):
-    """Collect and plot timestamp differences from a '.csv' file.
+    """Collect and plot timestamp differences from a '.feather' file.
 
-    Plots timestamp differences from a '.csv' file as a grid of histograms
+    Plots timestamp differences from a '.feather' file as a grid of histograms
     and as a single plot. The plot is saved in the 'results/delta_t' folder,
     which is created (if it does not already exist) in the same folder
     where data are.
@@ -704,6 +771,8 @@ def collect_and_plot_timestamp_differences(
 
     plt.rcParams.update({"font.size": 22})
 
+    # Prepare the grid for the plots based on the number of pixels
+    # given
     if len(pixels) > 2:
         fig, axs = plt.subplots(
             len(pixels) - 1,
@@ -727,6 +796,7 @@ def collect_and_plot_timestamp_differences(
             if len(pixels) > 2:
                 axs[q][w - 1].axes.set_axis_on()
 
+            # csv-version, left for debugging
             # Read data from csv file
 
             # try:
@@ -773,7 +843,7 @@ def collect_and_plot_timestamp_differences(
             except ValueError:
                 continue
 
-            # Prepare the data for plot
+            # Prepare the data for the plot
             data_to_plot = np.array(data_to_plot)
             data_to_plot = np.delete(
                 data_to_plot, np.argwhere(data_to_plot < range_left)
@@ -782,6 +852,8 @@ def collect_and_plot_timestamp_differences(
                 data_to_plot, np.argwhere(data_to_plot > range_right)
             )
 
+            # Bins should be in units of 17.857 ps - average bin width
+            # of the LinoSPAD2 TDCs
             try:
                 bins = np.arange(
                     np.min(data_to_plot),
@@ -812,6 +884,8 @@ def collect_and_plot_timestamp_differences(
                     color=color,
                 )
 
+            # Find number of timestamps differences in a 2 ns window
+            # around the peak (HBT or cross-talk)
             try:
                 peak_max_pos = np.argmax(n).astype(np.intc)
                 # 2 ns window around peak
@@ -874,14 +948,14 @@ def collect_and_plot_timestamp_differences_full_sensor(
     step: int = 1,
     same_y: bool = False,
     color: str = "salmon",
-):  # TODO
+):
     # TODO pixel_handling
-    """Collect and plot timestamp differences from a '.csv' file.
+    """Collect and plot timestamp differences from a '.feather' file.
 
-    Plots timestamp differences from a '.csv' file as a grid of histograms
-    and as a single plot. The plot is saved in the 'results/delta_t' folder,
-    which is created (if it does not already exist) in the same folder
-    where data are.
+    Plots timestamp differences from a '.feather' file as a grid of
+    histograms and as a single plot. The plot is saved in the
+    'results/delta_t' folder, which is created (if it does not already
+    exist) in the same folder where data are.
 
     Parameters
     ----------
@@ -922,6 +996,9 @@ def collect_and_plot_timestamp_differences_full_sensor(
     plt.ioff()
     os.chdir(path)
 
+    # Get the data files names for finding the appropriate '.feather'
+    # file with timestamps differences, checking both options, depending
+    # on which board was analyzed first
     folders = glob.glob("*#*")
     os.chdir(folders[0])
     files_all = glob.glob("*.dat*")
@@ -971,7 +1048,8 @@ def collect_and_plot_timestamp_differences_full_sensor(
     )
 
     plt.rcParams.update({"font.size": 22})
-
+    # Prepare the grid for the plots based on the number of pixels
+    # given
     if len(pixels) > 2:
         fig, axs = plt.subplots(
             len(pixels) - 1,
@@ -995,6 +1073,7 @@ def collect_and_plot_timestamp_differences_full_sensor(
             if len(pixels) > 2:
                 axs[q][w - 1].axes.set_axis_on()
 
+            # csv-version, left for debugging
             # Read data from csv file
 
             # try:
@@ -1016,8 +1095,9 @@ def collect_and_plot_timestamp_differences_full_sensor(
             #             "differences was not found"
             #         )
 
-            csv_file_path1 = "delta_ts_data/{}.csv".format(csv_file_name1)
-            csv_file_path2 = "delta_ts_data/{}.csv".format(csv_file_name2)
+            # Check if the file with timestamps differences is there
+            csv_file_path1 = "delta_ts_data/{}.feather".format(csv_file_name1)
+            csv_file_path2 = "delta_ts_data/{}.feather".format(csv_file_name2)
             csv_file, csv_file_name = (
                 (csv_file_path1, csv_file_name1)
                 if os.path.isfile(csv_file_path1)
@@ -1026,9 +1106,10 @@ def collect_and_plot_timestamp_differences_full_sensor(
             # print(csv_file)
             if not os.path.isfile(csv_file):
                 raise FileNotFoundError(
-                    "'.csv' file with timestamps differences was not found"
+                    "'.feather' file with timestamps differences was not found"
                 )
 
+            # csv-version, left for debugging
             # try:
             #     data_to_plot = pd.read_csv(
             #         csv_file,
@@ -1045,7 +1126,7 @@ def collect_and_plot_timestamp_differences_full_sensor(
             except ValueError:
                 continue
 
-            # Prepare the data for plot
+            # Prepare the data for the plot
             data_to_plot = np.array(data_to_plot)
             data_to_plot = np.delete(
                 data_to_plot, np.argwhere(data_to_plot < range_left)
@@ -1054,6 +1135,8 @@ def collect_and_plot_timestamp_differences_full_sensor(
                 data_to_plot, np.argwhere(data_to_plot > range_right)
             )
 
+            # Bins should be in units of 17.857 ps - average bin width
+            # of the LinoSPAD2 TDCs
             try:
                 bins = np.arange(
                     np.min(data_to_plot),
@@ -1084,6 +1167,8 @@ def collect_and_plot_timestamp_differences_full_sensor(
                     color=color,
                 )
 
+            # Find number of timestamps differences in a 2 ns window
+            # around the peak (HBT or cross-talk)
             try:
                 peak_max_pos = np.argmax(n).astype(np.intc)
                 # 2 ns window around peak
