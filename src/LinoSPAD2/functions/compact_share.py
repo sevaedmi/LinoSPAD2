@@ -14,11 +14,19 @@ functions:
     '.txt' file, calculates timestamp differences and packs them into a 
     '.csv' file.
     
+    * compact_share_feather - unpacks all '.dat' files in the given folder,
+    collects the number of timestamps in each pixel and packs it into a
+    '.txt' file, calculates timestamp differences and packs them into a 
+    '.feather' file.
+    
     * plot_shared - plots the sensor population plot from the '.txt'
     file.
     
-    * delta_cp_shared - plots the delta t histograms from the '.csv'
-    file.
+    * collect_and_plot_timestamp_differences_shared - plots the delta t
+    histograms from the '.csv' file used for sharing data.
+    
+    * collect_and_plot_timestamp_differences_shared_feather - plots the
+    delta t histograms from the '.feather' file used for sharing data
 
 """
 
@@ -107,7 +115,8 @@ def compact_share(
         )
     if isinstance(firmware_version, str) is False:
         raise TypeError(
-            "'firmware_version' should be string, '2212b' or '2208'"
+            "'firmware_version' should be string, '2212s', '2212b', or"
+            "'2208'"
         )
     if isinstance(rewrite, bool) is False:
         raise TypeError("'rewrite' should be boolean")
@@ -167,7 +176,14 @@ def compact_share(
 
         # Mask the hot/warm pixels
         path_to_back = os.getcwd()
-        path_to_mask = os.path.realpath(__file__) + "/../.." + "/params/masks"
+        # path_to_mask = os.path.realpath(__file__) + "/../.." + "/params/masks"
+
+        path_to_mask = os.path.join(
+            os.path.dirname(os.path.realpath(__file__)),
+            "..",
+            "params",
+            "masks",
+        )
         os.chdir(path_to_mask)
         file_mask = glob.glob(
             "*{}_{}*".format(daughterboard_number, motherboard_number)
@@ -202,7 +218,7 @@ def compact_share(
             deltas_all = {}
 
             # Unpack data for the requested pixels into dictionary
-            data_all = f_up.unpack_bin(
+            data_all = f_up.unpack_binary_data(
                 file,
                 daughterboard_number,
                 motherboard_number,
@@ -311,7 +327,6 @@ def compact_share(
             )
 
 
-# TODO check the feather file, seems to be close to empty
 def compact_share_feather(
     path: str,
     pixels: list,
@@ -478,7 +493,7 @@ def compact_share_feather(
             deltas_all = {}
 
             # Unpack data for the requested pixels into dictionary
-            data_all = f_up.unpack_bin(
+            data_all = f_up.unpack_binary_data(
                 file,
                 daughterboard_number,
                 motherboard_number,
@@ -661,7 +676,7 @@ def plot_shared(
     os.chdir("..")
 
 
-def delta_cp_shared(
+def collect_and_plot_timestamp_differences_shared(
     path,
     pixels,
     rewrite: bool,
@@ -715,8 +730,7 @@ def delta_cp_shared(
     plt.ioff()
     os.chdir(path)
 
-    # file = glob.glob("*.csv*")[0]
-    file = glob.glob("*.feather*")[0]
+    file = glob.glob("*.csv*")[0]
     csv_file_name = file[:-4]
 
     print(
@@ -840,6 +854,193 @@ def delta_cp_shared(
     print(
         "\n> > > Plot is saved as {file} in {path}< < <".format(
             file=csv_file_name + "_delta_t_grid.png",
+            path=path + "/results/delta_t",
+        )
+    )
+
+
+def collect_and_plot_timestamp_differences_shared_feather(
+    path,
+    pixels,
+    rewrite: bool,
+    range_left: int = -10e3,
+    range_right: int = 10e3,
+    step: int = 1,
+    same_y: bool = False,
+    color: str = "salmon",
+):
+    """Collect and plot timestamp differences from a '.feather' file.
+
+    Plots timestamp differences from a '.feather' file as a grid of
+    histograms and as a single plot. For plotting from the shared
+    '.feather' files.
+
+    Parameters
+    ----------
+    path : str
+        Path to data files.
+    pixels : list
+        List of pixel numbers for which the timestamp differences
+        should be plotted.
+    rewrite : bool
+        Switch for rewriting the plot if it already exists.
+    range_left : int, optional
+        Lower limit for timestamp differences, lower values are not used.
+        The default is -10e3.
+    range_right : int, optional
+        Upper limit for timestamp differences, higher values are not used.
+        The default is 10e3.
+    step : int, optional
+        Histogram binning multiplier. The default is 1.
+    same_y : bool, optional
+        Switch for plotting the histograms with the same y-axis.
+        The default is False.
+    color : str, optional
+        Color for the plot. The default is 'salmon'.
+
+    Raises
+    ------
+    TypeError
+        Only boolean values of 'rewrite' are accepted. The error is
+        raised so that the plot does not accidentally gets rewritten.
+
+    Returns
+    -------
+    None.
+    """
+    # parameter type check
+    if isinstance(rewrite, bool) is not True:
+        raise TypeError("'rewrite' should be boolean")
+    plt.ioff()
+    os.chdir(path)
+
+    # file = glob.glob("*.csv*")[0]
+    file = glob.glob("*.feather")[0]
+    feather_file_name = file[:-8]
+
+    print(
+        "\n> > > Plotting timestamps differences as a grid of histograms < < <"
+    )
+
+    plt.rcParams.update({"font.size": 22})
+
+    if len(pixels) > 2:
+        fig, axs = plt.subplots(
+            len(pixels) - 1,
+            len(pixels) - 1,
+            figsize=(5.5 * len(pixels), 5.5 * len(pixels)),
+        )
+        for ax in axs:
+            for x in ax:
+                x.axes.set_axis_off()
+    else:
+        fig = plt.figure(figsize=(14, 14))
+
+    # check if the y limits of all plots should be the same
+    if same_y is True:
+        y_max_all = 0
+
+    for q in tqdm(range(len(pixels)), desc="Row in plot"):
+        for w in range(len(pixels)):
+            if w <= q:
+                continue
+            if len(pixels) > 2:
+                axs[q][w - 1].axes.set_axis_on()
+            try:
+                # keep only the required column in memory
+                data_to_plot = feather.read_feather(
+                    "{name}.feather".format(name=feather_file_name),
+                    columns=["{},{}".format(pixels[q], pixels[w])],
+                ).dropna()
+            except ValueError:
+                continue
+
+            # prepare the data for plot
+            data_to_plot = np.array(data_to_plot)
+            data_to_plot = np.delete(
+                data_to_plot, np.argwhere(data_to_plot < range_left)
+            )
+            data_to_plot = np.delete(
+                data_to_plot, np.argwhere(data_to_plot > range_right)
+            )
+
+            try:
+                bins = np.arange(
+                    np.min(data_to_plot),
+                    np.max(data_to_plot),
+                    17.857 * step,
+                )
+            except ValueError:
+                print(
+                    "\nCouldn't calculate bins for {q}-{w} pair: probably not "
+                    "enough delta ts.".format(q=q, w=w)
+                )
+                continue
+
+            if len(pixels) > 2:
+                axs[q][w - 1].set_xlabel("\u0394t [ps]")
+                axs[q][w - 1].set_ylabel("# of coincidences [-]")
+                n, b, p = axs[q][w - 1].hist(
+                    data_to_plot,
+                    bins=bins,
+                    color=chosen_color,
+                )
+            else:
+                plt.xlabel("\u0394t [ps]")
+                plt.ylabel("# of coincidences [-]")
+                n, b, p = plt.hist(
+                    data_to_plot,
+                    bins=bins,
+                    color=color,
+                )
+
+            try:
+                peak_max_pos = np.argmax(n).astype(np.intc)
+                # 2 ns window around peak
+                win = int(1000 / ((range_right - range_left) / 100))
+                peak_max = np.sum(n[peak_max_pos - win : peak_max_pos + win])
+            except ValueError:
+                peak_max = None
+
+            if same_y is True:
+                try:
+                    y_max = np.max(n)
+                except ValueError:
+                    y_max = 0
+                    print("\nCould not find maximum y value\n")
+                if y_max_all < y_max:
+                    y_max_all = y_max
+                if len(pixels) > 2:
+                    axs[q][w - 1].set_ylim(0, y_max + 4)
+                else:
+                    plt.ylim(0, y_max + 4)
+
+            if len(pixels) > 2:
+                axs[q][w - 1].set_xlim(range_left - 100, range_right + 100)
+                axs[q][w - 1].set_title(
+                    "Pixels {p1},{p2}\nPeak in 2 ns window: {pp}".format(
+                        p1=pixels[q], p2=pixels[w], pp=int(peak_max)
+                    )
+                )
+            else:
+                plt.xlim(range_left - 100, range_right + 100)
+                plt.title(
+                    "Pixels {p1},{p2}".format(p1=pixels[q], p2=pixels[w])
+                )
+
+            try:
+                os.chdir("results/delta_t")
+            except FileNotFoundError:
+                os.makedirs("results/delta_t")
+                os.chdir("results/delta_t")
+            fig.tight_layout()  # for perfect spacing between the plots
+            plt.savefig(
+                "{name}_delta_t_grid.png".format(name=feather_file_name)
+            )
+            os.chdir("../..")
+    print(
+        "\n> > > Plot is saved as {file} in {path}< < <".format(
+            file=feather_file_name + "_delta_t_grid.png",
             path=path + "/results/delta_t",
         )
     )

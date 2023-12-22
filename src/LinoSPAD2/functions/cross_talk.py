@@ -13,6 +13,9 @@ functions:
     * plot_cross_talk - function for plotting the cross-talk data from the '.csv'
     file as the cross-talk vs. the distance between the two pixels, for
     which the cross-talk is calculated, in pixels.
+    
+    * calculate_dark_count_rate - get DCR in units of count per second
+    per pixel.
 
 """
 
@@ -330,7 +333,7 @@ def calculate_dark_count_rate(
     firmware_version: str,
     timestamps: int = 512,
 ):
-    """Calculate dark count rate.
+    """Calculate dark count rate in counts per second per pixel.
 
     Calculate dark count rate for the given daughterboard and
     motherboard.
@@ -352,7 +355,7 @@ def calculate_dark_count_rate(
     Returns
     -------
     dcr : float
-        The dark count rate number per pixel per data file.
+        The dark count rate number per pixel per second.
 
     Raises
     ------
@@ -409,6 +412,14 @@ def calculate_dark_count_rate(
     mask = utils.apply_mask(daughterboard_number, motherboard_number)
     valid_per_pixel[mask] = 0
 
-    dcr = np.average(valid_per_pixel) / len(files)
+    acq_window_length = np.max(data[:].T[1])
+
+    dcr = (
+        np.average(valid_per_pixel)
+        / len(files)
+        / len(np.where(data[0].T[0] == -2)[0])
+        / acq_window_length
+        / 1e-12
+    )
 
     return dcr

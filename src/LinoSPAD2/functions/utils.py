@@ -1,3 +1,26 @@
+"""Module of utility functions.
+
+This module provides a set of functions used in other LinoSPAD2 functions,
+covering tasks such as applying masks, unpickling and displaying
+matplotlib figures, defining Gaussian functions, fitting them to data,
+and transforming lists of pixels.
+
+This file can also be imported as a module and contains the following
+functions:
+
+    * apply_mask - Apply a mask to the given data based on the daughterboard and motherboard numbers.
+
+    * unpickle_plot - Unpickle and display a matplotlib figure based on the specified type.
+
+    * gaussian - Gaussian function for curve fitting.
+
+    * fit_gaussian - Fit Gaussian function to data and return optimal parameters and covariance.
+
+    * pixel_list_transform - Transform a list of pixels into two separate lists based on input type.
+
+"""
+
+
 import glob
 import os
 import pickle
@@ -24,7 +47,6 @@ def apply_mask(daughterboard_number: str, motherboard_number: str) -> None:
     None
     """
     path_to_back = os.getcwd()
-    # path_to_mask = os.path.realpath(__file__) + "/../.." + "/params/masks"
     path_to_mask = os.path.join(
         os.path.dirname(os.path.realpath(__file__)),
         "..",
@@ -152,3 +174,32 @@ def fit_gaussian(x, y):
     )
 
     return popt, pcov
+
+
+def pixel_list_transform(pixels: list):
+    """Transform a list of pixels into two separate lists.
+
+    Transform the given list of pixels into two separate lists,
+    based on the input type (list of integers, of lists, or a mix of
+    both).
+
+    Parameters:
+        pixels : list
+            A list of pixels.
+
+    Returns:
+        list: A list of the left pixels.
+        list: A list of the right pixels.
+    """
+
+    if isinstance(pixels[0], list) and isinstance(pixels[1], list) is True:
+        pixels_left, pixels_right = sorted(pixels)
+    elif isinstance(pixels[0], int) and isinstance(pixels[1], list) is True:
+        pixels_left, pixels_right = sorted([[pixels[0]], pixels[1]])
+    elif isinstance(pixels[0], list) and isinstance(pixels[1], int) is True:
+        pixels_left, pixels_right = sorted([pixels[0], [pixels[1]]])
+    elif isinstance(pixels[0], int) and isinstance(pixels[1], int) is True:
+        pixels_left = pixels
+        pixels_right = pixels
+
+    return pixels_left, pixels_right

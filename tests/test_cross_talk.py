@@ -6,7 +6,11 @@ import unittest
 import numpy as np
 import pandas as pd
 
-from LinoSPAD2.functions.cross_talk import collect_cross_talk, plot_cross_talk
+from LinoSPAD2.functions.cross_talk import (
+    calculate_dark_count_rate,
+    collect_cross_talk,
+    plot_cross_talk,
+)
 
 
 class TestCTFull(unittest.TestCase):
@@ -72,6 +76,20 @@ class TestCTFull(unittest.TestCase):
         # Test negative case of plot_ct function
         with self.assertRaises(FileNotFoundError):
             plot_cross_talk("nonexistent_folder", self.pix1, self.scale)
+
+    def test_calculate_dark_count_rate_positive(self):
+        work_dir = r"{}".format(os.path.realpath(__file__) + "../../..")
+        os.chdir(work_dir)
+        result = calculate_dark_count_rate(
+            self.path,
+            self.daughterboard_number,
+            self.motherboard_number,
+            self.firmware_version,
+            self.timestamps,
+        )
+        # Add your assertions here based on expected results
+        assert isinstance(result, float)
+        assert result >= 0  # Assuming the result should be non-negative
 
     def tearDownClass():
         # Clean up after tests

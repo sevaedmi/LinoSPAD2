@@ -7,13 +7,13 @@ This file can also be imported as a module and contains the following
 functions:
 
     * calculate_and_save_timestamp_differences - unpacks the binary data,
-    calculates timestamp differences and saves into a '.feather' file. Works
-    with firmware versions '2208' and '2212b'.
+    calculates timestamp differences, and saves into a '.feather' file.
+    Works with firmware versions '2208' and '2212b'.
     
     * calculate_and_save_timestamp_differences_full_sensor - unpacks the
-    binary data, calculates timestamp differences and saves into a '.feather'
-    file. Works with firmware versions '2208' and '2212b'. Analyzes data
-    from both sensor halves/both FPGAs.
+    binary data, calculates timestamp differences and saves into a
+    '.feather' file. Works with firmware versions '2208', '2212s' and
+    '2212b'. Analyzes data from both sensor halves/both FPGAs.
 
     * collect_and_plot_timestamp_differences - collect timestamps from a
     '.feather' file and plot them in a grid.
@@ -176,16 +176,18 @@ def calculate_and_save_timestamp_differences(
 
     # Check if 'pixels' is one or two peaks, swap their positions if
     # needed. All situations for pixel input are covered here.
-    # TODO modularity, pixel_handling
-    if isinstance(pixels[0], list) and isinstance(pixels[1], list) is True:
-        pixels_left, pixels_right = sorted(pixels)
-    elif isinstance(pixels[0], int) and isinstance(pixels[1], list) is True:
-        pixels_left, pixels_right = sorted([[pixels[0]], pixels[1]])
-    elif isinstance(pixels[0], list) and isinstance(pixels[1], int) is True:
-        pixels_left, pixels_right = sorted([pixels[0], [pixels[1]]])
-    elif isinstance(pixels[0], int) and isinstance(pixels[1], int) is True:
-        pixels_left = pixels
-        pixels_right = pixels
+
+    # if isinstance(pixels[0], list) and isinstance(pixels[1], list) is True:
+    #     pixels_left, pixels_right = sorted(pixels)
+    # elif isinstance(pixels[0], int) and isinstance(pixels[1], list) is True:
+    #     pixels_left, pixels_right = sorted([[pixels[0]], pixels[1]])
+    # elif isinstance(pixels[0], list) and isinstance(pixels[1], int) is True:
+    #     pixels_left, pixels_right = sorted([pixels[0], [pixels[1]]])
+    # elif isinstance(pixels[0], int) and isinstance(pixels[1], int) is True:
+    #     pixels_left = pixels
+    #     pixels_right = pixels
+
+    pixels_left, pixels_right = utils.pixel_list_transform(pixels)
 
     for i in tqdm(range(ceil(len(files_all))), desc="Collecting data"):
         file = files_all[i]

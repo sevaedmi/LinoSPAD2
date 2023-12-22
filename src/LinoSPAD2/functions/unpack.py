@@ -3,12 +3,13 @@
 This file can also be imported as a module and contains the following
 functions:
 
-    * unpack_bin - function for unpacking data from LinoSPAD2,
+    * unpack_binary_data - function for unpacking data from LinoSPAD2,
     firmware version 2212. Utilizes the numpy library to speed up the
     process.
-    
-    * unpack_bin_wat - function for unpacking data from LinoSPAD2,
-    including the absolute timestamps, works with firmware version 2212.
+
+    * unpack_binary_data_with_absolute_timestamps - function for
+    unpacking data from LinoSPAD2, including the absolute timestamps,
+    works with firmware version 2212.
 
 """
 
@@ -141,6 +142,7 @@ def unpack_binary_data(
             "calibration_data",
         )
 
+        # Include the offset calibration or not
         try:
             if include_offset:
                 calibration_matrix, offset_array = load_calibration_data(
@@ -250,6 +252,9 @@ def unpack_binary_data_with_absolute_timestamps(
     the TDC (from 0 to 3) and the timestamp recorded by that pixel.
     Additionally, an array of absolute timestamps is returned, representing
     the absolute time at the start of each acquisition cycle.
+
+    Absolute timestamps are inserted at the start of each cycle. The
+    value of these timestamps is given by the 400 MHz clock.
     """
     # Parameter type check
     if not isinstance(daughterboard_number, str):
@@ -262,11 +267,8 @@ def unpack_binary_data_with_absolute_timestamps(
     # Unpack binary data
     raw_data = np.fromfile(file_path, dtype=np.uint32)
     # Timestamps are stored in the lower 28 bits
-    # data_raw = (raw_data & 0xFFFFFFF).astype(np.longlong)
     data_timestamps_all = (raw_data & 0xFFFFFFF).astype(np.longlong)
-    # data_timestamps_all[np.where(raw_data < 0x80000000)] = -1
-    # data_pixels_all = ((raw_data >> 28) & 0x3).astype(np.longlong)
-    # cycles = int(len(data_raw) / (timestamps * 65 + 2))
+    # Number of acquisition cycles in each data file
     cycles = int(len(data_timestamps_all) / (timestamps * 65 + 2))
 
     # List of indices of absolute timestamps
@@ -274,7 +276,8 @@ def unpack_binary_data_with_absolute_timestamps(
     # Converted absolute timestamps: from binary to ps
     absolute_timestamps = np.zeros(cycles)
 
-    # Collect the absolute timestamps indices
+    # Collect the absolute timestamps indices; absolute timestamps
+    # inserted at the start of each cycle
     for cyc in range(cycles):
         ind.extend(
             [
@@ -287,7 +290,6 @@ def unpack_binary_data_with_absolute_timestamps(
         )
 
     # Absolute timestamps only
-    # data_absolute_timestamps = data_raw[ind].reshape(cycles, 2)
     data_absolute_timestamps = data_timestamps_all[ind].reshape(cycles, 2)
 
     # Convert the absolute timestamps from binary to decimal (ps)
@@ -301,22 +303,13 @@ def unpack_binary_data_with_absolute_timestamps(
 
     del data_absolute_timestamps
 
+    # Cut the absolute timestamps, collect the timestamps
     raw_data_cut = np.delete(raw_data, ind)
-
     data_timestamps_cut = (raw_data_cut & 0xFFFFFFF).astype(np.longlong)
     data_timestamps_cut[np.where(raw_data_cut < 0x80000000)] = -1
+    # Pixel address in the given TDC is 2 bits above timestamp
     data_pixels = ((raw_data_cut >> 28) & 0x3).astype(np.longlong)
     # Standard data: everything besides the absolute timestamps
-    # data_standard = np.delete(data_raw, ind)
-    # data_timestamps_cut = np.delete(data_timestamps_all, ind)
-    # data_pixels = np.delete(data_pixels_all, ind)
-
-    # Pixel address in the given TDC is 2 bits above timestamp
-    # data_pixels = ((data_standard >> 28) & 0x3).astype(np.longlong)
-    # data_standard[np.where(data_standard < 0x80000000)] = -1
-    # data_pixels = ((data_timestamps_cut >> 28) & 0x3).astype(np.longlong)
-    # data_timestamps_cut[np.where(raw_data < 0x80000000)] = -1
-    # Number of acquisition cycles in each data file
 
     # Transform into matrix 65 by cycles*timestamps
     data_matrix_pixels = (
@@ -362,9 +355,6 @@ def unpack_binary_data_with_absolute_timestamps(
     else:
         # Path to the calibration data
         pixel_coordinates = np.arange(256).reshape(64, 4)
-        # path_calibration_data = (
-        #     os.path.realpath(__file__) + "/../.." + "/params/calibration_data"
-        # )
         path_calibration_data = os.path.join(
             os.path.dirname(os.path.realpath(__file__)),
             "..",
@@ -372,6 +362,7 @@ def unpack_binary_data_with_absolute_timestamps(
             "calibration_data",
         )
 
+        # Include the offset calibration or not
         try:
             if include_offset:
                 calibration_matrix, offset_array = load_calibration_data(

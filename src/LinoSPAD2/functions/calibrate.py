@@ -1,23 +1,32 @@
 """Module for working with the calibration data.
 
+Functions in this module can be used to analyze the LinoSPAD2 data
+to collect either a calibration matrix for compensating TDC 
+nonlinearities or a calibration matrix for offset calibration. First
+nonlinearity is introduced by nonequal bins of the 140-bin long TDC line
+while the second - from the different-length electrical path in the PCB.
+
 This file can also be imported as a module and contains the following
 functions:
 
-    * calibrate_TDC_save - calculate a calibration matrix of the TDC
-    calibrations and save it as a '.csv' table.
+    * calibrate_and_save_TDC_calibration - calculate a calibration
+    matrix of the TDC calibrations and save it as a '.csv' table.
 
-    * unpack_for_offset - unpack binary data applying TDC calibration
-    in the process. Used for calculations of the offset calibration.
-    
-    * delta_save_for_offset - calculate and save timestamps differences
-    for pairs of pixels 0, 4 to 255, and 1 to 3 for finding the
-    delta t peaks for calculating the offset calibration.
-    
-    * calib_offset_save - calculate and save the 256 offset compensations
-    for all pixels of the given LinoSPAD2 sensor half. The output is 
-    saved as a .npy file for later use.
+    * unpack_data_for_offset_calibration - unpack binary data applying
+    TDC calibration in the process. Used for calculations of the offset
+    calibration.
 
-    * calibrate_load - load the calibration matrix from a '.csv' table.
+    * save_offset_timestamp_differences - calculate and save timestamps
+    differences for pairs of pixels 0, 4 to 255, and 1 to 3 for finding
+    the delta t peaks for calculating the offset calibration.
+
+    * calculate_and_save_offset_calibration - calculate and save the 256
+    offset compensations for all pixels of the given LinoSPAD2 sensor
+    half. The output is saved as a .npy file for later use.
+
+    * load_calibration_data - load the calibration matrix from a '.csv'
+    table.
+
 """
 import glob
 import os
@@ -40,7 +49,7 @@ def calibrate_and_save_TDC_data(
     firmware_version: str,
     timestamps: int = 512,
 ):
-    """Calculate and save calibration data for TDC.
+    """Calculate and save calibration data for TDC_nonlinearities.
 
     Function for calculating the calibration matrix and saving it into a
     '.csv' file. The data file used for the calculation should be taken

@@ -4,8 +4,13 @@ This file can also be imported as a module and contains the following
 functions:
 
     * fit_with_gaussian - fit timestamp differences of a pair of pixels
-    with a gaussian function and plot both a histogram of timestamp
+    with a Gaussian function and plot a histogram of timestamp
     differences and the fit in a single figure.
+
+    * fit_with_gaussian_full_sensor - fit timestamp differences of a
+    pair of pixels (one from each half of the sensor) with a Gaussian
+    function and plot a histogram of timestamp differences and the fit
+    in a single figure.
 
 """
 
@@ -33,8 +38,8 @@ def fit_with_gaussian(
 
     Fits timestamp differences of a pair of pixels with Gaussian
     function and plots it next to the histogram of the differences.
-    Timestamp differences are collected from a '.csv' file with those if
-    such exists.
+    Timestamp differences are collected from a '.feather' file with
+    those if such exists.
 
     Parameters
     ----------

@@ -14,6 +14,8 @@ functions:
 
 import numpy as np
 
+from LinoSPAD2.functions import utils
+
 
 def calculate_differences_2212(
     data, pixels, pix_coor, delta_window: float = 50e3
@@ -32,8 +34,8 @@ def calculate_differences_2212(
         be calculated or list of two lists with pixel numbers for peak
         vs. peak calculations.
     pix_coor : array-like
-        Array for transforming pixel number into TDC number + pixel
-        coordinates.
+        Array for transforming the pixel address in terms of TDC (0 to 3)
+        to pixel number in terms of half of the sensor (0 to 255).
     delta_window : float, optional
         Width of the time window for counting timestamp differences.
         The default is 50e3 (50 ns).
@@ -46,30 +48,17 @@ def calculate_differences_2212(
     """
     deltas_all = {}
 
-    # Most probably wrong indexing
-    # for cyc in range(len(cycle_ends) - 1):
-    #     data1_cycle = data1[cycle_ends[cyc] : cycle_ends[cyc + 1]]
-    #     data2_cycle = data2[cycle_ends[cyc] : cycle_ends[cyc + 1]]
+    # if isinstance(pixels[0], list) and isinstance(pixels[1], list) is True:
+    #     pixels_left, pixels_right = sorted(pixels)
+    # elif isinstance(pixels[0], int) and isinstance(pixels[1], list) is True:
+    #     pixels_left, pixels_right = sorted([[pixels[0]], pixels[1]])
+    # elif isinstance(pixels[0], list) and isinstance(pixels[1], int) is True:
+    #     pixels_left, pixels_right = sorted([pixels[0], [pixels[1]]])
+    # elif isinstance(pixels[0], int) and isinstance(pixels[1], int) is True:
+    #     pixels_left = pixels
+    #     pixels_right = pixels
 
-    #     # calculate delta t
-    #     tmsp1 = data1_cycle[np.where(data1_cycle > 0)[0]]
-    #     tmsp2 = data2_cycle[np.where(data2_cycle > 0)[0]]
-    #     for t1 in tmsp1:
-    #         # calculate all timestamp differences in the given cycle
-    #         deltas = tmsp2 - t1
-    #         # take values in the given delta t window only
-    #         ind = np.where(np.abs(deltas) < delta_window)[0]
-    #         deltas_out.extend(deltas[ind])
-
-    if isinstance(pixels[0], list) and isinstance(pixels[1], list) is True:
-        pixels_left, pixels_right = sorted(pixels)
-    elif isinstance(pixels[0], int) and isinstance(pixels[1], list) is True:
-        pixels_left, pixels_right = sorted([[pixels[0]], pixels[1]])
-    elif isinstance(pixels[0], list) and isinstance(pixels[1], int) is True:
-        pixels_left, pixels_right = sorted([pixels[0], [pixels[1]]])
-    elif isinstance(pixels[0], int) and isinstance(pixels[1], int) is True:
-        pixels_left = pixels
-        pixels_right = pixels
+    pixels_left, pixels_right = utils.pixel_list_transform(pixels)
 
     for q in pixels_left:
         for w in pixels_right:
@@ -87,6 +76,8 @@ def calculate_differences_2212(
             pix2 = np.where(data[tdc2].T[0] == pix_c2)[0]
             # Get timestamp for both pixels in the given cycle
 
+            # Go over cycles, getting data for the appropriate cycle
+            # only
             for cyc in range(len(cycle_ends) - 1):
                 pix1_ = pix1[
                     np.logical_and(
