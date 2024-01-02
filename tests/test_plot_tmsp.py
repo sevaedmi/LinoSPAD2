@@ -21,9 +21,7 @@ class TestPlotScripts(unittest.TestCase):
     def test_a_plot_pixel_hist(self):
         # Positive test case
         os.chdir(
-            r"{}".format(
-                os.path.dirname(os.path.realpath(__file__)) + "/../.."
-            )
+            r"{}".format(os.path.dirname(os.path.realpath(__file__)) + "/..")
         )
 
         plot_single_pix_hist(
@@ -44,9 +42,7 @@ class TestPlotScripts(unittest.TestCase):
     def test_b_plot_sen_pop(self):
         # Positive test case
         os.chdir(
-            r"{}".format(
-                os.path.dirname(os.path.realpath(__file__)) + "/../.."
-            )
+            r"{}".format(os.path.dirname(os.path.realpath(__file__)) + "/..")
         )
         plot_sensor_population(
             self.path,

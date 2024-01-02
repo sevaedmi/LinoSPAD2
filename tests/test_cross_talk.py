@@ -29,7 +29,9 @@ class TestCTFull(unittest.TestCase):
         self.include_offset = False
 
     def test_a_collect_ct_positive(self):
-        work_dir = r"{}".format(os.path.dirname(os.path.realpath(__file__)) + "/../..")
+        work_dir = r"{}".format(
+            os.path.dirname(os.path.realpath(__file__)) + "/.."
+        )
         os.chdir(work_dir)
         # Test positive case of collect_ct function
         collect_cross_talk(
@@ -49,7 +51,9 @@ class TestCTFull(unittest.TestCase):
         self.assertEqual(len(data), 20)
 
     def test_b_collect_ct_negative(self):
-        work_dir = r"{}".format(os.path.dirname(os.path.realpath(__file__)) + "/../..")
+        work_dir = r"{}".format(
+            os.path.dirname(os.path.realpath(__file__)) + "/.."
+        )
         os.chdir(work_dir)
         # Test negative case of collect_ct function
         with self.assertRaises(TypeError):
@@ -64,7 +68,9 @@ class TestCTFull(unittest.TestCase):
 
     def test_c_plot_ct_positive(self):
         # Test positive case of plot_ct function
-        work_dir = r"{}".format(os.path.dirname(os.path.realpath(__file__)) + "/../..")
+        work_dir = r"{}".format(
+            os.path.dirname(os.path.realpath(__file__)) + "/.."
+        )
         os.chdir(work_dir)
         plot_cross_talk(self.path, self.pix1, self.scale)
         # Check if the plot file is created
@@ -78,7 +84,9 @@ class TestCTFull(unittest.TestCase):
             plot_cross_talk("nonexistent_folder", self.pix1, self.scale)
 
     def test_calculate_dark_count_rate_positive(self):
-        work_dir = r"{}".format(os.path.dirname(os.path.realpath(__file__)) + "/../..")
+        work_dir = r"{}".format(
+            os.path.dirname(os.path.realpath(__file__)) + "/.."
+        )
         os.chdir(work_dir)
         result = calculate_dark_count_rate(
             self.path,
@@ -93,7 +101,7 @@ class TestCTFull(unittest.TestCase):
 
     def tearDownClass():
         # Clean up after tests
-        os.chdir(r"{}".format(os.path.dirname(os.path.realpath(__file__)))
+        os.chdir(r"{}".format(os.path.dirname(os.path.realpath(__file__))))
         shutil.rmtree("test_data/cross_talk_data")
         shutil.rmtree("test_data/results")
 
