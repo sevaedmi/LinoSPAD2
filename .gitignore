@@ -129,7 +129,7 @@ dmypy.json
 .pyre/
 
 # .dat data files
-*.dat
+# *.dat
 *.ini
 *.stats
 
