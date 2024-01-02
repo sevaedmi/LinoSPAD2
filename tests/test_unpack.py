@@ -9,7 +9,9 @@ from LinoSPAD2.functions.unpack import unpack_binary_data
 class TestUnpackBin(unittest.TestCase):
     def test_valid_input(self):
         # Positive test case with valid inputs
-        work_dir = r"{}".format(os.path.realpath(__file__) + "../../..")
+        work_dir = r"{}".format(
+            os.path.dirname(os.path.realpath(__file__)) + "/../.."
+        )
         os.chdir(work_dir)
         file = r"tests/test_data/test_data_2212b.dat"
         daughterboard_number = "NL11"

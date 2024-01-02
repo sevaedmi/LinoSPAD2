@@ -33,7 +33,9 @@ class TestDeltasFull(unittest.TestCase):
 
     def test_a_deltas_save_positive(self):
         # Test positive case for deltas_save function
-        work_dir = r"{}".format(os.path.realpath(__file__) + "../../..")
+        work_dir = r"{}".format(
+            os.path.dirname(os.path.realpath(__file__)) + "/../.."
+        )
         os.chdir(work_dir)
         calculate_and_save_timestamp_differences(
             self.path,
@@ -58,7 +60,9 @@ class TestDeltasFull(unittest.TestCase):
     # Negative test case
     # Invalid firmware version
     def test_b_deltas_save_negative(self):
-        work_dir = r"{}".format(os.path.realpath(__file__) + "../../..")
+        work_dir = r"{}".format(
+            os.path.dirname(os.path.realpath(__file__)) + "/../.."
+        )
         os.chdir(work_dir)
         # Test negative case for deltas_save function
         with self.assertRaises(TypeError):
@@ -76,7 +80,9 @@ class TestDeltasFull(unittest.TestCase):
     def test_c_delta_cp(self):
         # Test case for delta_cp function
         # Positive test case
-        os.chdir(r"{}".format(os.path.realpath(__file__) + "/../.."))
+        os.chdir(
+            r"{}".format(os.path.dirname(os.path.realpath(__file__)) + "/..")
+        )
         collect_and_plot_timestamp_differences(
             path=self.path,
             pixels=[x for x in range(67, 69)] + [x for x in range(173, 175)],
@@ -96,7 +102,9 @@ class TestDeltasFull(unittest.TestCase):
     # TODO: need larger data set to get more delta ts
     def test_d_fit_wg_positive(self):
         # Test with valid input
-        os.chdir(r"{}".format(os.path.realpath(__file__) + "/../.."))
+        os.chdir(
+            r"{}".format(os.path.dirname(os.path.realpath(__file__)) + "/..")
+        )
         pix_pair = [67, 174]
         window = 20e3
         step = 5
@@ -115,7 +123,7 @@ class TestDeltasFull(unittest.TestCase):
 
     def tearDownClass():
         # Clean up after tests
-        os.chdir(r"{}".format(os.path.realpath(__file__) + "/.."))
+        os.chdir(r"{}".format(os.path.dirname(os.path.realpath(__file__))))
         shutil.rmtree("test_data/delta_ts_data")
         shutil.rmtree("test_data/results")
 
