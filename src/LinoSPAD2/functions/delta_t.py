@@ -26,13 +26,12 @@ functions:
 import glob
 import os
 import sys
-import time
 from math import ceil
 
 import numpy as np
 import pandas as pd
-import pyarrow.feather as feather
 from matplotlib import pyplot as plt
+from pyarrow import feather as ft
 from tqdm import tqdm
 
 from LinoSPAD2.functions import calc_diff as cd
@@ -110,7 +109,7 @@ def calculate_and_save_timestamp_differences(
         )
     if isinstance(firmware_version, str) is False:
         raise TypeError(
-            "'firmware_version' should be string, '2212s', '2212b' or" "'2208'"
+            "'firmware_version' should be string, '2212s', '2212b' or '2208'"
         )
     if isinstance(rewrite, bool) is False:
         raise TypeError("'rewrite' should be boolean")
@@ -119,7 +118,7 @@ def calculate_and_save_timestamp_differences(
 
     os.chdir(path)
 
-    files_all = glob.glob("*.dat*")
+    files_all = sorted(glob.glob("*.dat*"))
 
     out_file_name = files_all[0][:-4] + "-" + files_all[-1][:-4]
 
@@ -127,28 +126,7 @@ def calculate_and_save_timestamp_differences(
 
     feather_file = f"{out_file_name}.feather"
 
-    try:
-        os.chdir("delta_ts_data")
-        if os.path.isfile(feather_file):
-            if rewrite is True:
-                print(
-                    "\n! ! ! Feather file with timestamps differences already "
-                    "exists and will be rewritten ! ! !\n"
-                )
-                for i in range(5):
-                    print(
-                        "\n! ! ! Deleting the file in {} ! ! !\n".format(5 - i)
-                    )
-                    time.sleep(1)
-                os.remove(feather_file)
-            else:
-                sys.exit(
-                    "\n Feather file already exists, 'rewrite' set to"
-                    "'False', exiting."
-                )
-        os.chdir("..")
-    except FileNotFoundError:
-        pass
+    utils.file_rewrite_handling(feather_file, rewrite)
 
     # Collect the data for the required pixels
     print(
@@ -174,21 +152,6 @@ def calculate_and_save_timestamp_differences(
             pixels[0] = [pix for pix in pixels[0] if pix not in mask]
             pixels[1] = [pix for pix in pixels[1] if pix not in mask]
 
-    # Check if 'pixels' is one or two peaks, swap their positions if
-    # needed. All situations for pixel input are covered here.
-
-    # if isinstance(pixels[0], list) and isinstance(pixels[1], list) is True:
-    #     pixels_left, pixels_right = sorted(pixels)
-    # elif isinstance(pixels[0], int) and isinstance(pixels[1], list) is True:
-    #     pixels_left, pixels_right = sorted([[pixels[0]], pixels[1]])
-    # elif isinstance(pixels[0], list) and isinstance(pixels[1], int) is True:
-    #     pixels_left, pixels_right = sorted([pixels[0], [pixels[1]]])
-    # elif isinstance(pixels[0], int) and isinstance(pixels[1], int) is True:
-    #     pixels_left = pixels
-    #     pixels_right = pixels
-
-    pixels_left, pixels_right = utils.pixel_list_transform(pixels)
-
     for i in tqdm(range(ceil(len(files_all))), desc="Collecting data"):
         file = files_all[i]
 
@@ -206,52 +169,10 @@ def calculate_and_save_timestamp_differences(
             apply_calibration,
         )
 
-        deltas_all = cd.calculate_differences_2212(data_all, pixels, pix_coor)
+        deltas_all = cd.calculate_differences_2212(
+            data_all, pixels, pix_coor, delta_window
+        )
 
-        # Calculate and collect timestamp differences
-        for q in pixels_left:
-            for w in pixels_right:
-                if w <= q:
-                    continue
-                deltas_all["{},{}".format(q, w)] = []
-                # Find end of cycles
-                cycle_ends = np.argwhere(data_all[0].T[0] == -2)
-                cycle_ends = np.insert(cycle_ends, 0, 0)
-                # First pixel in the pair
-                tdc1, pix_c1 = np.argwhere(pix_coor == q)[0]
-                pix1 = np.where(data_all[tdc1].T[0] == pix_c1)[0]
-                # Second pixel in the pair
-                tdc2, pix_c2 = np.argwhere(pix_coor == w)[0]
-                pix2 = np.where(data_all[tdc2].T[0] == pix_c2)[0]
-                # Get timestamp for both pixels in the given cycle
-
-                # Take data from the appropriate cycle only
-                for cyc in range(len(cycle_ends) - 1):
-                    pix1_ = pix1[
-                        np.logical_and(
-                            pix1 >= cycle_ends[cyc], pix1 < cycle_ends[cyc + 1]
-                        )
-                    ]
-                    if not np.any(pix1_):
-                        continue
-                    pix2_ = pix2[
-                        np.logical_and(
-                            pix2 >= cycle_ends[cyc], pix2 < cycle_ends[cyc + 1]
-                        )
-                    ]
-                    if not np.any(pix2_):
-                        continue
-                    # Calculate delta t
-                    tmsp1 = data_all[tdc1].T[1][
-                        pix1_[np.where(data_all[tdc1].T[1][pix1_] > 0)[0]]
-                    ]
-                    tmsp2 = data_all[tdc2].T[1][
-                        pix2_[np.where(data_all[tdc2].T[1][pix2_] > 0)[0]]
-                    ]
-                    for t1 in tmsp1:
-                        deltas = tmsp2 - t1
-                        ind = np.where(np.abs(deltas) < delta_window)[0]
-                        deltas_all["{},{}".format(q, w)].extend(deltas[ind])
         # Save data as a .feather file in a cycle so data is not lost
         # in the case of failure close to the end
         data_for_plot_df = pd.DataFrame.from_dict(deltas_all, orient="index")
@@ -281,33 +202,30 @@ def calculate_and_save_timestamp_differences(
         feather_file = f"{out_file_name}.feather"
         if os.path.isfile(feather_file):
             # Load existing feather file
-            existing_data = feather.read_feather(feather_file)
+            existing_data = ft.read_feather(feather_file)
 
             # Append new data to the existing feather file
             combined_data = pd.concat(
                 [existing_data, data_for_plot_df], axis=0
             )
-            feather.write_feather(combined_data, feather_file)
+            ft.write_feather(combined_data, feather_file)
 
         else:
             # Save as a new feather file
-            feather.write_feather(data_for_plot_df, feather_file)
+            ft.write_feather(data_for_plot_df, feather_file)
         os.chdir("..")
 
     # Check, if the file was created
     if (
-        os.path.isfile(
-            path + "/delta_ts_data/{}.feather".format(out_file_name)
-        )
+        os.path.isfile(path + f"/delta_ts_data/{out_file_name}.feather")
         is True
     ):
         print(
-            "\n> > > Timestamp differences are saved as {file}.feather in "
-            "{path} < < <".format(
-                file=out_file_name,
-                path=path + "\delta_ts_data",
-            )
+            "\n> > > Timestamp differences are saved as"
+            f"{out_file_name}.feather in "
+            f"{os.path.join(path, 'delta_ts_data')} < < <"
         )
+
     else:
         print("File wasn't generated. Check input parameters.")
 
@@ -403,23 +321,23 @@ def calculate_and_save_timestamp_differences_full_sensor(
 
     # Check the data from the first FPGA board
     try:
-        os.chdir("{}".format(motherboard_number1))
-    except FileNotFoundError:
+        os.chdir(f"{motherboard_number1}")
+    except FileNotFoundError as exc:
         raise FileNotFoundError(
-            "Data from {} not found".format(motherboard_number1)
-        )
-    files_all1 = glob.glob("*.dat*")
+            f"Data from {motherboard_number1} not found"
+        ) from exc
+    files_all1 = sorted(glob.glob("*.dat*"))
     out_file_name = files_all1[0][:-4]
     os.chdir("..")
 
     # Check the data from the second FPGA board
     try:
-        os.chdir("{}".format(motherboard_number2))
-    except FileNotFoundError:
+        os.chdir(f"{motherboard_number2}")
+    except FileNotFoundError as exc:
         raise FileNotFoundError(
-            "Data from {} not found".format(motherboard_number2)
-        )
-    files_all2 = glob.glob("*.dat*")
+            f"Data from {motherboard_number2} not found"
+        ) from exc
+    files_all2 = sorted(glob.glob("*.dat*"))
     out_file_name = out_file_name + "-" + files_all2[-1][:-4]
     os.chdir("..")
 
@@ -437,28 +355,7 @@ def calculate_and_save_timestamp_differences_full_sensor(
     # exists
     feather_file = f"{out_file_name}.feather"
 
-    try:
-        os.chdir("delta_ts_data")
-        if os.path.isfile(feather_file):
-            if rewrite is True:
-                print(
-                    "\n! ! ! Feather file with timestamps differences already "
-                    "exists and will be rewritten ! ! !\n"
-                )
-                for i in range(5):
-                    print(
-                        "\n! ! ! Deleting the file in {} ! ! !\n".format(5 - i)
-                    )
-                    time.sleep(1)
-                os.remove(feather_file)
-            else:
-                sys.exit(
-                    "\n Feather file already exists, 'rewrite' set to"
-                    "'False', exiting."
-                )
-        os.chdir("..")
-    except FileNotFoundError:
-        pass
+    utils.file_rewrite_handling(feather_file, rewrite)
 
     # TODO add check for masked/noisy pixels
     # if app_mask is True:
@@ -474,7 +371,7 @@ def calculate_and_save_timestamp_differences_full_sensor(
     for i in tqdm(range(ceil(len(files_all1))), desc="Collecting data"):
         deltas_all = {}
         # First board, unpack data
-        os.chdir("{}".format(motherboard_number1))
+        os.chdir(f"{motherboard_number1}")
         file = files_all1[i]
         if not absolute_timestamps:
             data_all1 = f_up.unpack_binary_data(
@@ -512,7 +409,7 @@ def calculate_and_save_timestamp_differences_full_sensor(
         os.chdir("..")
 
         # Second board, unpack data
-        os.chdir("{}".format(motherboard_number2))
+        os.chdir(f"{motherboard_number2}")
         file = files_all2[i]
         if not absolute_timestamps:
             data_all2 = f_up.unpack_binary_data(
@@ -564,7 +461,7 @@ def calculate_and_save_timestamp_differences_full_sensor(
             pixels[1] = pixels[1] + 128
 
         # Get the data from the requested pixel only
-        deltas_all["{},{}".format(pixels[0], pixels[1])] = []
+        deltas_all[f"{pixels[0]},{pixels[1]}"] = []
         tdc1, pix_c1 = np.argwhere(pix_coor == pixels[0])[0]
         pix1 = np.where(data_all1[tdc1].T[0] == pix_c1)[0]
         tdc2, pix_c2 = np.argwhere(pix_coor == pixels[1])[0]
@@ -613,9 +510,7 @@ def calculate_and_save_timestamp_differences_full_sensor(
             for t1 in tmsp1:
                 deltas = tmsp2 - t1
                 ind = np.where(np.abs(deltas) < delta_window)[0]
-                deltas_all["{},{}".format(pixels[0], pixels[1])].extend(
-                    deltas[ind]
-                )
+                deltas_all[f"{pixels[0]},{pixels[1]}"].extend(deltas[ind])
         # Version using csv files; left for debugging
         # # Save data as a .csv file in a cycle so data is not lost
         # # in the case of failure close to the end
@@ -657,33 +552,31 @@ def calculate_and_save_timestamp_differences_full_sensor(
 
         if os.path.isfile(feather_file):
             # Load existing Feather file
-            existing_data = feather.read_feather(feather_file)
+            existing_data = ft.read_feather(feather_file)
 
             # Append new data to the existing Feather file
             combined_data = pd.concat(
                 [existing_data, data_for_plot_df], axis=0
             )
-            feather.write_feather(combined_data, feather_file)
+            ft.write_feather(combined_data, feather_file)
 
         else:
             # Save as a new Feather file
-            feather.write_feather(data_for_plot_df, feather_file)
+            ft.write_feather(data_for_plot_df, feather_file)
 
         os.chdir("..")
 
     # Check if the file with the results was created
     if (
         os.path.isfile(
-            path + "/delta_ts_data/{}.feather".format(out_file_name)
+            os.path.join(path, f"/delta_ts_data/{out_file_name}.feather")
         )
         is True
     ):
         print(
-            "\n> > > Timestamp differences are saved as {file}.feather in "
-            "{path} < < <".format(
-                file=out_file_name,
-                path=path + "\delta_ts_data",
-            )
+            "\n> > > Timestamp differences are saved as"
+            f"{out_file_name}.feather in "
+            f"{os.path.join(path, 'delta_ts_data')} < < <"
         )
     else:
         print("File wasn't generated. Check input parameters.")
@@ -745,15 +638,13 @@ def collect_and_plot_timestamp_differences(
     plt.ioff()
     os.chdir(path)
 
-    files_all = glob.glob("*.dat*")
+    files_all = sorted(glob.glob("*.dat*"))
     csv_file_name = files_all[0][:-4] + "-" + files_all[-1][:-4]
 
     # Check if plot exists and if it should be rewritten
     try:
         os.chdir("results/delta_t")
-        if os.path.isfile(
-            "{name}_delta_t_grid.png".format(name=csv_file_name)
-        ):
+        if os.path.isfile(f"{csv_file_name}_delta_t_grid.png"):
             if rewrite is True:
                 print(
                     "\n! ! ! Plot of timestamp differences already"
@@ -791,8 +682,8 @@ def collect_and_plot_timestamp_differences(
     if same_y is True:
         y_max_all = 0
 
-    for q in tqdm(range(len(pixels)), desc="Row in plot"):
-        for w in range(len(pixels)):
+    for q, _ in tqdm(enumerate(pixels), desc="Row in plot"):
+        for w, _ in enumerate(pixels):
             if w <= q:
                 continue
             if len(pixels) > 2:
@@ -838,9 +729,9 @@ def collect_and_plot_timestamp_differences(
 
             # Read data from Feather file
             try:
-                data_to_plot = feather.read_feather(
-                    "delta_ts_data/{name}.feather".format(name=csv_file_name),
-                    columns=["{},{}".format(pixels[q], pixels[w])],
+                data_to_plot = ft.read_feather(
+                    f"delta_ts_data/{csv_file_name}.feather",
+                    columns=[f"{pixels[q]},{pixels[w]}"],
                 ).dropna()
             except ValueError:
                 continue
@@ -864,8 +755,8 @@ def collect_and_plot_timestamp_differences(
                 )
             except ValueError:
                 print(
-                    "\nCouldn't calculate bins for {q}-{w} pair: probably not "
-                    "enough delta ts.".format(q=q, w=w)
+                    f"\nCouldn't calculate bins for {q}-{w} pair: "
+                    "probably not enough delta ts."
                 )
                 continue
 
@@ -912,16 +803,13 @@ def collect_and_plot_timestamp_differences(
             if len(pixels) > 2:
                 axs[q][w - 1].set_xlim(range_left - 100, range_right + 100)
                 axs[q][w - 1].set_title(
-                    "Pixels {p1},{p2}\nPeak in 2 ns window: {pp}".format(
-                        p1=pixels[q], p2=pixels[w], pp=int(peak_max)
-                    )
+                    f"Pixels {pixels[q]},{pixels[w]}\nPeak in 2 ns "
+                    f"window: {int(peak_max)}"
                 )
             else:
                 plt.xlim(range_left - 100, range_right + 100)
 
-                plt.title(
-                    "Pixels {p1},{p2}".format(p1=pixels[q], p2=pixels[w])
-                )
+                plt.title(f"Pixels {pixels[q]},{pixels[w]}")
 
             # Save the figure
             try:
@@ -929,8 +817,8 @@ def collect_and_plot_timestamp_differences(
             except FileNotFoundError:
                 os.makedirs("results/delta_t")
                 os.chdir("results/delta_t")
-            fig.tight_layout()  # for perfect spacing between the plots
-            plt.savefig("{name}_delta_t_grid.png".format(name=csv_file_name))
+            # fig.tight_layout()  # for perfect spacing between the plots
+            plt.savefig(f"{csv_file_name}_delta_t_grid.png")
             os.chdir("../..")
 
     print(
@@ -1003,11 +891,11 @@ def collect_and_plot_timestamp_differences_full_sensor(
     # on which board was analyzed first
     folders = glob.glob("*#*")
     os.chdir(folders[0])
-    files_all = glob.glob("*.dat*")
+    files_all = sorted(glob.glob("*.dat*"))
     csv_file_name1 = files_all[0][:-4] + "-"
     csv_file_name2 = "-" + files_all[-1][:-4]
     os.chdir("../{}".format(folders[1]))
-    files_all = glob.glob("*.dat*")
+    files_all = sorted(glob.glob("*.dat*"))
     csv_file_name1 += files_all[-1][:-4]
     csv_file_name2 = files_all[0][:-4] + csv_file_name2
     os.chdir("..")
@@ -1068,8 +956,8 @@ def collect_and_plot_timestamp_differences_full_sensor(
     if same_y is True:
         y_max_all = 0
 
-    for q in tqdm(range(len(pixels)), desc="Row in plot"):
-        for w in range(len(pixels)):
+    for q, _ in tqdm(enumerate(pixels), desc="Row in plot"):
+        for w, _ in enumerate(pixels):
             if w <= q:
                 continue
             if len(pixels) > 2:
@@ -1121,7 +1009,7 @@ def collect_and_plot_timestamp_differences_full_sensor(
             #     continue
             # Read data from Feather file
             try:
-                data_to_plot = feather.read_feather(
+                data_to_plot = ft.read_feather(
                     "delta_ts_data/{name}.feather".format(name=csv_file_name),
                     columns=["{},{}".format(pixels[q], pixels[w])],
                 ).dropna()
@@ -1195,18 +1083,13 @@ def collect_and_plot_timestamp_differences_full_sensor(
             if len(pixels) > 2:
                 axs[q][w - 1].set_xlim(range_left - 100, range_right + 100)
                 axs[q][w - 1].set_title(
-                    "Pixels {p1},{p2}\nPeak in 2 ns window: {pp}".format(
-                        p1=pixels[q], p2=pixels[w], pp=int(peak_max)
-                    )
+                    f"Pixels {pixels[q]},{pixels[w]}\nPeak in 2 ns "
+                    f"window: {int(peak_max)}"
                 )
             else:
                 plt.xlim(range_left - 100, range_right + 100)
 
-                plt.title(
-                    "Pixels {p1},{p2}".format(
-                        p1=pixels[0], p2=256 + 255 - pixels[1]
-                    )
-                )
+                plt.title(f"Pixels {pixels[0]},{256 + 255 - pixels[1]}")
 
             # Save the figure
             try:
