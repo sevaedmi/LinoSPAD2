@@ -141,3 +141,6 @@ dmypy.json
 
 # Tox
 requirements_dev.txt
+
+# VS Code
+.lprof/settings.json
