@@ -1035,8 +1035,8 @@ def collect_and_plot_timestamp_differences_full_sensor(
                 )
             except ValueError:
                 print(
-                    "\nCouldn't calculate bins for {q}-{w} pair: probably not "
-                    "enough delta ts.".format(q=q, w=w)
+                    f"\nCouldn't calculate bins for {q}-{w} pair: probably not "
+                    "enough delta ts."
                 )
                 continue
 

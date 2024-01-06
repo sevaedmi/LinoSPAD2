@@ -49,6 +49,7 @@ def collect_data_and_apply_mask(
     include_offset: bool,
     apply_calibration: bool,
     app_mask: bool = True,
+    absolute_timestamps: bool = False,
 ) -> np.ndarray:
     """Collect data from files and apply mask to the valid pixel count.
 
@@ -74,6 +75,9 @@ def collect_data_and_apply_mask(
         Switch for applying TDC and offset calibration.
     app_mask : bool, optional
         Switch for applying the mask on warm/hot pixels. Default is True.
+    absolute_timestamps : bool, optional
+        Indicator for data files with absolute timestamps. Default is
+        False.
 
     Returns
     -------
@@ -93,15 +97,26 @@ def collect_data_and_apply_mask(
     timestamps_per_pixel = np.zeros(256)
 
     for i in tqdm(range(len(files)), desc="Collecting data"):
-        data = f_up.unpack_binary_data(
-            files[i],
-            daughterboard_number,
-            motherboard_number,
-            firmware_version,
-            timestamps,
-            include_offset,
-            apply_calibration,
-        )
+        if not absolute_timestamps:
+            data = f_up.unpack_binary_data(
+                files[i],
+                daughterboard_number,
+                motherboard_number,
+                firmware_version,
+                timestamps,
+                include_offset,
+                apply_calibration,
+            )
+        else:
+            data, abs_tmsp = f_up.unpack_binary_data_with_absolute_timestamps(
+                files[i],
+                daughterboard_number,
+                motherboard_number,
+                firmware_version,
+                timestamps,
+                include_offset,
+                apply_calibration,
+            )
         for i in range(256):
             tdc, pix = np.argwhere(pix_coor == i)[0]
             ind = np.where(data[tdc].T[0] == pix)[0]
@@ -619,6 +634,8 @@ def plot_sensor_population_full_sensor(
     fit_peaks: bool = False,
     threshold_multiplier: int = 10,
     pickle_fig: bool = False,
+    single_file: bool = False,
+    absolute_timestamps: bool = False,
 ):
     """Plot the number of timestamps in each pixel for all datafiles.
 
@@ -672,6 +689,12 @@ def plot_sensor_population_full_sensor(
     pickle_fig : bool, optional
         Switch for pickling the figure. Can be used when plotting takes
         a lot of time. The default is False.
+    single_file : bool, optional
+        Switch for unpacking only the first file for a quick plot.
+        The default is False.
+    absolute_timestamps : bool, optional
+        Indicator for data files with absolute timestamps. Default is
+        False.
 
     Returns
     -------
@@ -707,14 +730,17 @@ def plot_sensor_population_full_sensor(
 
     # First motherboard / half of the sensor
     os.chdir(path1)
-    files1 = glob.glob("*.dat*")
+    files1 = sorted(glob.glob("*.dat*"))
+    if single_file:
+        files1 = files1[0]
     plot_name1 = files1[0][:-4] + "-"
 
     print(
         "\n> > > Collecting data for sensor population plot,"
         "Working in {} < < <\n".format(path1)
     )
-    collect_data_and_apply_mask(
+
+    valid_per_pixel1 = collect_data_and_apply_mask(
         files1,
         daughterboard_number,
         motherboard_number1,
@@ -722,22 +748,24 @@ def plot_sensor_population_full_sensor(
         timestamps,
         include_offset,
         apply_calibration,
-        valid_per_pixel1,
         app_mask,
+        absolute_timestamps,
     )
 
     os.chdir("..")
 
     # Second motherboard / half of the sensor
     os.chdir(path2)
-    files2 = glob.glob("*.dat*")
+    files2 = sorted(glob.glob("*.dat*"))
+    if single_file:
+        files2 = files2[0]
     plot_name2 = files2[-1][:-4]
 
     print(
         "\n> > > Collecting data for sensor population plot,"
         "Working in {} < < <\n".format(path2)
     )
-    collect_data_and_apply_mask(
+    valid_per_pixel2 = collect_data_and_apply_mask(
         files2,
         daughterboard_number,
         motherboard_number2,
@@ -745,8 +773,8 @@ def plot_sensor_population_full_sensor(
         timestamps,
         include_offset,
         apply_calibration,
-        valid_per_pixel2,
         app_mask,
+        absolute_timestamps,
     )
 
     # Fix pixel addressing for the second board
