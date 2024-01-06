@@ -85,6 +85,7 @@ def unpack_binary_data(
     # Pixel address in the given TDC is 2 bits above timestamp
     data_pixels = ((raw_data >> 28) & 0x3).astype(np.longlong)
     data_timestamps[np.where(raw_data < 0x80000000)] = -1
+    del raw_data
     # Number of acquisition cycles in each data file
     cycles = int(len(data_timestamps) / timestamps / 65)
     # Transform into a matrix of size 65 by cycles*timestamps
@@ -309,6 +310,7 @@ def unpack_binary_data_with_absolute_timestamps(
     data_timestamps_cut[np.where(raw_data_cut < 0x80000000)] = -1
     # Pixel address in the given TDC is 2 bits above timestamp
     data_pixels = ((raw_data_cut >> 28) & 0x3).astype(np.longlong)
+    del raw_data
     # Standard data: everything besides the absolute timestamps
 
     # Transform into matrix 65 by cycles*timestamps

@@ -168,28 +168,7 @@ def calculate_and_save_timestamp_differences_mp(
 
     feather_file = os.path.join(path, "delta_ts_data", feather_file_name)
 
-    try:
-        os.chdir("delta_ts_data")
-        if os.path.isfile(feather_file):
-            if rewrite is True:
-                print(
-                    "\n! ! ! Feather file with timestamps differences already "
-                    "exists and will be rewritten ! ! !\n"
-                )
-                for i in range(5):
-                    print(
-                        "\n! ! ! Deleting the file in {} ! ! !\n".format(5 - i)
-                    )
-                    time.sleep(1)
-                os.remove(feather_file)
-            else:
-                sys.exit(
-                    "\n Feather file already exists, 'rewrite' set to"
-                    "'False', exiting."
-                )
-        os.chdir("..")
-    except FileNotFoundError:
-        pass
+    utils.file_rewrite_handling(feather_file, rewrite)
 
     with multiprocessing.Manager() as manager:
         shared_result_queue = manager.Queue()
@@ -253,7 +232,7 @@ def calculate_and_save_timestamp_differences_mp(
 
 
 if __name__ == "__main__":
-    path = r"D:\LinoSPAD2\Data\board_NL11\Prague\Ne\703"
+    path = "/home/sj/LS2_Data/703"
     pixels = [58, 191]
     daughterboard_number = "NL11"
     motherboard_number = "#33"
