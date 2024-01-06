@@ -219,7 +219,24 @@ def calculate_and_save_timestamp_differences_mp(
                 apply_calibration=apply_calibration,
             )
 
-            pool.map(partial_process_file, files, chunksize=30)
+            arg_list = [
+                (
+                    file,
+                    shared_result_queue,
+                    pixels,
+                    daughterboard_number,
+                    motherboard_number,
+                    firmware_version,
+                    timestamps,
+                    delta_window,
+                    app_mask,
+                    include_offset,
+                    apply_calibration,
+                )
+                for file in files
+            ]
+
+            pool.starmap(partial_process_file, arg_list, chunksize=30)
 
             # Use tqdm to create a progress bar for the file processing
             # Can't configure tqdm to update the progress bar correctly
@@ -236,8 +253,8 @@ def calculate_and_save_timestamp_differences_mp(
 
 
 if __name__ == "__main__":
-    path = "/home/sj/LS2_Data/703"
-    pixels = [[57, 58, 59], [190, 191, 192]]
+    path = r"D:\LinoSPAD2\Data\board_NL11\Prague\Ne\703"
+    pixels = [58, 191]
     daughterboard_number = "NL11"
     motherboard_number = "#33"
     firmware_version = "2212b"
@@ -247,6 +264,8 @@ if __name__ == "__main__":
     include_offset = False
     apply_calibration = True
     start_time = time.time()
+    # multiprocessing.set_start_method('spawn', force=True)
+    multiprocessing.freeze_support()
     calculate_and_save_timestamp_differences_mp(
         path,
         pixels,
@@ -265,6 +284,6 @@ if __name__ == "__main__":
     )
 
 
-file = "/home/sj/LS2_Data/703/MP_RESULTS/out.feather"
-# file1 = "/home/sj/LS2_Data/703/delta_ts_data/0000004613-0000004847.feather"
-data = feather.read_feather(file)
+# file = "/home/sj/LS2_Data/703/MP_RESULTS/out.feather"
+# # file1 = "/home/sj/LS2_Data/703/delta_ts_data/0000004613-0000004847.feather"
+# data = feather.read_feather(file)

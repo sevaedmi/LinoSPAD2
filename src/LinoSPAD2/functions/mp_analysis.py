@@ -310,6 +310,8 @@ def calculate_and_save_timestamp_differences_mp(
             # Start the multicore analysis of the files
             pool.map(partial_process_file, files, chunksize=chunksize)
 
+            # pool.close()
+            # pool.join()
             # Use tqdm to create a progress bar for the file processing
             # TODO Can't configure tqdm to update the progress bar
             # correctly while using chunksize in pool

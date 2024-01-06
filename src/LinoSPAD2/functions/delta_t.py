@@ -447,24 +447,26 @@ def calculate_and_save_timestamp_differences_full_sensor(
 
         os.chdir("..")
 
+        pix_left_peak = pixels[0]
         # The following piece of code take any value for the pixel from
         # the second motherboard, either in terms of full sensor (so
         # a value >=256) or in terms of single sensor half
+
         if pixels[1] >= 256:
             if pixels[1] > 256 + 127:
-                pixels[1] = 255 - (pixels[1] - 256)
+                pix_right_peak = 255 - (pixels[1] - 256)
             else:
-                pixels[1] = pixels[1] - 256 + 128
+                pix_right_peak = pixels[1] - 256 + 128
         elif pixels[1] > 127:
-            pixels[1] = 255 - pixels[1]
+            pix_right_peak = 255 - pixels[1]
         else:
-            pixels[1] = pixels[1] + 128
+            pix_right_peak = pixels[1] + 128
 
         # Get the data from the requested pixel only
-        deltas_all[f"{pixels[0]},{pixels[1]}"] = []
-        tdc1, pix_c1 = np.argwhere(pix_coor == pixels[0])[0]
+        deltas_all[f"{pix_left_peak},{pix_right_peak}"] = []
+        tdc1, pix_c1 = np.argwhere(pix_coor == pix_left_peak)[0]
         pix1 = np.where(data_all1[tdc1].T[0] == pix_c1)[0]
-        tdc2, pix_c2 = np.argwhere(pix_coor == pixels[1])[0]
+        tdc2, pix_c2 = np.argwhere(pix_coor == pix_right_peak)[0]
         pix2 = np.where(data_all2[tdc2].T[0] == pix_c2)[0]
 
         # Data from one of the board should be shifted as data collection
@@ -510,7 +512,9 @@ def calculate_and_save_timestamp_differences_full_sensor(
             for t1 in tmsp1:
                 deltas = tmsp2 - t1
                 ind = np.where(np.abs(deltas) < delta_window)[0]
-                deltas_all[f"{pixels[0]},{pixels[1]}"].extend(deltas[ind])
+                deltas_all[f"{pix_left_peak},{pix_right_peak}"].extend(
+                    deltas[ind]
+                )
         # Version using csv files; left for debugging
         # # Save data as a .csv file in a cycle so data is not lost
         # # in the case of failure close to the end
