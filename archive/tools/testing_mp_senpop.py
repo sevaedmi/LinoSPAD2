@@ -11,7 +11,7 @@ from LinoSPAD2.functions import utils
 
 
 # Step 1: Function to Process a Single File
-def process_file(file, result_queue) -> np.ndarray:
+def process_file(file) -> np.ndarray:
     daughterboard_number = "NL11"
     motherboard_number = "#33"
     firmware_version = "2212b"
@@ -53,9 +53,7 @@ def process_file(file, result_queue) -> np.ndarray:
         timestamps_per_pixel[mask] = 0
 
     # timestamps_per_pixel = timestamps_per_pixel
-
-    # return timestamps_per_pixel
-    result_queue.put(timestamps_per_pixel.astype(int))
+    return timestamps_per_pixel
 
 
 def write_results_to_file(result_queue, output_file, lock):
@@ -70,47 +68,63 @@ def write_results_to_file(result_queue, output_file, lock):
                 np.savetxt(f, [result_array], fmt="%d")
 
 
+# def main():
+#     input_folder = "/home/sj/LS2_Data/703"
+#     output_file = "/home/sj/LS2_Data/703/MP_RESULTS/out.txt"
+
+#     os.chdir(input_folder)
+
+#     files = glob.glob("*.dat")
+
+#     # Create a multiprocessing queue to pass results from worker processes to the writer process
+#     result_queue = multiprocessing.Queue()
+
+#     # Create a lock to synchronize access to the output file
+#     lock = multiprocessing.Lock()
+
+#     # Use a manager to create a shared result queue and lock
+#     with multiprocessing.Manager() as manager:
+#         shared_result_queue = manager.Queue()
+#         shared_lock = manager.Lock()
+
+#         # Create a pool of worker processes
+#         with multiprocessing.Pool() as pool:
+#             # Start the writer process
+#             writer_process = multiprocessing.Process(
+#                 target=write_results_to_file,
+#                 args=(shared_result_queue, output_file, shared_lock),
+#             )
+#             writer_process.start()
+
+#             # Submit the file processing function for each file to the pool
+#             pool.starmap(
+#                 process_file, [(file, shared_result_queue) for file in files]
+#             )
+
+#             # Signal the writer process that no more results will be added to the queue
+#             shared_result_queue.put(None)
+#             writer_process.join()
+
+
 def main():
     input_folder = "/home/sj/LS2_Data/703"
-    output_file = "/home/sj/LS2_Data/703/MP_RESULTS/out.txt"
+    # output_file = "/home/sj/LS2_Data/703/MP_RESULTS/out.txt"
 
     os.chdir(input_folder)
 
     files = glob.glob("*.dat")
 
-    # Create a multiprocessing queue to pass results from worker processes to the writer process
-    result_queue = multiprocessing.Queue()
+    final_result_array = np.zeros(256)
 
-    # Create a lock to synchronize access to the output file
-    lock = multiprocessing.Lock()
+    with multiprocessing.Pool() as pool:
+        final_result_array = sum(pool.map(process_file, files, chunksize=50))
 
-    # Use a manager to create a shared result queue and lock
-    with multiprocessing.Manager() as manager:
-        shared_result_queue = manager.Queue()
-        shared_lock = manager.Lock()
-
-        # Create a pool of worker processes
-        with multiprocessing.Pool() as pool:
-            # Start the writer process
-            writer_process = multiprocessing.Process(
-                target=write_results_to_file,
-                args=(shared_result_queue, output_file, shared_lock),
-            )
-            writer_process.start()
-
-            # Submit the file processing function for each file to the pool
-            pool.starmap(
-                process_file, [(file, shared_result_queue) for file in files]
-            )
-
-            # Signal the writer process that no more results will be added to the queue
-            shared_result_queue.put(None)
-            writer_process.join()
+    return final_result_array
 
 
 if __name__ == "__main__":
     start_time = time.time()
-    main()
+    result = main()
     end_time = time.time()
     elapsed_time = end_time - start_time
 

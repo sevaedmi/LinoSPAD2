@@ -173,7 +173,7 @@ def fit_gaussian(x, y):
     bkg_guess = np.median(y)
 
     # Perform the curve fitting
-    popt, *pcov = curve_fit(
+    popt, pcov = curve_fit(
         gaussian, x, y, p0=[amp_guess, mu_guess, sigma_guess, bkg_guess]
     )
 
@@ -242,7 +242,7 @@ def file_rewrite_handling(file: str, rewrite: bool):
 
     """
     try:
-        os.chdir("delta_ts_data")
+        # os.chdir("delta_ts_data")
         if os.path.isfile(file):
             if rewrite is True:
                 print(
@@ -258,6 +258,6 @@ def file_rewrite_handling(file: str, rewrite: bool):
                     "\n Feather file already exists, 'rewrite' set to"
                     "'False', exiting."
                 )
-        os.chdir("..")
+        # os.chdir("..")
     except FileNotFoundError:
         pass

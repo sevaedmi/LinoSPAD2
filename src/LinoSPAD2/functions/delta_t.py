@@ -51,6 +51,7 @@ def calculate_and_save_timestamp_differences(
     app_mask: bool = True,
     include_offset: bool = True,
     apply_calibration: bool = True,
+    absolute_timestamps: bool = False,
 ):
     """Calculate and save timestamp differences into '.feather' file.
 
@@ -89,6 +90,9 @@ def calculate_and_save_timestamp_differences(
         Switch for applying TDC and offset calibration. If set to 'True'
         while apply_offset_calibration is set to 'False', only the TDC
         calibration is applied. The default is True.
+    absolute_timestamps: bool, optional
+        Indicator for data with absolute timestamps. The default is
+        False.
 
     Raises
     ------
@@ -124,7 +128,11 @@ def calculate_and_save_timestamp_differences(
 
     # Check if the feather file exists and if it should be rewrited
 
-    feather_file = f"{out_file_name}.feather"
+    # feather_file = f"{out_file_name}.feather"
+
+    feather_file = os.path.join(
+        path, "delta_ts_data", f"{out_file_name}.feather"
+    )
 
     utils.file_rewrite_handling(feather_file, rewrite)
 
@@ -159,15 +167,26 @@ def calculate_and_save_timestamp_differences(
         deltas_all = {}
 
         # Unpack data for the requested pixels into dictionary
-        data_all = f_up.unpack_binary_data(
-            file,
-            daughterboard_number,
-            motherboard_number,
-            firmware_version,
-            timestamps,
-            include_offset,
-            apply_calibration,
-        )
+        if not absolute_timestamps:
+            data_all = f_up.unpack_binary_data(
+                file,
+                daughterboard_number,
+                motherboard_number,
+                firmware_version,
+                timestamps,
+                include_offset,
+                apply_calibration,
+            )
+        else:
+            data_all, _ = f_up.unpack_binary_data_with_absolute_timestamps(
+                file,
+                daughterboard_number,
+                motherboard_number,
+                firmware_version,
+                timestamps,
+                include_offset,
+                apply_calibration,
+            )
 
         deltas_all = cd.calculate_differences_2212(
             data_all, pixels, pix_coor, delta_window
@@ -353,7 +372,13 @@ def calculate_and_save_timestamp_differences_full_sensor(
 
     # Check if '.feather' file with timestamps differences already
     # exists
-    feather_file = f"{out_file_name}.feather"
+    # feather_file = f"{out_file_name}.feather"
+
+    # utils.file_rewrite_handling(feather_file, rewrite)
+
+    feather_file = os.path.join(
+        path, "delta_ts_data", f"{out_file_name}.feather"
+    )
 
     utils.file_rewrite_handling(feather_file, rewrite)
 
@@ -368,8 +393,11 @@ def calculate_and_save_timestamp_differences_full_sensor(
     #     mask2 = np.genfromtxt(file_mask2).astype(int)
     #     os.chdir(path_to_back)
 
+    abs_tmsp_list1 = []
+    abs_tmsp_list2 = []
     for i in tqdm(range(ceil(len(files_all1))), desc="Collecting data"):
         deltas_all = {}
+
         # First board, unpack data
         os.chdir(f"{motherboard_number1}")
         file = files_all1[i]
@@ -396,6 +424,7 @@ def calculate_and_save_timestamp_differences_full_sensor(
                 include_offset,
                 apply_calibration,
             )
+        abs_tmsp_list1.append(abs_tmsp1)
         # Collect indices of cycle ends (the '-2's)
         cycle_ends1 = np.where(data_all1[0].T[1] == -2)[0]
         cyc1 = np.argmin(
@@ -434,7 +463,7 @@ def calculate_and_save_timestamp_differences_full_sensor(
                 include_offset,
                 apply_calibration,
             )
-
+        abs_tmsp_list2.append(abs_tmsp2)
         # Collect indices of cycle ends (the '-2's)
         cycle_ends2 = np.where(data_all2[0].T[1] == -2)[0]
         cyc2 = np.argmin(
@@ -572,18 +601,17 @@ def calculate_and_save_timestamp_differences_full_sensor(
 
     # Check if the file with the results was created
     if (
-        os.path.isfile(
-            os.path.join(path, f"/delta_ts_data/{out_file_name}.feather")
-        )
+        os.path.isfile(os.path.join(path, f"/delta_ts_data/{feather_file}"))
         is True
     ):
         print(
             "\n> > > Timestamp differences are saved as"
-            f"{out_file_name}.feather in "
-            f"{os.path.join(path, 'delta_ts_data')} < < <"
+            f"{feather_file} in {os.path.join(path, 'delta_ts_data/')} < < <"
         )
     else:
         print("File wasn't generated. Check input parameters.")
+
+    return abs_tmsp_list1, abs_tmsp_list2
 
 
 def collect_and_plot_timestamp_differences(
