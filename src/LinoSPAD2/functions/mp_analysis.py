@@ -17,6 +17,7 @@ import multiprocessing
 import os
 import sys
 from dataclasses import dataclass
+from zipfile import ZipFile
 
 import numpy as np
 import pandas as pd
@@ -445,6 +446,52 @@ def write_results_to_feather(result_queue, feather_file, lock) -> None:
             ft.write_feather(combined_data, feather_file)
 
 
+def write_results_to_txt(result_queue_txt, txt_file, lock) -> None:
+    """Save or append data to a txt file.
+
+    Parameters
+    ----------
+    result_queue : multiprocessing.Queue
+        Interprocess queue containing data to be saved or appended to
+        the txt file.
+    txt_file : str
+        Absolute path to the txt file.
+    lock : multiprocessing.Lock
+        Shared interprocess lock for synchronizing access to the Feather
+        file.
+
+    Notes
+    -----
+    The data in `result_queue` is retrieved and combined with the
+    existing data in the txt file, or a new file is created if it
+    doesn't exist.
+    The process is synchronized using the shared `lock` to prevent
+    conflicts during file access.
+    """
+    while True:
+        result_df = result_queue_txt.get()
+        if result_df is None:
+            break
+
+        # Use a lock to prevent conflicts when writing to the file
+        with lock:
+            if os.path.exists(txt_file):
+                existing_data = np.genfromtxt(
+                    txt_file, delimiter="\t", dtype=int
+                )
+                combined_data = existing_data + result_df
+            else:
+                combined_data = result_df.copy()
+
+            # Write the combined data to the Feather file
+            np.savetxt(
+                txt_file,
+                combined_data,
+                fmt="%d",
+                delimiter="\t",
+            )
+
+
 def calculate_and_save_timestamp_differences_mp(
     path: str,
     pixels: list,
@@ -758,3 +805,277 @@ def calculate_and_save_timestamp_differences_full_sensor_mp(
             # added to the queue
             shared_result_queue.put(None)
             writer_process.join()
+
+
+def compact_share_collect_data(
+    file: str,
+    result_queue_feather: multiprocessing.Queue,
+    result_queue_txt: multiprocessing.Queue,
+    data_params: DataParamsConfig,
+):
+    """Collect delta timestamp differences and sensor population from
+    unpacked data, saving results to '.feather' and '.txt' files.
+
+    This function processes data from a single .dat file, calculates
+    timestamp differences and collects sensor population numbers. The
+    resulting arrays are put each to a separate multiprocessing queue
+    for saving via an appropriate function.
+
+    Parameters
+    ----------
+    file : str
+        Path to the data file to be processed.
+    result_queue_feather : multiprocessing.Queue
+        Queue for storing the timestamp differences in '.feather' format.
+    result_queue_txt : multiprocessing.Queue
+        Queue for storing the sensor population in '.txt' format.
+    data_params : DataParamsConfig
+        Configuration object containing parameters for data processing.
+
+    Returns
+    -------
+    None.
+    """
+
+    os.chdir(data_params.path)
+
+    # Collect the data for the required pixels
+
+    # for transforming pixel number into TDC number + pixel
+    # coordinates in that TDC
+    if data_params.firmware_version == "2212s":
+        pix_coor = np.arange(256).reshape(4, 64).T
+    elif data_params.firmware_version == "2212b":
+        pix_coor = np.arange(256).reshape(64, 4)
+    else:
+        sys.exit()
+
+    # Prepare array for sensor population
+    valid_per_pixel = np.zeros(256, dtype=int)
+
+    # Prepare a dictionary for timestamp differences
+    deltas_all = {}
+
+    # Unpack data
+    if not data_params.absolute_timestamps:
+        data_all = f_up.unpack_binary_data(
+            file,
+            data_params.daughterboard_number,
+            data_params.motherboard_number,
+            data_params.firmware_version,
+            data_params.timestamps,
+            data_params.include_offset,
+            data_params.apply_calibration,
+        )
+    else:
+        data_all, _ = f_up.unpack_binary_data_with_absolute_timestamps(
+            file,
+            data_params.daughterboard_number,
+            data_params.motherboard_number,
+            data_params.firmware_version,
+            data_params.timestamps,
+            data_params.include_offset,
+            data_params.apply_calibration,
+        )
+
+    deltas_all = cd.calculate_differences_2212(
+        data_all, data_params.pixels, pix_coor, data_params.delta_window
+    )
+
+    # Collect sensor population
+    for k in range(256):
+        tdc, pix = np.argwhere(pix_coor == k)[0]
+        valid_per_pixel[k] += np.count_nonzero(data_all[tdc][:, 0] == pix)
+
+    # Save data as a .feather file in a cycle so data is not lost
+    # in the case of failure close to the end
+    data_for_plot_df = pd.DataFrame.from_dict(deltas_all, orient="index")
+    del deltas_all
+
+    result_queue_feather.put(data_for_plot_df.T)
+    result_queue_txt.put(valid_per_pixel)
+
+
+def compact_share_mp(
+    path: str,
+    pixels: list,
+    rewrite: bool,
+    daughterboard_number: str,
+    motherboard_number: str,
+    firmware_version: str,
+    timestamps: int,
+    delta_window: float = 50e3,
+    include_offset: bool = True,
+    apply_calibration: bool = True,
+    absolute_timestamps: bool = False,
+    chunksize=None,
+):
+    """Collect timestamp differences and sensor population using
+    multiprocessing, saving results to '.feather' and '.txt' files.
+
+    This function parallelizes the processing of data in the specified
+    path using multiprocessing. It calculates timestamp differences and
+    sensor population for the specified pixels based on the provided
+    parameters, saving the timestamp differences to a '.feather' file and
+    the sensor population to a '.txt' file. Both files are then zipped for
+    compact output ready to share.
+
+    Parameters
+    ----------
+    path : str
+        Path to the directory containing data files.
+    pixels : list
+        List of pixel numbers for which the timestamp differences should
+        be calculated and saved, or list of two lists with pixel numbers
+        for peak vs. peak calculations.
+    rewrite : bool
+        Switch for rewriting the '.feather' file if it already exists.
+    daughterboard_number : str
+        LinoSPAD2 daughterboard number.
+    motherboard_number : str
+        LinoSPAD2 motherboard (FPGA) number.
+    firmware_version: str
+        LinoSPAD2 firmware version. Accepted values are "2212s" (skip)
+        and "2212b" (block).
+    timestamps : int
+        Number of timestamps per acquisition cycle per pixel.
+    delta_window : float, optional
+        Size of a window (in nanoseconds) to which timestamp differences
+        are compared (default is 50e3 nanoseconds).
+    include_offset : bool, optional
+        Switch for applying offset calibration (default is True).
+    apply_calibration : bool, optional
+        Switch for applying TDC and offset calibration. If set to 'True'
+        while include_offset is set to 'False', only the TDC calibration is
+        applied (default is True).
+    absolute_timestamps : bool, optional
+        Indicator for data with absolute timestamps (default is False).
+    chunksize : int, optional
+        The number of data points processed in each batch by each worker.
+        If None, the default chunk size is determined automatically.
+
+    Raises
+    ------
+    TypeError
+        Only boolean values of 'rewrite' and string values of
+        'firmware_version' are accepted. The first error is raised so
+        that the files are not accidentally overwritten in the case of
+        unclear input.
+
+    Returns
+    -------
+    None.
+    """
+
+    # parameter type check
+    if isinstance(pixels, list) is False:
+        raise TypeError(
+            "'pixels' should be a list of integers or a list of two lists"
+        )
+    if isinstance(firmware_version, str) is False:
+        raise TypeError(
+            "'firmware_version' should be string, '2212s', '2212b' or '2208'"
+        )
+    if isinstance(rewrite, bool) is False:
+        raise TypeError("'rewrite' should be boolean")
+    if isinstance(daughterboard_number, str) is False:
+        raise TypeError("'daughterboard_number' should be string")
+    if isinstance(motherboard_number, str) is False:
+        raise TypeError("'motherboard_number' should be string")
+
+    # Generate a dataclass object
+    data_params = DataParamsConfig(
+        pixels=pixels,
+        path=path,
+        daughterboard_number=daughterboard_number,
+        motherboard_number=motherboard_number,
+        firmware_version=firmware_version,
+        timestamps=timestamps,
+        delta_window=delta_window,
+        include_offset=include_offset,
+        apply_calibration=apply_calibration,
+        absolute_timestamps=absolute_timestamps,
+    )
+
+    os.chdir(path)
+
+    # Find all LinoSPAD2 data files
+    files = sorted(glob.glob("*.dat"))
+    # Get the resulting Feather file name based on the data files
+    # found
+    feather_file_name = files[0][:-4] + "-" + files[-1][:-4] + ".feather"
+    txt_file_name = files[0][:-4] + "-" + files[-1][:-4] + ".txt"
+    # Construct absolute path to the Feather file
+    feather_file = os.path.join(path, "compact_share", feather_file_name)
+    txt_file = os.path.join(path, "compact_share", txt_file_name)
+    # Handle the rewrite parameter based on the file existence to avoid
+    # accidental file overwritting
+    utils.file_rewrite_handling(feather_file, rewrite)
+    utils.file_rewrite_handling(txt_file, rewrite)
+
+    with multiprocessing.Manager() as manager:
+        shared_result_feather = manager.Queue()
+        shared_result_txt = manager.Queue()
+        shared_lock_feather = manager.Lock()
+        shared_lock_txt = manager.Lock()
+
+        with multiprocessing.Pool() as pool:
+            # Start the writer process
+            writer_process_feather = multiprocessing.Process(
+                target=write_results_to_feather,
+                args=(
+                    shared_result_feather,
+                    feather_file,
+                    shared_lock_feather,
+                ),
+            )
+
+            writer_process_txt = multiprocessing.Process(
+                target=write_results_to_txt,
+                args=(shared_result_txt, txt_file, shared_lock_txt),
+            )
+
+            writer_process_feather.start()
+            writer_process_txt.start()
+
+            # Create a partial function with fixed arguments for
+            # process_file
+            partial_process_file = functools.partial(
+                compact_share_collect_data,
+                result_queue_feather=shared_result_feather,
+                result_queue_txt=shared_result_txt,
+                data_params=data_params,
+            )
+
+            # Start the multicore analysis of the files
+            if chunksize is None:
+                pool.map(partial_process_file, files)
+
+            else:
+                pool.map(partial_process_file, files, chunksize=chunksize)
+
+            # Signal the writer process that no more results will be
+            # added to the queue
+            shared_result_feather.put(None)
+            shared_result_txt.put(None)
+            writer_process_feather.join()
+            writer_process_txt.join()
+
+        # Create a ZipFile Object
+        os.chdir(os.path.join(path, "compact_share"))
+        out_file_name, _ = os.path.splitext(feather_file_name)
+
+        with ZipFile(f"{out_file_name}.zip", "w") as zip_object:
+            # Adding files that need to be zipped
+            zip_object.write(f"{out_file_name}.feather")
+            zip_object.write(f"{out_file_name}.txt")
+
+            print(
+                "\n> > > Timestamp differences are saved as {feather_file} and "
+                "sensor population as {txt_file} in "
+                "{path} < < <".format(
+                    feather_file=feather_file,
+                    txt_file=txt_file,
+                    path=path + "\delta_ts_data",
+                )
+            )
