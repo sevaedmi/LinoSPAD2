@@ -84,7 +84,7 @@ def fit_with_gaussian(
 
     os.chdir(path)
 
-    files = glob.glob("*.dat*")
+    files = sorted(glob.glob("*.dat*"))
     file_name = files[0][:-4] + "-" + files[-1][:-4]
 
     try:
