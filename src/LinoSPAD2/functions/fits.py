@@ -415,10 +415,10 @@ def fit_with_gaussian_full_sensor(
         )
 
     try:
-        os.chdir("results/fits")
+        os.chdir(os.path.join(path, r"results/fits"))
     except Exception:
-        os.makedirs("results/fits")
-        os.chdir("results/fits")
+        os.makedirs(os.path.join(path, r"results/fits"))
+        os.chdir(os.path.join(path, r"results/fits"))
 
     plt.savefig(
         "{file}_pixels_"
