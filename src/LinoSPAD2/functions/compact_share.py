@@ -2,7 +2,7 @@
 
 The module provides a simple and memory-friendly way of sharing data - 
 that is processed '.dat' data in a form of a '.txt' file with number of
-timestamps collected by each pixel and a '.csv' file with timestamp
+timestamps collected by each pixel and a '.feather' file with timestamp
 differences. Additionally, function for plotting both the sensor
 population plot and the delta t histograms are provided.
 
@@ -383,7 +383,6 @@ def collect_and_plot_timestamp_differences_shared_feather(
     plt.ioff()
     os.chdir(path)
 
-    # file = glob.glob("*.csv*")[0]
     file = glob.glob("*.feather")[0]
     feather_file_name = file[:-8]
 
