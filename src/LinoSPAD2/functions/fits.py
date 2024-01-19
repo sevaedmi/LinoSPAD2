@@ -291,13 +291,13 @@ def fit_with_gaussian_full_sensor(
 
     # Collect ".dat" files' names in the first folder
     os.chdir(folders[0])
-    files_all = glob.glob("*.dat*")
+    files_all = sorted(glob.glob("*.dat*"))
     feather_file_name1 = files_all[0][:-4] + "-"
     feather_file_name2 = "-" + files_all[-1][:-4]
 
     # Collect ".dat" files' names in the second folder
     os.chdir("../{}".format(folders[1]))
-    files_all = glob.glob("*.dat")
+    files_all = sorted(glob.glob("*.dat"))
     feather_file_name1 += files_all[-1][:-4]
     feather_file_name2 = files_all[0][:-4] + feather_file_name2
 
