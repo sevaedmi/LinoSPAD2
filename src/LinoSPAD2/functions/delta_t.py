@@ -122,7 +122,9 @@ def calculate_and_save_timestamp_differences(
 
     os.chdir(path)
 
-    files_all = sorted(glob.glob("*.dat*"))
+    # files_all = sorted(glob.glob("*.dat*"))
+    files_all = glob.glob("*.dat*")
+    files_all.sort(key=os.path.getmtime)
 
     out_file_name = files_all[0][:-4] + "-" + files_all[-1][:-4]
 
@@ -202,20 +204,6 @@ def calculate_and_save_timestamp_differences(
         except FileNotFoundError:
             os.mkdir("delta_ts_data")
             os.chdir("delta_ts_data")
-
-        # Version for saving to a csv, left for debugging purposes
-        # csv_file = glob.glob("*{}.csv*".format(out_file_name))
-        # if csv_file != []:
-        #     data_for_plot_df.to_csv(
-        #         "{}.csv".format(out_file_name),
-        #         mode="a",
-        #         index=False,
-        #         header=False,
-        #     )
-        # else:
-        #     data_for_plot_df.to_csv(
-        #         "{}.csv".format(out_file_name), index=False
-        #     )
 
         # Check if feather file exists
         feather_file = f"{out_file_name}.feather"
@@ -345,7 +333,9 @@ def calculate_and_save_timestamp_differences_full_sensor(
         raise FileNotFoundError(
             f"Data from {motherboard_number1} not found"
         ) from exc
-    files_all1 = sorted(glob.glob("*.dat*"))
+    # files_all1 = sorted(glob.glob("*.dat*"))
+    files_all1 = glob.glob("*.dat*")
+    files_all1.sort(key=os.path.getmtime)
     out_file_name = files_all1[0][:-4]
     os.chdir("..")
 
@@ -356,7 +346,9 @@ def calculate_and_save_timestamp_differences_full_sensor(
         raise FileNotFoundError(
             f"Data from {motherboard_number2} not found"
         ) from exc
-    files_all2 = sorted(glob.glob("*.dat*"))
+    # files_all2 = sorted(glob.glob("*.dat*"))
+    files_all2 = glob.glob("*.dat*")
+    files_all2.sort(key=os.path.getmtime)
     out_file_name = out_file_name + "-" + files_all2[-1][:-4]
     os.chdir("..")
 
@@ -525,12 +517,6 @@ def calculate_and_save_timestamp_differences_full_sensor(
                 cycle_ends1[cycle_ends1 <= cyc],
             )
 
-        print(cyc1, cyc2)
-        print("+++++++++")
-        print(cycle_start1, cycle_start2)
-        print("+++++++++")
-        print(cyc)
-
         # Get timestamps for both pixels in the given cycle
         for cyc in range(len(cycle_ends1) - 1):
             pix1_ = pix1[
@@ -561,30 +547,6 @@ def calculate_and_save_timestamp_differences_full_sensor(
                 deltas_all[f"{pix_left_peak},{pix_right_peak}"].extend(
                     deltas[ind]
                 )
-        # Version using csv files; left for debugging
-        # # Save data as a .csv file in a cycle so data is not lost
-        # # in the case of failure close to the end
-        # data_for_plot_df = pd.DataFrame.from_dict(deltas_all, orient="index")
-        # del deltas_all
-        # data_for_plot_df = data_for_plot_df.T
-        # try:
-        #     os.chdir("delta_ts_data")
-        # except FileNotFoundError:
-        #     os.mkdir("delta_ts_data")
-        #     os.chdir("delta_ts_data")
-        # csv_file = glob.glob("*{}.csv*".format(out_file_name))
-        # if csv_file != []:
-        #     data_for_plot_df.to_csv(
-        #         "{}.csv".format(out_file_name),
-        #         mode="a",
-        #         index=False,
-        #         header=False,
-        #     )
-        # else:
-        #     data_for_plot_df.to_csv(
-        #         "{}.csv".format(out_file_name), index=False
-        #     )
-        # os.chdir("..")
 
         # Save data to a feather file in a cycle so data is not lost
         # in the case of failure close to the end
@@ -735,7 +697,7 @@ def calculate_and_save_timestamp_differences_full_sensor_alt(
             f"Data from {motherboard_number1} not found"
         ) from exc
     files_all1 = glob.glob("*.dat*")
-    files_all1.sort(key=lambda x: os.path.getctime(x))
+    files_all1.sort(key=lambda x: os.path.getmtime(x))
     out_file_name = files_all1[0][:-4]
     os.chdir("..")
 
@@ -747,7 +709,7 @@ def calculate_and_save_timestamp_differences_full_sensor_alt(
             f"Data from {motherboard_number2} not found"
         ) from exc
     files_all2 = glob.glob("*.dat*")
-    files_all2.sort(key=lambda x: os.path.getctime(x))
+    files_all2.sort(key=lambda x: os.path.getmtime(x))
     out_file_name = out_file_name + "-" + files_all2[-1][:-4]
     os.chdir("..")
 
@@ -1077,13 +1039,15 @@ def collect_and_plot_timestamp_differences(
     plt.ioff()
     os.chdir(path)
 
-    files_all = sorted(glob.glob("*.dat*"))
-    csv_file_name = files_all[0][:-4] + "-" + files_all[-1][:-4]
+    # files_all = sorted(glob.glob("*.dat*"))
+    files_all = glob.glob("*.dat*")
+    files_all.sort(key=os.path.getmtime)
+    feather_file_name = files_all[0][:-4] + "-" + files_all[-1][:-4]
 
     # Check if plot exists and if it should be rewritten
     try:
         os.chdir("results/delta_t")
-        if os.path.isfile(f"{csv_file_name}_delta_t_grid.png"):
+        if os.path.isfile(f"{feather_file_name}_delta_t_grid.png"):
             if rewrite is True:
                 print(
                     "\n! ! ! Plot of timestamp differences already"
@@ -1128,48 +1092,10 @@ def collect_and_plot_timestamp_differences(
             if len(pixels) > 2:
                 axs[q][w - 1].axes.set_axis_on()
 
-            # csv-version, left for debugging
-            # Read data from csv file
-
-            # try:
-            #     os.path.isfile("delta_ts_data/{}.csv".format(csv_file_name))
-            #     csv_file = "delta_ts_data/{}.csv".format(csv_file_name)
-            # except FileNotFoundError:
-            #     try:
-            #         dash_position = csv_file.find("-")
-            #         csv_file_name = (
-            #             "delta_ts_data/"
-            #             + csv_file[dash_position + 1 : -4]
-            #             + "-"
-            #             + csv_file[14:dash_position]
-            #             + ".csv"
-            #         )
-            #     except FileNotFoundError:
-            #         raise FileNotFoundError(
-            #             "'.csv' file with timestamps"
-            #             "differences was not found"
-            #         )
-
-            # csv_file_path = "delta_ts_data/{}.csv".format(csv_file_name)
-            # if os.path.isfile(csv_file_path):
-            #     csv_file = csv_file_path
-            # else:
-            #     raise FileNotFoundError(
-            #         "'.csv' file with timestamps differences was not found"
-            #     )
-
-            # try:
-            #     data_to_plot = pd.read_csv(
-            #         csv_file,
-            #         usecols=["{},{}".format(pixels[q], pixels[w])],
-            #     ).dropna()
-            # except ValueError:
-            #     continue
-
             # Read data from Feather file
             try:
                 data_to_plot = ft.read_feather(
-                    f"delta_ts_data/{csv_file_name}.feather",
+                    f"delta_ts_data/{feather_file_name}.feather",
                     columns=[f"{pixels[q]},{pixels[w]}"],
                 ).dropna()
             except ValueError:
@@ -1257,12 +1183,12 @@ def collect_and_plot_timestamp_differences(
                 os.makedirs("results/delta_t")
                 os.chdir("results/delta_t")
             # fig.tight_layout()  # for perfect spacing between the plots
-            plt.savefig(f"{csv_file_name}_delta_t_grid.png")
+            plt.savefig(f"{feather_file_name}_delta_t_grid.png")
             os.chdir("../..")
 
     print(
         "\n> > > Plot is saved as {file} in {path}< < <".format(
-            file=csv_file_name + "_delta_t_grid.png",
+            file=feather_file_name + "_delta_t_grid.png",
             path=path + "/results/delta_t",
         )
     )
@@ -1330,20 +1256,29 @@ def collect_and_plot_timestamp_differences_full_sensor(
     # on which board was analyzed first
     folders = glob.glob("*#*")
     os.chdir(folders[0])
-    files_all = sorted(glob.glob("*.dat*"))
-    csv_file_name1 = files_all[0][:-4] + "-"
-    csv_file_name2 = "-" + files_all[-1][:-4]
+    # files_all = sorted(glob.glob("*.dat*"))
+    files_all = glob.glob("*.dat*")
+    # files_all.sort(key=lambda x: os.path.getmtime(x))
+    files_all.sort(key=os.path.getmtime)
+
+    feather_file_name1 = files_all[0][:-4] + "-"
+    feather_file_name2 = "-" + files_all[-1][:-4]
+
     os.chdir("../{}".format(folders[1]))
-    files_all = sorted(glob.glob("*.dat*"))
-    csv_file_name1 += files_all[-1][:-4]
-    csv_file_name2 = files_all[0][:-4] + csv_file_name2
+    # files_all = sorted(glob.glob("*.dat*"))
+    files_all = glob.glob("*.dat*")
+    # files_all.sort(key=lambda x: os.path.getmtime(x))
+    files_all.sort(key=os.path.getmtime)
+
+    feather_file_name1 += files_all[-1][:-4]
+    feather_file_name2 = files_all[0][:-4] + feather_file_name2
     os.chdir("..")
 
     # Check if plot exists and if it should be rewritten
     try:
-        os.chdir("results/delta_t")
+        os.chdir(os.path.join(path, "results/delta_t"))
         if os.path.isfile(
-            "{name}_delta_t_grid.png".format(name=csv_file_name1)
+            "{name}_delta_t_grid.png".format(name=feather_file_name1)
         ):
             if rewrite is True:
                 print(
@@ -1356,7 +1291,7 @@ def collect_and_plot_timestamp_differences_full_sensor(
                 )
 
         elif os.path.isfile(
-            "{name}_delta_t_grid.png".format(name=csv_file_name2)
+            "{name}_delta_t_grid.png".format(name=feather_file_name2)
         ):
             if rewrite is True:
                 print(
@@ -1368,7 +1303,7 @@ def collect_and_plot_timestamp_differences_full_sensor(
                     "\nPlot already exists, 'rewrite' set to 'False', exiting."
                 )
 
-        os.chdir("../..")
+        # os.chdir("../..")
     except FileNotFoundError:
         pass
 
@@ -1402,55 +1337,30 @@ def collect_and_plot_timestamp_differences_full_sensor(
             if len(pixels) > 2:
                 axs[q][w - 1].axes.set_axis_on()
 
-            # csv-version, left for debugging
-            # Read data from csv file
-
-            # try:
-            #     os.path.isfile("delta_ts_data/{}.csv".format(csv_file_name))
-            #     csv_file = "delta_ts_data/{}.csv".format(csv_file_name)
-            # except FileNotFoundError:
-            #     try:
-            #         dash_position = csv_file.find("-")
-            #         csv_file_name = (
-            #             "delta_ts_data/"
-            #             + csv_file[dash_position + 1 : -4]
-            #             + "-"
-            #             + csv_file[14:dash_position]
-            #             + ".csv"
-            #         )
-            #     except FileNotFoundError:
-            #         raise FileNotFoundError(
-            #             "'.csv' file with timestamps"
-            #             "differences was not found"
-            #         )
-
             # Check if the file with timestamps differences is there
-            csv_file_path1 = "delta_ts_data/{}.feather".format(csv_file_name1)
-            csv_file_path2 = "delta_ts_data/{}.feather".format(csv_file_name2)
-            csv_file, csv_file_name = (
-                (csv_file_path1, csv_file_name1)
-                if os.path.isfile(csv_file_path1)
-                else (csv_file_path2, csv_file_name2)
+            feather_file_path1 = "delta_ts_data/{}.feather".format(
+                feather_file_name1
             )
-            # print(csv_file)
-            if not os.path.isfile(csv_file):
+            feather_file_path2 = "delta_ts_data/{}.feather".format(
+                feather_file_name2
+            )
+            feather_file, feather_file_name = (
+                (feather_file_path1, feather_file_name1)
+                if os.path.isfile(os.path.join(path, feather_file_path1))
+                else (feather_file_path2, feather_file_name2)
+            )
+            if not os.path.isfile(os.path.join(path, feather_file)):
                 raise FileNotFoundError(
                     "'.feather' file with timestamps differences was not found"
                 )
-
-            # csv-version, left for debugging
-            # try:
-            #     data_to_plot = pd.read_csv(
-            #         csv_file,
-            #         usecols=["{},{}".format(pixels[q], pixels[w])],
-            #     ).dropna()
-            # except ValueError:
-            #     continue
+            os.chdir(path)
             # Read data from Feather file
             try:
                 data_to_plot = ft.read_feather(
-                    "delta_ts_data/{name}.feather".format(name=csv_file_name),
-                    columns=["{},{}".format(pixels[q], pixels[w])],
+                    os.path.join(
+                        path, f"delta_ts_data/{feather_file_name}.feather"
+                    ),
+                    columns=[f"{pixels[q]},{pixels[w]}"],
                 ).dropna()
             except ValueError:
                 continue
@@ -1537,12 +1447,14 @@ def collect_and_plot_timestamp_differences_full_sensor(
                 os.makedirs("results/delta_t")
                 os.chdir("results/delta_t")
             fig.tight_layout()  # for perfect spacing between the plots
-            plt.savefig("{name}_delta_t_grid.png".format(name=csv_file_name))
+            plt.savefig(
+                "{name}_delta_t_grid.png".format(name=feather_file_name)
+            )
             os.chdir("../..")
 
     print(
         "\n> > > Plot is saved as {file} in {path}< < <".format(
-            file=csv_file_name + "_delta_t_grid.png",
+            file=feather_file_name + "_delta_t_grid.png",
             path=path + "/results/delta_t",
         )
     )

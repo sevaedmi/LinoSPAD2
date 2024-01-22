@@ -9,15 +9,15 @@ functions:
 
     * collect_data_and_apply_mask - Collect data from files and apply
     mask to the valid pixel count.
-    
+
     * plot_single_pix_hist - Plot a histogram for each pixel in the given
     range.
-    
+
     * plot_sensor_population - Plot number of timestamps in each pixel
     for all data files.
-    
+
     * plot_sensor_population_spdc - Plot sensor population for SPDC data.
-    
+
     * plot_sensor_population_full_sensor - Plot the number of timestamps
     in each pixel for all data files from two different FPGAs/sensor
     halves.
@@ -108,7 +108,7 @@ def collect_data_and_apply_mask(
                 apply_calibration,
             )
         else:
-            data, abs_tmsp = f_up.unpack_binary_data_with_absolute_timestamps(
+            data, _ = f_up.unpack_binary_data_with_absolute_timestamps(
                 files[i],
                 daughterboard_number,
                 motherboard_number,
@@ -199,18 +199,16 @@ def plot_single_pix_hist(
 
     os.chdir(path)
 
-    DATA_FILES = glob.glob("*.dat*")
+    # data_files = glob.glob("*.dat*")
+    data_files = glob.glob("*.dat*")
+    data_files.sort(key=os.path.getmtime)
 
     if show_fig is True:
         plt.ion()
     else:
         plt.ioff()
-    for i, num in enumerate(DATA_FILES):
-        print(
-            "> > > Plotting pixel histograms, Working on {} < < <\n".format(
-                num
-            )
-        )
+    for i, num in enumerate(data_files):
+        print(f"> > > Plotting pixel histograms, Working on {num} < < <\n")
 
         data = f_up.unpack_binary_data(
             num,
@@ -227,7 +225,7 @@ def plot_single_pix_hist(
         if pixels is None:
             pixels = np.arange(145, 165, 1)
 
-        for i in range(len(pixels)):
+        for i, _ in enumerate(pixels):
             plt.figure(figsize=(16, 10))
             plt.rcParams.update({"font.size": 22})
             # Define matrix of pixel coordinates, where rows are numbers of TDCs
@@ -248,14 +246,14 @@ def plot_single_pix_hist(
             if fit_average is True:
                 av_win = np.zeros(int(len(n) / 10) + 1)
                 av_win_in = np.zeros(int(len(n) / 10) + 1)
-                for j in range(len(av_win)):
+                for j, _ in enumerate(av_win):
                     av_win[j] = n[j * 10 : j * 10 + 1]
                     av_win_in[j] = b[j * 10 : j * 10 + 1]
 
                 a = 1
                 b = np.average(n)
 
-                par, pcov = curve_fit(lin_fit, av_win_in, av_win, p0=[a, b])
+                par, _ = curve_fit(lin_fit, av_win_in, av_win, p0=[a, b])
 
                 av_win_fit = lin_fit(av_win_in, par[0], par[1])
 
@@ -266,15 +264,13 @@ def plot_single_pix_hist(
                 plt.gcf()
                 plt.plot(av_win_in, av_win_fit, color="black", linewidth=8)
             plt.ticklabel_format(axis="y", style="sci", scilimits=(0, 0))
-            plt.title("Pixel {}".format(pixels[i]))
+            plt.title(f"Pixel {pixels[i]}")
             try:
                 os.chdir("results/single pixel histograms")
-            except Exception:
+            except Exception as _:
                 os.makedirs("results/single pixel histograms")
                 os.chdir("results/single pixel histograms")
-            plt.savefig(
-                "{file}, pixel {pixel}.png".format(file=num, pixel=pixels[i])
-            )
+            plt.savefig(f"{num}, pixel {pixels[i]}.png")
             os.chdir("../..")
 
 
@@ -373,7 +369,9 @@ def plot_sensor_population(
 
     os.chdir(path)
 
+    # files = glob.glob("*.dat*")
     files = glob.glob("*.dat*")
+    files.sort(key=os.path.getmtime)
 
     plot_name = files[0][:-4] + "-" + files[-1][:-4]
 
@@ -526,7 +524,10 @@ def plot_sensor_population_spdc(
 
     os.chdir(path)
 
+    # files = glob.glob("*.dat*")
+
     files = glob.glob("*.dat*")
+    files.sort(key=os.path.getmtime)
 
     # background data for subtracting
     path_bckg = path + "/bckg"
@@ -730,7 +731,11 @@ def plot_sensor_population_full_sensor(
 
     # First motherboard / half of the sensor
     os.chdir(path1)
-    files1 = sorted(glob.glob("*.dat*"))
+    # files1 = sorted(glob.glob("*.dat*"))
+
+    files1 = glob.glob("*.dat*")
+    files1.sort(key=os.path.getmtime)
+
     if single_file:
         files1 = files1[0]
     plot_name1 = files1[0][:-4] + "-"
@@ -756,7 +761,9 @@ def plot_sensor_population_full_sensor(
 
     # Second motherboard / half of the sensor
     os.chdir(path2)
-    files2 = sorted(glob.glob("*.dat*"))
+    # files2 = sorted(glob.glob("*.dat*"))
+    files2 = glob.glob("*.dat*")
+    files2.sort(key=os.path.getmtime)
     if single_file:
         files2 = files2[0]
     plot_name2 = files2[-1][:-4]

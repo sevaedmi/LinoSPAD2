@@ -1,3 +1,28 @@
+"""Module for checking quality of data from LinoSPAD2.
+
+The functions implemented in this module can be used to check data
+quality, i.e., to study more closely how sensor population changes
+between cycles or how the total number of timestamps in the given pixel
+changes over time (cycles).
+
+This file can also be imported as a module and contains the following
+functions:
+
+    * sensor_population_by_cycle - unpack data from the chosen file,
+    collect number of timestamps in each pixel and cycle and plot the
+    sensor population for either chosen cycles or for the starting
+    cycle and 3 cycles on each side. The starting cycle can be found
+    based on the given threshold, e.g., 0 for any positive signal or
+    15 for a signal stronger than 3.5 kHz per pixel. The plots
+    are then saved.
+
+    * pixel_population_by_cycle - unpack data for all files in the given
+    folder, collect number of timestamps accross all cycles for the
+    given pixel and plot them against the cycle number. For clearer
+    picture how the signal oscilates, also plot a moving average in a
+    window of 100 cycles. The plot is then saved.
+"""
+
 import glob
 import os
 import sys
@@ -11,19 +36,20 @@ from LinoSPAD2.functions import utils
 
 
 def sensor_population_by_cycle(
-    path,
+    path: str,
     daughterboard_number: str,
-    cycle_range: list,
     motherboard_number: str,
     firmware_version: str,
-    chosen_file: int = 0,
     timestamps: int = 512,
     app_mask: bool = True,
     include_offset: bool = True,
     apply_calibration: bool = True,
     absolute_timestamps: bool = False,
     correct_pixel_addressing: bool = False,
-):
+    cycle_range: list = None,
+    threshold: int = 0,
+    chosen_file: int = 0,
+) -> Tuple[np.ndarray, list]:
     """
     Collect sensor population data by acquisition cycle.
 
@@ -33,12 +59,10 @@ def sensor_population_by_cycle(
         Path to the data files.
     daughterboard_number : str
         LinoSPAD2 daughterboard number.
-    cycle_range : list
-        List of specific acquisition cycles to plot.
     motherboard_number : str
         LinoSPAD2 motherboard (FPGA) number.
     firmware_version : str
-        LinoSPAD2 firmware version. Versions "2212s" (skip) and "2212b"
+        LinoSPAD2 firmware version. Versions '2212s' (skip) and '2212b'
         (block) are recognized.
     timestamps : int, optional
         Number of timestamps per acquisition cycle per pixel. The default
@@ -56,6 +80,15 @@ def sensor_population_by_cycle(
         False.
     correct_pixel_addressing : bool, optional
         Switch for correcting pixel addressing. The default is False.
+    cycle_range : list, optional
+        List of specific acquisition cycles to plot. The default is None.
+    threshold : int, optional
+        Threshold for finding the starting cycle: 0 for the first
+        cycle where any signal appears. This parameter should be changed
+        only in the case no cycles to plot were given manually. The
+        default is 0.
+    chosen_file : int, optional
+        Index of the chosen file. The default is 0.
 
     Returns
     -------
@@ -63,10 +96,12 @@ def sensor_population_by_cycle(
         Tuple containing the sensor population array and the list of
         absolute timestamps.
     """
+
     os.chdir(path)
 
     files_all = glob.glob("*.dat*")
-    files_all.sort(key=lambda x: os.path.getctime(x))
+    # files_all.sort(key=lambda x: os.path.getctime(x))
+    files_all.sort(key=os.path.getmtime)
 
     if firmware_version == "2212s":
         pix_coor = np.arange(256).reshape(4, 64).T
@@ -141,6 +176,17 @@ def sensor_population_by_cycle(
         )
         os.chdir(os.path.join(path, "results", "data_quality", "senpop_cycle"))
 
+    # If cycles are not manually given, find the starting cycle
+    if cycle_range is None:
+        # Find the pixel where a peak is
+        pix_peak = np.argmax(sensor_population[:, -1])
+        # Find first cycle where height of the peak is above the threshold
+        # which can be set to 15 for signal above 3.5 kHz
+        cycle_start = np.where(sensor_population[pix_peak, :] > threshold)[
+            0
+        ].min()
+        cycle_range = [x for x in range(cycle_start - 3, cycle_start + 3)]
+
     plt.rcParams.update({"font.size": 22})
     for _, cycle in enumerate(cycle_range):
         fig = plt.figure(figsize=(10, 6))
@@ -148,12 +194,13 @@ def sensor_population_by_cycle(
         plt.xlabel("Pixel Index")
         plt.ylabel("Sensor Population")
         plt.title(f"Cycle {cycle}")
+        plt.tight_layout()
 
-        # Save the figure with a unique filename
+        # Save the figure
         fig.savefig(f"{os.path.splitext(file)[0]}_cycle_{cycle}.png")
 
-    # Close all the figures to free up resources
-    plt.close("all")
+        # Close all the figures to free up resources
+        plt.close("all")
 
 
 def pixel_population_by_cycle(
@@ -208,7 +255,8 @@ def pixel_population_by_cycle(
     os.chdir(path)
 
     files_all = glob.glob("*.dat*")
-    files_all.sort(key=lambda x: os.path.getctime(x))
+    # files_all.sort(key=lambda x: os.path.getmtime(x))
+    files_all.sort(key=os.path.getmtime)
 
     # Define matrix of pixel coordinates, where rows are numbers of TDCs
     # and columns are the pixels that connected to these TDCs

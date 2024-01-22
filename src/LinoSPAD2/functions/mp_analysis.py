@@ -588,7 +588,9 @@ def calculate_and_save_timestamp_differences_mp(
     os.chdir(path)
 
     # Find all LinoSPAD2 data files
-    files = sorted(glob.glob("*.dat"))
+    # files = sorted(glob.glob("*.dat"))
+    files = glob.glob("*.dat*")
+    files.sort(key=os.path.getmtime)
     # Get the resulting Feather file name based on the data files
     # found
     feather_file_name = files[0][:-4] + "-" + files[-1][:-4] + ".feather"
@@ -747,7 +749,9 @@ def calculate_and_save_timestamp_differences_full_sensor_mp(
         raise FileNotFoundError(
             f"Data from {motherboard_number1} not found"
         ) from exc
-    files_all1 = sorted(glob.glob("*.dat*"))
+    # files_all1 = sorted(glob.glob("*.dat*"))
+    files_all1 = glob.glob("*.dat*")
+    files_all1.sort(key=os.path.getmtime)
     out_file_name = files_all1[0][:-4]
 
     # Check the data from the second FPGA board
@@ -758,7 +762,9 @@ def calculate_and_save_timestamp_differences_full_sensor_mp(
         raise FileNotFoundError(
             f"Data from {motherboard_number2} not found"
         ) from exc
-    files_all2 = sorted(glob.glob("*.dat*"))
+    # files_all2 = sorted(glob.glob("*.dat*"))
+    files_all2 = glob.glob("*.dat*")
+    files_all2.sort(key=os.path.getmtime)
     out_file_name = out_file_name + "-" + files_all2[-1][:-4]
 
     # Check if '.feather' file with timestamps differences already
@@ -1000,7 +1006,9 @@ def compact_share_mp(
     os.chdir(path)
 
     # Find all LinoSPAD2 data files
-    files = sorted(glob.glob("*.dat"))
+    # files = sorted(glob.glob("*.dat"))
+    files = glob.glob("*.dat*")
+    files.sort(key=os.path.getmtime)
     # Get the resulting Feather file name based on the data files
     # found
     feather_file_name = files[0][:-4] + "-" + files[-1][:-4] + ".feather"
