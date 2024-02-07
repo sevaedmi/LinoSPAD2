@@ -23,7 +23,6 @@ functions:
     halves.
 """
 
-
 import glob
 import os
 import pickle
@@ -47,9 +46,11 @@ def collect_data_and_apply_mask(
     firmware_version: str,
     timestamps: int,
     include_offset: bool,
-    apply_calibration: bool,
+    apply_calibration: bool = True,
     app_mask: bool = True,
     absolute_timestamps: bool = False,
+    save_to_file: bool = False,
+    correct_pixel_addressing: bool = False,
 ) -> np.ndarray:
     """Collect data from files and apply mask to the valid pixel count.
 
@@ -78,7 +79,8 @@ def collect_data_and_apply_mask(
     absolute_timestamps : bool, optional
         Indicator for data files with absolute timestamps. Default is
         False.
-
+    correct_pixel_addressing : bool, optional
+        Check for correcting the pixel addresing. THe default is False.
     Returns
     -------
     np.ndarray
@@ -95,6 +97,10 @@ def collect_data_and_apply_mask(
         sys.exit()
 
     timestamps_per_pixel = np.zeros(256)
+
+    # In the case a single file is passed, make a list out of it
+    if isinstance(files, str):
+        files = [files]
 
     for i in tqdm(range(len(files)), desc="Collecting data"):
         if not absolute_timestamps:
@@ -123,10 +129,29 @@ def collect_data_and_apply_mask(
             ind1 = np.where(data[tdc].T[1][ind] > 0)[0]
             timestamps_per_pixel[i] += len(data[tdc].T[1][ind[ind1]])
 
+    if correct_pixel_addressing:
+        fix = np.zeros(len(timestamps_per_pixel))
+        fix[:128] = timestamps_per_pixel[128:]
+        fix[128:] = np.flip(timestamps_per_pixel[:128])
+        timestamps_per_pixel = fix
+        del fix
+
     # Apply mask if requested
     if app_mask:
         mask = utils.apply_mask(daughterboard_number, motherboard_number)
         timestamps_per_pixel[mask] = 0
+
+    if save_to_file:
+        files.sort(key=os.path.getmtime)
+        file_name = files[0][:-4] + "-" + files[-1][:-4]
+        try:
+            os.chdir("senpop_data")
+        except FileNotFoundError as _:
+            os.mkdir("senpop_data")
+            os.chdir("senpop_data")
+
+        np.savetxt(f"{file_name}_senpop_numbers.txt", timestamps_per_pixel)
+        os.chdir("..")
 
     return timestamps_per_pixel
 
@@ -291,6 +316,7 @@ def plot_sensor_population(
     fit_peaks: bool = False,
     threshold_multiplier: int = 10,
     pickle_fig: bool = False,
+    absolute_timestamps: bool = False,
 ) -> None:
     """Plot number of timestamps in each pixel for all datafiles.
 
@@ -341,11 +367,14 @@ def plot_sensor_population(
         Switch for finding the highest peaks and fitting them with a
         Gaussian to provide their position. The default is False.
     threshold_multiplier : int, optional
-        Threshold multiplier for setting threshold for finding peaks.
-        The default is 10.
+        Threshold multiplier that is applied to median across the whole
+        sensor for finding peaks. The default is 10.
     pickle_fig : bool, optional
         Switch for pickling the figure. Can be used when plotting takes
         a lot of time. The default is False.
+    absolute_timestamps : bool, optional
+        Indicator for data files with absolute timestamps. Default is
+        False.
 
     Returns
     -------
@@ -391,14 +420,17 @@ def plot_sensor_population(
         include_offset,
         apply_calibration,
         app_mask,
+        absolute_timestamps,
+        save_to_file=False,
+        correct_pixel_addressing=correct_pixel_addressing,
     )
 
-    if correct_pixel_addressing:
-        fix = np.zeros(len(timestamps_per_pixel))
-        fix[:128] = timestamps_per_pixel[128:]
-        fix[128:] = np.flip(timestamps_per_pixel[:128])
-        timestamps_per_pixel = fix
-        del fix
+    # if correct_pixel_addressing:
+    #     fix = np.zeros(len(timestamps_per_pixel))
+    #     fix[:128] = timestamps_per_pixel[128:]
+    #     fix[128:] = np.flip(timestamps_per_pixel[:128])
+    #     timestamps_per_pixel = fix
+    #     del fix
 
     # Plotting
     print("\n> > > Plotting < < <\n")
@@ -417,18 +449,21 @@ def plot_sensor_population(
         peaks, _ = find_peaks(timestamps_per_pixel, height=threshold)
         peaks = np.unique(peaks)
 
-        valid_per_pixel_tmp = np.zeros(256)
+        # valid_per_pixel_tmp = np.zeros(256)
 
-        for peak_index in tqdm(peaks, desc="Fitting Gaussians"):
-            ind = peaks - peak_index
-            valid_per_pixel_tmp[ind] = np.median(timestamps_per_pixel)
+        print("Fitting the peaks with gaussian")
+        for peak_index in peaks:
+            # ind = peaks - peak_index
+            # valid_per_pixel_tmp[ind] = np.median(timestamps_per_pixel)
             x_fit = np.arange(
                 peak_index - fit_width, peak_index + fit_width + 1
             )
+            cut_above_256 = np.where(x_fit >= 256)[0]
+            x_fit = np.delete(x_fit, cut_above_256)
             y_fit = timestamps_per_pixel[x_fit]
             try:
                 params, _ = utils.fit_gaussian(x_fit, y_fit)
-            except Exception:
+            except Exception as _:
                 continue
 
             # amplitude, position, width = params
@@ -438,7 +473,7 @@ def plot_sensor_population(
                 x_fit,
                 utils.gaussian(x_fit, *params),
                 "--",
-                label=f"Peak at {peak_index}",
+                label=f"Peak at {peak_index}, {round(timestamps_per_pixel[peak_index], 1):.1e}",
             )
 
         plt.legend()

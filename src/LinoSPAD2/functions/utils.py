@@ -27,7 +27,6 @@ functions:
     its' existence. Introduced for clearer code and modularity.
 """
 
-
 import glob
 import os
 import pickle
@@ -39,13 +38,13 @@ import numpy as np
 from scipy.optimize import curve_fit
 
 
-def apply_mask(daughterboard_number: str, motherboard_number: str) -> None:
-    """Apply mask to the given data.
+def apply_mask(
+    daughterboard_number: str, motherboard_number: str
+) -> np.ndarray:
+    """Find and return mask for the requested motherboard.
 
     Parameters
     ----------
-    data : np.ndarray
-        The data array to which the mask will be applied.
     daughterboard_number : str
         The LinoSPAD2 daughterboard number.
     motherboard_number : str
@@ -53,8 +52,10 @@ def apply_mask(daughterboard_number: str, motherboard_number: str) -> None:
 
     Returns
     -------
-    None
+    mask : np.ndarray
+        The mask array generated from the given daughterboard and motherboard numbers.
     """
+
     path_to_back = os.getcwd()
     path_to_mask = os.path.join(
         os.path.dirname(os.path.realpath(__file__)),

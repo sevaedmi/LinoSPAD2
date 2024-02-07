@@ -1066,6 +1066,11 @@ def collect_and_plot_timestamp_differences(
     )
 
     plt.rcParams.update({"font.size": 22})
+    # In the case two lists given - the left and right peaks - flatten
+    # into a single list
+    #TODO: check this code
+    # if len(pixels) == 2:
+    #     pixels = [x for sublist in pixels for x in sublist]
 
     # Prepare the grid for the plots based on the number of pixels
     # given
