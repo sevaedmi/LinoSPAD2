@@ -28,11 +28,11 @@ import os
 import sys
 
 import numpy as np
-from matplotlib import pyplot as plt
-from tqdm import tqdm
-
+import pandas as pd
 from LinoSPAD2.functions import unpack as f_up
 from LinoSPAD2.functions import utils
+from matplotlib import pyplot as plt
+from tqdm import tqdm
 
 
 def sensor_population_by_cycle(
@@ -49,7 +49,7 @@ def sensor_population_by_cycle(
     cycle_range: list = None,
     threshold: int = 0,
     chosen_file: int = 0,
-) -> Tuple[np.ndarray, list]:
+):
     """
     Collect sensor population data by acquisition cycle.
 
@@ -315,6 +315,11 @@ def pixel_population_by_cycle(
         np.array(pixel_pop), np.ones(100) / 100, mode="valid"
     )
 
+    # Plot moving average
+    offset = (
+        100 - 1
+    ) // 2  # Offset for aligning moving average with original data
+
     try:
         os.chdir(os.path.join(path, "results", "data_quality", "pixpop_cycle"))
     except FileNotFoundError:
@@ -326,7 +331,12 @@ def pixel_population_by_cycle(
     plt.rcParams.update({"font.size": 22})
     plt.figure(figsize=(16, 10))
     plt.plot(pixel_pop, "-.", color=color, label="Pixel population")
-    plt.plot(moving_average, color="teal", label="Average in 100 cycles")
+    plt.plot(
+        range(offset, len(moving_average) + offset),
+        moving_average,
+        color="teal",
+        label="Average in 100 cycles",
+    )
     plt.xlabel("Acquisition cycle [-]")
     plt.ylabel("# of timestamps [-]")
     plt.legend()

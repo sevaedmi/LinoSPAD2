@@ -7,7 +7,7 @@ from scipy import signal as sg
 from scipy.optimize import curve_fit
 from tqdm import tqdm
 
-from functions import unpack
+from LinoSPAD2.functions import unpack
 
 path = "D:/LinoSPAD2/Data/board_A5/FW 2212 block/Spectrometer/Ar"
 os.chdir(path)
@@ -19,7 +19,14 @@ valid_per_pixel = np.zeros(256)
 pix_coor = np.arange(256).reshape(64, 4)
 
 for i in tqdm(range(len(files)), desc="Going through files"):
-    data = unpack.unpack_2212_numpy(files[i], board_number="A5", timestamps=200)
+    data = unpack.unpack_binary_data(
+        files[i],
+        daughterboard_number="A5",
+        motherboard_number="#36",
+        firmware_version="2212b",
+        timestamps=200,
+        include_offset=False,
+    )
 
     for i in range(0, 256):
         tdc, pix = np.argwhere(pix_coor == i)[0]
@@ -41,7 +48,9 @@ nm_per_pix = (811.5311 / 1.0003 - 810.3692 / 1.0003) / 11
 x_nm = nm_per_pix * pixels + 811.5311 / 1.0003 - nm_per_pix * peak_pos[-1]
 
 peak_pos_nm = (
-    np.array(peak_pos) * nm_per_pix + 811.5311 / 1.0003 - nm_per_pix * peak_pos[-1]
+    np.array(peak_pos) * nm_per_pix
+    + 811.5311 / 1.0003
+    - nm_per_pix * peak_pos[-1]
 )
 
 
@@ -111,6 +120,7 @@ for i in range(len(peak_pos)):
 # =============================================================================
 
 plt.ioff()
+
 fig, ax = plt.subplots(figsize=(16, 10))
 plt.rcParams.update({"font.size": 28})
 ax.set_xlabel("Wavelength [nm]")
@@ -129,9 +139,12 @@ for i in range(len(peak_pos)):
         color=colors1[i],
         linewidth=2,
         label="\n"
-        "\u03C3={p1} nm\n"
-        "\u03bb={p2} nm".format(
-            p1=format(par[i][2], ".3f"), p2=format(par[i][1], ".3f")
+        "\u03C3={p1}\u00B1{pe1} nm\n"
+        "\u03bb={p2}\u00B1{pe2} nm".format(
+            p1=format(par[i][2], ".3f"),
+            p2=format(par[i][1], ".3f"),
+            pe1=format(perr[i][2], ".3f"),
+            pe2=format(perr[i][1], ".3f"),
         ),
     )
 ax.legend(loc="best", fontsize=22)

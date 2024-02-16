@@ -48,6 +48,7 @@ see [this](https://packaging.python.org/en/latest/guides/installing-using-pip-an
 pip install virtualenv
 py -m venv PATH/TO/ENVIRONMENT/ENVIRONMENT_NAME
 PATH/TO/ENVIRONMENT/ENVIRONMENT_NAME/Scripts/activate
+cd PATH/TO/GITHUB/CODES/LinoSPAD2
 pip install -r requirements.txt
 ```
 or (recommended)

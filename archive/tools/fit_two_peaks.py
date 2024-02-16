@@ -690,16 +690,72 @@ def fit_all_lmfit(
 
 # %matplotlib qt
 
-path0 = r"D:\LinoSPAD2\Data\board_NL11\Prague\CT_HBT\CT_HBT_1-0m_full_int"
-path1 = r"D:\LinoSPAD2\Data\board_NL11\Prague\CT_HBT\CT_HBT_2-0m_full_int"
-path2 = r"D:\LinoSPAD2\Data\board_NL11\Prague\CT_HBT\CT_HBT_1-0m_1.2xlower_int"
-path3 = r"D:\LinoSPAD2\Data\board_NL11\Prague\CT_HBT\CT_HBT_1-0m_1.4xlower_int"
-path4 = r"D:\LinoSPAD2\Data\board_NL11\Prague\CT_HBT\CT_HBT_1-0m_1.6xlower_int"
-path5 = r"D:\LinoSPAD2\Data\board_NL11\Prague\CT_HBT\CT_HBT_1-0m_1.8xlower_int"
-path6 = r"D:\LinoSPAD2\Data\board_NL11\Prague\CT_HBT\CT_HBT_1-0m_2.0xlower_int"
-path7 = r"D:\LinoSPAD2\Data\board_NL11\Prague\CT_HBT\CT_HBT_2-0m_1.2xlower_int"
+# path0 = r"D:\LinoSPAD2\Data\board_NL11\Prague\CT_HBT\CT_HBT_1-0m_full_int"
+# path1 = r"D:\LinoSPAD2\Data\board_NL11\Prague\CT_HBT\CT_HBT_2-0m_full_int"
+# path2 = r"D:\LinoSPAD2\Data\board_NL11\Prague\CT_HBT\CT_HBT_1-0m_1.2xlower_int"
+# path3 = r"D:\LinoSPAD2\Data\board_NL11\Prague\CT_HBT\CT_HBT_1-0m_1.4xlower_int"
+# path4 = r"D:\LinoSPAD2\Data\board_NL11\Prague\CT_HBT\CT_HBT_1-0m_1.6xlower_int"
+# path5 = r"D:\LinoSPAD2\Data\board_NL11\Prague\CT_HBT\CT_HBT_1-0m_1.8xlower_int"
+# path6 = r"D:\LinoSPAD2\Data\board_NL11\Prague\CT_HBT\CT_HBT_1-0m_2.0xlower_int"
+# path7 = r"D:\LinoSPAD2\Data\board_NL11\Prague\CT_HBT\CT_HBT_2-0m_1.2xlower_int"
 
-paths = [path0, path1, path2, path3, path4, path5, path6, path7]
+path0 = r"D:\LinoSPAD2\Data\board_NL11\Prague\CT_HBT\Second try\CT_HBT_1-0m_full_int"
+path1 = r"D:\LinoSPAD2\Data\board_NL11\Prague\CT_HBT\Second try\CT_HBT_2-0m_full_int"
+
+path2 = (
+    r"D:\LinoSPAD2\Data\board_NL11\Prague\CT_HBT\Second try\CT_HBT_1-0m_80%"
+)
+path3 = (
+    r"D:\LinoSPAD2\Data\board_NL11\Prague\CT_HBT\Second try\CT_HBT_1-0m_70%"
+)
+path4 = (
+    r"D:\LinoSPAD2\Data\board_NL11\Prague\CT_HBT\Second try\CT_HBT_1-0m_60%"
+)
+path5 = (
+    r"D:\LinoSPAD2\Data\board_NL11\Prague\CT_HBT\Second try\CT_HBT_1-0m_50%"
+)
+
+path6 = r"D:\LinoSPAD2\Data\board_NL11\Prague\CT_HBT\Second try\CT_HBT_2-0m_80%_int"
+path7 = r"D:\LinoSPAD2\Data\board_NL11\Prague\CT_HBT\Second try\CT_HBT_2-0m_70%_int"
+path8 = r"D:\LinoSPAD2\Data\board_NL11\Prague\CT_HBT\Second try\CT_HBT_2-0m_60%_int"
+path9 = r"D:\LinoSPAD2\Data\board_NL11\Prague\CT_HBT\Second try\CT_HBT_2-0m_50%_int"
+
+paths = [path0, path1, path2, path3, path4, path5, path6, path7, path8, path9]
+
+from LinoSPAD2.functions import delta_t, plot_tmsp
 
 for path in paths:
+
+    # plot_tmsp.plot_sensor_population(
+    #     path,
+    #     daughterboard_number="NL11",
+    #     motherboard_number="#33",
+    #     firmware_version="2212s",
+    #     timestamps=300,
+    #     include_offset=False,
+    #     fit_peaks=True,
+    #     pickle_fig=True,
+    #     show_fig=True,
+    # )
+
+    # delta_t.calculate_and_save_timestamp_differences(
+    #     path,
+    #     pixels=[
+    #         [x for x in range(170 - 2, 170 + 3)],
+    #         [x for x in range(174 - 2, 174 + 3)],
+    #     ],
+    #     rewrite=True,
+    #     daughterboard_number="NL11",
+    #     motherboard_number="#33",
+    #     firmware_version="2212s",
+    #     timestamps=300,
+    #     include_offset=False,
+    # )
+
+    # delta_t.collect_and_plot_timestamp_differences(
+    #     path,
+    #     pixels=[168, 169, 170, 171, 172, 172, 173, 174, 175, 176],
+    #     rewrite=True,
+    #     step=3,
+    # )
     fit_wg_all(path, pix_pair=[170, 174], window=20e3, step=8, thrs=1.27)

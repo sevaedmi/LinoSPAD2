@@ -7,7 +7,7 @@ from pyarrow import feather as ft
 # file = "D:/LinoSPAD2/Data/board_NL11/BNL/FW_2212b/Ne_703/delta_ts_data/0000050776-0000051075.csv"
 # file = "D:/LinoSPAD2/Data/board_A5/BNL/FW_2212_block/SPDC/delta_ts_data/0000000050-0000000089.csv"
 
-file = r"D:\LinoSPAD2\Data\board_NL11\Prague\CT_HBT\CT_HBT_1-0m_1.2xlower_int\delta_ts_data\0000331250-0000331499.feather"
+file = r"D:\LinoSPAD2\Data\board_NL11\Prague\CT_HBT\Second try\CT_HBT_1-0m_80%\delta_ts_data\0000337767-0000338066.feather"
 
 # data = pd.read_csv(file)
 data = ft.read_feather(
@@ -25,7 +25,7 @@ to_del = np.where(np.logical_or(y < -10e3, y > 10e3))[0]
 
 y1 = np.delete(y, to_del)
 
-step = 5
+step = 2
 
 bins = np.arange(np.min(y1), np.max(y1), 17.857 * step)
 
@@ -41,11 +41,11 @@ mod_res = mod_peak + mod_bckg
 peak_pos = np.where(n == np.max(n))[0][0].astype(int)
 
 y_bckg = np.copy(n)
-y_bckg[peak_pos - 10 : peak_pos + 10] = np.average(n)
+y_bckg[peak_pos - 10 : peak_pos + 10] = np.median(n)
 
 
 pars = mod_peak.guess(y_bckg, x=b_c)
-pars += mod_bckg.guess(n, x=b_c)
+pars += mod_bckg.guess(y_bckg, x=b_c)
 
 res = mod_res.fit(n, pars, x=b_c)
 
