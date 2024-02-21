@@ -453,8 +453,12 @@ def fit_wg_all(
         plt.axvline(lower_limit, color="gray", linestyle="--")
         plt.axvline(upper_limit, color="gray", linestyle="--")
         print(len(data_in_interval), len(bckg_in_2sigma))
+        er1 = np.sqrt(len(data_in_interval))
+        er2 = np.sqrt(len(bckg_in_2sigma))
         print(
             f"Population of the peak at {b11[peak_ind]} in a 2sigma interval is: {len(data_in_interval) - len(bckg_in_2sigma)}"
+            + "\u00B1"
+            + f"{np.sqrt(er1**2+er2**2):.2f}"
         )
 
     plt.legend(loc="best")
@@ -482,210 +486,210 @@ def fit_wg_all(
     os.chdir("../..")
 
 
-def fit_all_lmfit(
-    path,
-    pix_pair: list,
-    thrs: float = 1.2,
-    window: float = 5e3,
-    step: int = 1,
-    color_d: str = "salmon",
-    color_f: str = "teal",
-    title_on: bool = True,
-):
-    os.chdir(path)
+# def fit_all_lmfit(
+#     path,
+#     pix_pair: list,
+#     thrs: float = 1.2,
+#     window: float = 5e3,
+#     step: int = 1,
+#     color_d: str = "salmon",
+#     color_f: str = "teal",
+#     title_on: bool = True,
+# ):
+#     os.chdir(path)
 
-    files = glob.glob("*.dat*")
-    file_name = files[0][:-4] + "-" + files[-1][:-4]
+#     files = glob.glob("*.dat*")
+#     file_name = files[0][:-4] + "-" + files[-1][:-4]
 
-    try:
-        os.chdir("delta_ts_data")
-        feather_file_name = glob.glob("*{}.feather*".format(file_name))[0]
-    except (FileNotFoundError, IndexError):
-        raise FileNotFoundError("\nFile with data not found")
+#     try:
+#         os.chdir("delta_ts_data")
+#         feather_file_name = glob.glob("*{}.feather*".format(file_name))[0]
+#     except (FileNotFoundError, IndexError):
+#         raise FileNotFoundError("\nFile with data not found")
 
-    data_to_plot = ft.read_feather(
-        "{}".format(feather_file_name),
-        columns=["{},{}".format(pix_pair[0], pix_pair[1])],
-    ).dropna()
+#     data_to_plot = ft.read_feather(
+#         "{}".format(feather_file_name),
+#         columns=["{},{}".format(pix_pair[0], pix_pair[1])],
+#     ).dropna()
 
-    # Check if there any finite values
-    if not np.any(~np.isnan(data_to_plot)):
-        raise ValueError("\nNo data for the requested pixel pair available")
+#     # Check if there any finite values
+#     if not np.any(~np.isnan(data_to_plot)):
+#         raise ValueError("\nNo data for the requested pixel pair available")
 
-    data_to_plot = data_to_plot.dropna()
-    data_to_plot = np.array(data_to_plot)
-    # Use the given window for trimming the data for fitting
-    data_to_plot = np.delete(
-        data_to_plot, np.argwhere(data_to_plot < -window / 2)
-    )
-    data_to_plot = np.delete(
-        data_to_plot, np.argwhere(data_to_plot > window / 2)
-    )
+#     data_to_plot = data_to_plot.dropna()
+#     data_to_plot = np.array(data_to_plot)
+#     # Use the given window for trimming the data for fitting
+#     data_to_plot = np.delete(
+#         data_to_plot, np.argwhere(data_to_plot < -window / 2)
+#     )
+#     data_to_plot = np.delete(
+#         data_to_plot, np.argwhere(data_to_plot > window / 2)
+#     )
 
-    # Data is ready, time to do the histograms
+#     # Data is ready, time to do the histograms
 
-    # bins must be in units of 17.857 ps
-    bins = np.arange(np.min(data_to_plot), np.max(data_to_plot), 17.857 * step)
+#     # bins must be in units of 17.857 ps
+#     bins = np.arange(np.min(data_to_plot), np.max(data_to_plot), 17.857 * step)
 
-    # Calculate histogram of timestamp differences for primary guess
-    # of fit parameters and selecting a narrower window for the fit
-    counts, bin_edges = np.histogram(data_to_plot, bins)
+#     # Calculate histogram of timestamp differences for primary guess
+#     # of fit parameters and selecting a narrower window for the fit
+#     counts, bin_edges = np.histogram(data_to_plot, bins)
 
-    # bin_centers = (bin_edges - 17.857 * step / 2)[1:]
-    bin_centers = bin_edges[:-1] + 0.5 * 17.857 * step
+#     # bin_centers = (bin_edges - 17.857 * step / 2)[1:]
+#     bin_centers = bin_edges[:-1] + 0.5 * 17.857 * step
 
-    peak_pos = sg.find_peaks(counts, height=np.median(counts) * thrs)[0]
+#     peak_pos = sg.find_peaks(counts, height=np.median(counts) * thrs)[0]
 
-    plt.figure(figsize=(16, 10))
-    plt.xlabel(r"$\Delta$t [ps]")
-    plt.ylabel("# of coincidences [-]")
-    plt.step(
-        bin_centers,
-        counts,
-        color=color_d,
-        label="data",
-    )
+#     plt.figure(figsize=(16, 10))
+#     plt.xlabel(r"$\Delta$t [ps]")
+#     plt.ylabel("# of coincidences [-]")
+#     plt.step(
+#         bin_centers,
+#         counts,
+#         color=color_d,
+#         label="data",
+#     )
 
-    color_f = [
-        "teal",
-        "navy",
-        "limegreen",
-        "orchid",
-        "paleturquoise",
-        "gold",
-        "royalblue",
-    ]
+#     color_f = [
+#         "teal",
+#         "navy",
+#         "limegreen",
+#         "orchid",
+#         "paleturquoise",
+#         "gold",
+#         "royalblue",
+#     ]
 
-    for k, peak_ind in enumerate(peak_pos):
-        counts_flatten = np.copy(counts)
+#     for k, peak_ind in enumerate(peak_pos):
+#         counts_flatten = np.copy(counts)
 
-        peaks_to_flatten = np.delete(peak_pos, k)
+#         peaks_to_flatten = np.delete(peak_pos, k)
 
-        for peak_go_flat in peaks_to_flatten:
-            counts_flatten[peak_go_flat - 3 : peak_go_flat + 3] = np.median(
-                counts
-            )
+#         for peak_go_flat in peaks_to_flatten:
+#             counts_flatten[peak_go_flat - 3 : peak_go_flat + 3] = np.median(
+#                 counts
+#             )
 
-        av_bkg = np.average(counts)
+#         av_bkg = np.average(counts)
 
-        mod_peak = GaussianModel(prefix="peak_")
+#         mod_peak = GaussianModel(prefix="peak_")
 
-        mod_bckg = ConstantModel(prefix="bkg_")
+#         mod_bckg = ConstantModel(prefix="bkg_")
 
-        gmodel = mod_peak + mod_bckg
+#         gmodel = mod_peak + mod_bckg
 
-        center = bin_centers[peak_ind]
-        # amplitude = max(counts_flatten)
-        amplitude = counts[peak_ind]
-        if np.std(bin_centers) > 150:
-            sigma = 150
-        else:
-            sigma = np.std(bin_centers)
+#         center = bin_centers[peak_ind]
+#         # amplitude = max(counts_flatten)
+#         amplitude = counts[peak_ind]
+#         if np.std(bin_centers) > 150:
+#             sigma = 150
+#         else:
+#             sigma = np.std(bin_centers)
 
-        # Initial parameter values for the Gaussian model
-        params_res = gmodel.make_params(
-            peak_center=center,
-            bkg_c=av_bkg,
-            peak_amplitude=dict(
-                value=amplitude, min=av_bkg, max=amplitude * 2
-            ),
-            peak_sigma=dict(value=sigma, min=40, max=200),
-        )
+#         # Initial parameter values for the Gaussian model
+#         params_res = gmodel.make_params(
+#             peak_center=center,
+#             bkg_c=av_bkg,
+#             peak_amplitude=dict(
+#                 value=amplitude, min=av_bkg, max=amplitude * 2
+#             ),
+#             peak_sigma=dict(value=sigma, min=40, max=200),
+#         )
 
-        # params_res = mod_peak.guess(counts_flatten, x=bin_centers)
-        # params_res += mod_bckg.guess(np.median(counts), x=bin_centers)
+#         # params_res = mod_peak.guess(counts_flatten, x=bin_centers)
+#         # params_res += mod_bckg.guess(np.median(counts), x=bin_centers)
 
-        res = gmodel.fit(counts_flatten, params_res, x=bin_centers)
+#         res = gmodel.fit(counts_flatten, params_res, x=bin_centers)
 
-        amp_fit = res.params["peak_amplitude"].value
-        mean_fit = res.params["peak_center"].value
-        sigma_fit = res.params["peak_sigma"].value
-        background_fit = res.params["bkg_c"].value
+#         amp_fit = res.params["peak_amplitude"].value
+#         mean_fit = res.params["peak_center"].value
+#         sigma_fit = res.params["peak_sigma"].value
+#         background_fit = res.params["bkg_c"].value
 
-        amp_stderr = res.params["peak_amplitude"].stderr
-        mean_stderr = res.params["peak_center"].stderr
-        sigma_stderr = res.params["peak_sigma"].stderr
-        background_stderr = res.params["bkg_c"].stderr
+#         amp_stderr = res.params["peak_amplitude"].stderr
+#         mean_stderr = res.params["peak_center"].stderr
+#         sigma_stderr = res.params["peak_sigma"].stderr
+#         background_stderr = res.params["bkg_c"].stderr
 
-        print(amp_fit, mean_fit, sigma_fit, background_fit)
-        print(amp_stderr, mean_stderr, sigma_stderr, background_stderr)
-        try:
-            vis_er = amp_fit / background_fit**2 * 100 * amp_stderr
-        except TypeError:
-            vis_er = 0
-        # interpolate for smoother fit plot
-        to_fit_b1 = np.linspace(
-            np.min(bin_centers), np.max(bin_centers), len(bin_centers) * 100
-        )
-        to_fit_n1 = gaussian(
-            to_fit_b1, amp_fit, mean_fit, sigma_fit, background_fit
-        )
+#         print(amp_fit, mean_fit, sigma_fit, background_fit)
+#         print(amp_stderr, mean_stderr, sigma_stderr, background_stderr)
+#         try:
+#             vis_er = amp_fit / background_fit**2 * 100 * amp_stderr
+#         except TypeError:
+#             vis_er = 0
+#         # interpolate for smoother fit plot
+#         to_fit_b1 = np.linspace(
+#             np.min(bin_centers), np.max(bin_centers), len(bin_centers) * 100
+#         )
+#         to_fit_n1 = gaussian(
+#             to_fit_b1, amp_fit, mean_fit, sigma_fit, background_fit
+#         )
 
-        plt.plot(
-            to_fit_b1,
-            to_fit_n1,
-            "-",
-            color=color_f[k],
-            # label="CT\n"
-            # "\u03C3={p1}\u00B1{pe1} ps\n"
-            # "\u03BC={p2}\u00B1{pe2} ps\n"
-            # "vis={vis}\u00B1{vis_er} %\n"
-            # "bkg={bkg}\u00B1{bkg_er}".format(
-            #     p1=format(sigma_fit, ".1f"),
-            #     p2=format(mean_fit, ".1f"),
-            #     pe1=format(sigma_stderr, ".1f"),
-            #     pe2=format(mean_stderr, ".1f"),
-            #     bkg=format(background_fit, ".1f"),
-            #     bkg_er=format(background_stderr, ".1f"),
-            #     vis=format(amp_fit / background_fit * 100, ".1f"),
-            #     vis_er=format(vis_er, ".1f"),
-            # ),
-        )
+#         plt.plot(
+#             to_fit_b1,
+#             to_fit_n1,
+#             "-",
+#             color=color_f[k],
+#             # label="CT\n"
+#             # "\u03C3={p1}\u00B1{pe1} ps\n"
+#             # "\u03BC={p2}\u00B1{pe2} ps\n"
+#             # "vis={vis}\u00B1{vis_er} %\n"
+#             # "bkg={bkg}\u00B1{bkg_er}".format(
+#             #     p1=format(sigma_fit, ".1f"),
+#             #     p2=format(mean_fit, ".1f"),
+#             #     pe1=format(sigma_stderr, ".1f"),
+#             #     pe2=format(mean_stderr, ".1f"),
+#             #     bkg=format(background_fit, ".1f"),
+#             #     bkg_er=format(background_stderr, ".1f"),
+#             #     vis=format(amp_fit / background_fit * 100, ".1f"),
+#             #     vis_er=format(vis_er, ".1f"),
+#             # ),
+#         )
 
-        lower_limit = mean_fit - 2 * sigma_fit
-        upper_limit = mean_fit + 2 * sigma_fit
+#         lower_limit = mean_fit - 2 * sigma_fit
+#         upper_limit = mean_fit + 2 * sigma_fit
 
-        data_in_interval = data_to_plot[
-            (data_to_plot >= lower_limit) & (data_to_plot <= upper_limit)
-        ]
+#         data_in_interval = data_to_plot[
+#             (data_to_plot >= lower_limit) & (data_to_plot <= upper_limit)
+#         ]
 
-        bckg_center_position = mean_fit - 7 * sigma_fit
-        bckg_in_2sigma = data_to_plot[
-            (data_to_plot > bckg_center_position - 2 * sigma_fit)
-            & (data_to_plot < bckg_center_position + 2 * sigma_fit)
-        ]
+#         bckg_center_position = mean_fit - 7 * sigma_fit
+#         bckg_in_2sigma = data_to_plot[
+#             (data_to_plot > bckg_center_position - 2 * sigma_fit)
+#             & (data_to_plot < bckg_center_position + 2 * sigma_fit)
+#         ]
 
-        # Plot the Gaussian fit and the 2-sigma interval
-        plt.axvline(lower_limit, color="gray", linestyle="--")
-        plt.axvline(upper_limit, color="gray", linestyle="--")
-        print(len(data_in_interval), len(bckg_in_2sigma))
-        print(
-            f"Population of the peak at {bin_centers[peak_ind]} in a 2sigma interval is: {len(data_in_interval) - len(bckg_in_2sigma)}"
-        )
+#         # Plot the Gaussian fit and the 2-sigma interval
+#         plt.axvline(lower_limit, color="gray", linestyle="--")
+#         plt.axvline(upper_limit, color="gray", linestyle="--")
+#         print(len(data_in_interval), len(bckg_in_2sigma))
+#         print(
+#             f"Population of the peak at {bin_centers[peak_ind]} in a 2sigma interval is: {len(data_in_interval) - len(bckg_in_2sigma)}"
+#         )
 
-    plt.legend(loc="best")
-    if title_on is True:
-        plt.title(
-            "Gaussian fit of delta t histogram, pixels {}, {}".format(
-                pix_pair[0], pix_pair[1]
-            )
-        )
+#     plt.legend(loc="best")
+#     if title_on is True:
+#         plt.title(
+#             "Gaussian fit of delta t histogram, pixels {}, {}".format(
+#                 pix_pair[0], pix_pair[1]
+#             )
+#         )
 
-    try:
-        os.chdir("results/fits")
-    except FileNotFoundError as _:
-        os.makedirs("results/fits")
-        os.chdir("results/fits")
+#     try:
+#         os.chdir("results/fits")
+#     except FileNotFoundError as _:
+#         os.makedirs("results/fits")
+#         os.chdir("results/fits")
 
-    plt.savefig(
-        "{file}_pixels_"
-        "{pix1},{pix2}_fit.png".format(
-            file=file_name, pix1=pix_pair[0], pix2=pix_pair[1]
-        )
-    )
+#     plt.savefig(
+#         "{file}_pixels_"
+#         "{pix1},{pix2}_fit.png".format(
+#             file=file_name, pix1=pix_pair[0], pix2=pix_pair[1]
+#         )
+#     )
 
-    plt.pause(0.1)
-    os.chdir("../..")
+#     plt.pause(0.1)
+#     os.chdir("../..")
 
 
 # %matplotlib qt
@@ -758,4 +762,4 @@ for path in paths:
     #     rewrite=True,
     #     step=3,
     # )
-    fit_wg_all(path, pix_pair=[170, 174], window=20e3, step=8, thrs=1.27)
+    fit_wg_all(path, pix_pair=[171, 172], window=20e3, step=8, thrs=100)
