@@ -26,7 +26,7 @@ import sys
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
-from scipy.optimize import curve_fit
+from pyarrow import feather as ft
 from scipy.stats import sem
 from tqdm import tqdm
 
@@ -253,32 +253,188 @@ def collect_cross_talk(
             os.makedirs("{}".format("cross_talk_data"))
             os.chdir("cross_talk_data")
 
-        # Check if the '.csv' file with cross-talk numbers for these
-        # data files already exists
-        if (
-            glob.glob(
-                "*CT_data_{}-{}_pixel_{}.csv*".format(
-                    files[0], files[-1], pixels[0]
-                )
+    # Check if the '.csv' file with cross-talk numbers for these
+    # data files already exists
+    if (
+        glob.glob(
+            "*CT_data_{}-{}_pixel_{}.csv*".format(
+                files[0], files[-1], pixels[0]
             )
-            == []
-        ):
-            cross_talk_data.to_csv(
-                "CT_data_{}-{}_pixel_{}.csv".format(
-                    files[0], files[-1], pixels[0]
-                ),
-                index=False,
+        )
+        == []
+    ):
+        cross_talk_data.to_csv(
+            "CT_data_{}-{}_pixel_{}.csv".format(
+                files[0], files[-1], pixels[0]
+            ),
+            index=False,
+        )
+    else:
+        cross_talk_data.to_csv(
+            "CT_data_{}-{}_pixel_{}.csv".format(
+                files[0], files[-1], pixels[0]
+            ),
+            mode="a",
+            index=False,
+            header=False,
+        )
+
+
+def collect_cross_talk_detailed(
+    path,
+    pixels,
+    rewrite: bool,
+    daughterboard_number: str,
+    motherboard_number: str,
+    firmware_version: str,
+    timestamps: int = 512,
+    delta_window: float = 50e3,
+    step: int = 1,
+    include_offset: bool = True,
+    apply_calibration: bool = True,
+    absolute_timestamps: bool = False,
+    correct_pixel_addressing: bool = False,
+):
+    # parameter type check
+    if isinstance(pixels, list) is False:
+        raise TypeError(
+            "'pixels' should be a list of integers or a list of two lists"
+        )
+    if isinstance(firmware_version, str) is False:
+        raise TypeError(
+            "'firmware_version' should be string, '2212s', '2212b' or '2208'"
+        )
+    if isinstance(rewrite, bool) is False:
+        raise TypeError("'rewrite' should be boolean")
+    if isinstance(daughterboard_number, str) is False:
+        raise TypeError("'daughterboard_number' should be string")
+    os.chdir(path)
+
+    # files_all = sorted(glob.glob("*.dat*"))
+    files_all = glob.glob("*.dat*")
+    files_all.sort(key=os.path.getmtime)
+
+    out_file_name = files_all[0][:-4] + "-" + files_all[-1][:-4]
+
+    feather_file = os.path.join(
+        path,
+        "cross_talk_data",
+        f"{out_file_name}_pixels_{pixels[0]}-{pixels[-1]}.feather",
+    )
+
+    utils.file_rewrite_handling(feather_file, rewrite)
+
+    # Define matrix of pixel coordinates, where rows are numbers of TDCs
+    # and columns are the pixels that connected to these TDCs
+    if firmware_version == "2212s":
+        pix_coor = np.arange(256).reshape(4, 64).T
+    elif firmware_version == "2212b":
+        print(
+            "\nFor firmware version '2212b' cross-talk numbers "
+            "would be incorrect, try data collected with '2212s'"
+        )
+        sys.exit()
+    else:
+        print("\nFirmware version is not recognized.")
+        sys.exit()
+
+    timestamps_per_pixel = np.zeros(256)
+
+    pixels_formatted = [[pixels[0]], pixels[1:]]
+
+    for i in tqdm(range(len(files_all)), desc="Collecting data"):
+        file = files_all[i]
+
+        # Prepare a dictionary for output
+        deltas_all = {}
+
+        # Unpack data for the requested pixels into dictionary
+        if not absolute_timestamps:
+            data_all = f_up.unpack_binary_data(
+                file,
+                daughterboard_number,
+                motherboard_number,
+                firmware_version,
+                timestamps,
+                include_offset,
+                apply_calibration,
             )
         else:
-            cross_talk_data.to_csv(
-                "CT_data_{}-{}_pixel_{}.csv".format(
-                    files[0], files[-1], pixels[0]
-                ),
-                mode="a",
-                index=False,
-                header=False,
+            data_all, _ = f_up.unpack_binary_data_with_absolute_timestamps(
+                file,
+                daughterboard_number,
+                motherboard_number,
+                firmware_version,
+                timestamps,
+                include_offset,
+                apply_calibration,
             )
+
+        for i in range(256):
+            tdc, pix = np.argwhere(pix_coor == i)[0]
+            ind = np.where(data_all[tdc].T[0] == pix)[0]
+            ind1 = np.where(data_all[tdc].T[1][ind] > 0)[0]
+            timestamps_per_pixel[i] += len(data_all[tdc].T[1][ind[ind1]])
+
+        deltas_all = cd.calculate_differences_2212(
+            data_all, pixels_formatted, pix_coor, delta_window
+        )
+
+        # Save data as a .feather file in a cycle so data is not lost
+        # in the case of failure close to the end
+        data_for_plot_df = pd.DataFrame.from_dict(deltas_all, orient="index")
+        del deltas_all
+        data_for_plot_df = data_for_plot_df.T
+        try:
+            os.chdir("cross_talk_data")
+        except FileNotFoundError:
+            os.mkdir("cross_talk_data")
+            os.chdir("cross_talk_data")
+
+        # Check if feather file exists
+        feather_file = (
+            f"{out_file_name}_pixels_{pixels[0]}-{pixels[-1]}.feather"
+        )
+        if os.path.isfile(feather_file):
+            # Load existing feather file
+            existing_data = ft.read_feather(feather_file)
+
+            # Append new data to the existing feather file
+            combined_data = pd.concat(
+                [existing_data, data_for_plot_df], axis=0
+            )
+            ft.write_feather(combined_data, feather_file)
+
+        else:
+            # Save as a new feather file
+            ft.write_feather(data_for_plot_df, feather_file)
         os.chdir("..")
+
+    # Check, if the file was created
+    if (
+        os.path.isfile(
+            path
+            + f"/cross_talk_data/{out_file_name}_pixels_{pixels[0]}-{pixels[-1]}.feather"
+        )
+        is True
+    ):
+        print(
+            "\n> > > Timestamp differences are saved as"
+            f"{out_file_name}_pixels_{pixels[0]}-{pixels[-1]}.feather in "
+            f"{os.path.join(path, 'cross_talk_data')} < < <"
+        )
+
+    else:
+        print("File wasn't generated. Check input parameters.")
+
+    if correct_pixel_addressing:
+        fix = np.zeros(len(timestamps_per_pixel))
+        fix[:128] = timestamps_per_pixel[128:]
+        fix[128:] = np.flip(timestamps_per_pixel[:128])
+        timestamps_per_pixel = fix
+        del fix
+
+    return timestamps_per_pixel[pixels]
 
 
 def plot_cross_talk(path, pix1, scale: str = "linear"):
