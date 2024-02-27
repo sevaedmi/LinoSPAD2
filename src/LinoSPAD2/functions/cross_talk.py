@@ -26,6 +26,7 @@ import sys
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
+from scipy.optimize import curve_fit
 from scipy.stats import sem
 from tqdm import tqdm
 
@@ -45,6 +46,7 @@ def collect_cross_talk(
     step: int = 1,
     include_offset: bool = True,
     apply_calibration: bool = True,
+    correct_pixel_addressing: bool = False,
 ):
     """Calculate cross-talk and save it to a '.csv' file.
 
@@ -81,6 +83,9 @@ def collect_cross_talk(
         Switch for applying TDC and offset calibration. If set to 'True'
         while include_offset is set to 'False', only the TDC calibration is
         applied. The default is True.
+    correct_pixel_addressing : bool, optional
+        Switch for correcting pixel address. Should be used for FPGA
+        board on side 23. The default is False.
 
     Returns
     -------
@@ -151,6 +156,13 @@ def collect_cross_talk(
             ind1 = np.where(data[tdc].T[1][ind] > 0)[0]
             timestamps_per_pixel[i] += len(data[tdc].T[1][ind[ind1]])
 
+        if correct_pixel_addressing:
+            fix = np.zeros(len(timestamps_per_pixel))
+            fix[:128] = timestamps_per_pixel[128:]
+            fix[128:] = np.flip(timestamps_per_pixel[:128])
+            timestamps_per_pixel = fix
+            del fix
+
         # Population of the aggressor pixel
         timestamps_pix1 = timestamps_per_pixel[pixels[0]]
 
@@ -165,9 +177,45 @@ def collect_cross_talk(
                 data, [pixels[0], j], pix_coor
             )
 
+            counts, bin_edges = np.histogram(
+                deltas[f"{pixels[0]},{j}"],
+                bins=200,
+            )
+            bin_centers = (bin_edges - 17.857 * step / 2)[1:]
+
+            params, cov = curve_fit(
+                utils.gaussian,
+                bin_centers,
+                counts,
+                p0=[
+                    max(counts),
+                    bin_centers[np.argmax(counts)],
+                    100,
+                    np.median(counts),
+                ],
+                # sigma=sigma_values,
+            )
+
+            lower_limit = params[1] - 2 * params[2]
+            upper_limit = params[1] + 2 * params[2]
+
+            plt.figure(figsize=(10, 8))
+            plt.plot(bin_centers, counts, "o")
+            plt.plot(bin_centers, utils.gaussian(bin_centers, *params))
+
+            data_arr = np.array(deltas[f"{pixels[0]},{j}"])
+            data_in_interval = [
+                (data_arr >= lower_limit) & (data_arr <= upper_limit)
+            ]
+            bckg_center_position = params[1] - 7 * params[2]
+            bckg_in_interval = data_arr[
+                (data_arr > bckg_center_position - 2 * params[2])
+                & (data_arr < bckg_center_position + 2 * params[2])
+            ]
             # The cross-talk number in %
             ct = (
-                len(deltas[f"{pixels[0]},{j}"])
+                # len(deltas[f"{pixels[0]},{j}"])
+                (len(data_in_interval) - len(bckg_in_interval))
                 * 100
                 / (timestamps_pix1 + timestamps_pix2)
             )
@@ -180,56 +228,57 @@ def collect_cross_talk(
             deltas_list.append(len(deltas[f"{pixels[0]},{j}"]))
             ct_list.append(ct)
 
-    print(
-        "\n> > > Saving data as 'CT_data_{}-{}.csv' in"
-        " {path} < < <\n".format(
-            files[0], files[-1], path=path + "/cross_talk_data"
-        )
-    )
-
-    dic = {
-        "File": file_name_list,
-        "Pixel 1": pix1_list,
-        "Pixel 2": pix2_list,
-        "Timestamps 1": timestamps_list1,
-        "Timestamps 2": timestamps_list2,
-        "Deltas": deltas_list,
-        "CT": ct_list,
-    }
-
-    cross_talk_data = pd.DataFrame(dic)
-
-    try:
-        os.chdir("cross_talk_data")
-    except FileNotFoundError:
-        os.makedirs("{}".format("cross_talk_data"))
-        os.chdir("cross_talk_data")
-
-    # Check if the '.csv' file with cross-talk numbers for these
-    # data files already exists
-    if (
-        glob.glob(
-            "*CT_data_{}-{}_pixel_{}.csv*".format(
-                files[0], files[-1], pixels[0]
+        print(
+            "\n> > > Saving data as 'CT_data_{}-{}.csv' in"
+            " {path} < < <\n".format(
+                files[0], files[-1], path=path + "/cross_talk_data"
             )
         )
-        == []
-    ):
-        cross_talk_data.to_csv(
-            "CT_data_{}-{}_pixel_{}.csv".format(
-                files[0], files[-1], pixels[0]
-            ),
-            index=False,
-        )
-    else:
-        cross_talk_data.to_csv(
-            "CT_data_{}-{}_pixel_{}.csv".format(
-                files[0], files[-1], pixels[0]
-            ),
-            mode="a",
-            index=False,
-            header=False,
-        )
+
+        dic = {
+            "File": file_name_list,
+            "Pixel 1": pix1_list,
+            "Pixel 2": pix2_list,
+            "Timestamps 1": timestamps_list1,
+            "Timestamps 2": timestamps_list2,
+            "Deltas": deltas_list,
+            "CT": ct_list,
+        }
+
+        cross_talk_data = pd.DataFrame(dic)
+
+        try:
+            os.chdir("cross_talk_data")
+        except FileNotFoundError:
+            os.makedirs("{}".format("cross_talk_data"))
+            os.chdir("cross_talk_data")
+
+        # Check if the '.csv' file with cross-talk numbers for these
+        # data files already exists
+        if (
+            glob.glob(
+                "*CT_data_{}-{}_pixel_{}.csv*".format(
+                    files[0], files[-1], pixels[0]
+                )
+            )
+            == []
+        ):
+            cross_talk_data.to_csv(
+                "CT_data_{}-{}_pixel_{}.csv".format(
+                    files[0], files[-1], pixels[0]
+                ),
+                index=False,
+            )
+        else:
+            cross_talk_data.to_csv(
+                "CT_data_{}-{}_pixel_{}.csv".format(
+                    files[0], files[-1], pixels[0]
+                ),
+                mode="a",
+                index=False,
+                header=False,
+            )
+        os.chdir("..")
 
 
 def plot_cross_talk(path, pix1, scale: str = "linear"):

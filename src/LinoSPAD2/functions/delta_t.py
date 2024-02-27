@@ -52,6 +52,7 @@ def calculate_and_save_timestamp_differences(
     include_offset: bool = True,
     apply_calibration: bool = True,
     absolute_timestamps: bool = False,
+    correct_pix_address: bool = False
 ):
     """Calculate and save timestamp differences into '.feather' file.
 
@@ -93,6 +94,9 @@ def calculate_and_save_timestamp_differences(
     absolute_timestamps: bool, optional
         Indicator for data with absolute timestamps. The default is
         False.
+    correct_pix_addres : bool, optional
+        Correct pixel address for the FPGA board on side 23. The
+        default is False.
 
     Raises
     ------
@@ -189,6 +193,12 @@ def calculate_and_save_timestamp_differences(
                 include_offset,
                 apply_calibration,
             )
+        
+        if correct_pix_address:
+            if pixels[1] > 127:
+                pixels[1] = 255 - pixels[1]
+            else:
+                pixels[1] = pixels[1] + 128
 
         deltas_all = cd.calculate_differences_2212(
             data_all, pixels, pix_coor, delta_window
