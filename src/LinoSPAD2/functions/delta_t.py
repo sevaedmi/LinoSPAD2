@@ -23,6 +23,7 @@ functions:
     in a grid. This function should be used for the full sensor
     setup.
 """
+
 import glob
 import os
 import sys
@@ -52,7 +53,7 @@ def calculate_and_save_timestamp_differences(
     include_offset: bool = True,
     apply_calibration: bool = True,
     absolute_timestamps: bool = False,
-    correct_pix_address: bool = False
+    correct_pix_address: bool = False,
 ):
     """Calculate and save timestamp differences into '.feather' file.
 
@@ -193,12 +194,13 @@ def calculate_and_save_timestamp_differences(
                 include_offset,
                 apply_calibration,
             )
-        
+
         if correct_pix_address:
-            if pixels[1] > 127:
-                pixels[1] = 255 - pixels[1]
-            else:
-                pixels[1] = pixels[1] + 128
+            for i, pixel in enumerate(pixels):
+                if pixel > 127:
+                    pixels[i] = 255 - pixels[i]
+                else:
+                    pixels[i] = pixels[i] + 128
 
         deltas_all = cd.calculate_differences_2212(
             data_all, pixels, pix_coor, delta_window
@@ -1046,7 +1048,7 @@ def collect_and_plot_timestamp_differences(
     # parameter type check
     if isinstance(rewrite, bool) is not True:
         raise TypeError("'rewrite' should be boolean")
-    plt.ioff()
+    # plt.ioff()
     os.chdir(path)
 
     # files_all = sorted(glob.glob("*.dat*"))
@@ -1078,7 +1080,7 @@ def collect_and_plot_timestamp_differences(
     plt.rcParams.update({"font.size": 22})
     # In the case two lists given - the left and right peaks - flatten
     # into a single list
-    #TODO: check this code
+    # TODO: check this code
     # if len(pixels) == 2:
     #     pixels = [x for sublist in pixels for x in sublist]
 
@@ -1197,7 +1199,7 @@ def collect_and_plot_timestamp_differences(
             except FileNotFoundError:
                 os.makedirs("results/delta_t")
                 os.chdir("results/delta_t")
-            # fig.tight_layout()  # for perfect spacing between the plots
+            fig.tight_layout()  # for perfect spacing between the plots
             plt.savefig(f"{feather_file_name}_delta_t_grid.png")
             os.chdir("../..")
 

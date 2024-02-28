@@ -27,6 +27,7 @@ import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
 from pyarrow import feather as ft
+from scipy.optimize import curve_fit
 from scipy.stats import sem
 from tqdm import tqdm
 
@@ -435,6 +436,54 @@ def collect_cross_talk_detailed(
         del fix
 
     return timestamps_per_pixel[pixels]
+
+
+def plot_cross_talk_peaks(path, pixels, step):
+
+    os.chdir(path)
+    files = glob.glob("*.dat")
+    ft_file_name = files[0][:-4] + "-" + files[-1][:-4]
+
+    os.chdir(os.path.join(path, "cross_talk_data"))
+
+    ft_file = glob.glob(f"{ft_file_name}_*{pixels[0]}-{pixels[-1]}*.feather")[
+        0
+    ]
+
+    for i, pix in enumerate(pixels[1:]):
+        data_pix = ft.read_feather(ft_file, columns=[f"{pixels[0]},{pix}"])
+        counts, bin_edges = np.histogram(
+            data_pix,
+            bins=(
+                np.arange(np.min(data_pix), np.max(data_pix), step * 17.857)
+            ),
+        )
+        bin_centers = (bin_edges - step * 17.857 / 2)[1:]
+
+        params, covs = curve_fit(
+            utils.gaussian,
+            bin_centers,
+            counts,
+            p0=[
+                np.max(counts),
+                bin_centers[np.argmax(counts)],
+                100,
+                np.median(counts),
+            ],
+        )
+
+        plt.rcParams.update({"font.size": 22})
+        plt.figure(figsize=(10, 8))
+        plt.step(bin_centers, counts, color="salmon", label="Data")
+        plt.plot(
+            bin_centers,
+            utils.gaussian(bin_centers, *params),
+            color="teal",
+            label="Fit",
+        )
+        plt.xlabel("\u0394t [ps]")
+        plt.ylabel("# of coincidences [-]")
+        plt.legend()
 
 
 def plot_cross_talk(path, pix1, scale: str = "linear"):
