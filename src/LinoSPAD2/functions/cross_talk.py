@@ -197,26 +197,25 @@ def collect_cross_talk(
                 # sigma=sigma_values,
             )
 
-            lower_limit = params[1] - 2 * params[2]
-            upper_limit = params[1] + 2 * params[2]
+            # lower_limit = params[1] - 2 * params[2]
+            # upper_limit = params[1] + 2 * params[2]
 
             plt.figure(figsize=(10, 8))
             plt.plot(bin_centers, counts, "o")
             plt.plot(bin_centers, utils.gaussian(bin_centers, *params))
 
-            data_arr = np.array(deltas[f"{pixels[0]},{j}"])
-            data_in_interval = [
-                (data_arr >= lower_limit) & (data_arr <= upper_limit)
-            ]
-            bckg_center_position = params[1] - 7 * params[2]
-            bckg_in_interval = data_arr[
-                (data_arr > bckg_center_position - 2 * params[2])
-                & (data_arr < bckg_center_position + 2 * params[2])
-            ]
+            # data_arr = np.array(deltas[f"{pixels[0]},{j}"])
+            # data_in_interval = [
+            #     (data_arr >= lower_limit) & (data_arr <= upper_limit)
+            # ]
+            # bckg_center_position = params[1] - 7 * params[2]
+            # bckg_in_interval = data_arr[
+            #     (data_arr > bckg_center_position - 2 * params[2])
+            #     & (data_arr < bckg_center_position + 2 * params[2])
+            # ]
             # The cross-talk number in %
             ct = (
-                # len(deltas[f"{pixels[0]},{j}"])
-                (len(data_in_interval) - len(bckg_in_interval))
+                len(deltas[f"{pixels[0]},{j}"])
                 * 100
                 / (timestamps_pix1 + timestamps_pix2)
             )
@@ -438,11 +437,19 @@ def collect_cross_talk_detailed(
     return timestamps_per_pixel[pixels]
 
 
-def plot_cross_talk_peaks(path, pixels, step):
+def plot_cross_talk_peaks(
+    path,
+    pixels,
+    step,
+    window: int = 50e3,
+    senpop: list = None,
+    pix_on_left: bool = False,
+):
 
     os.chdir(path)
-    files = glob.glob("*.dat")
-    ft_file_name = files[0][:-4] + "-" + files[-1][:-4]
+    files_all1 = glob.glob("*.dat")
+    files_all1.sort(key=os.path.getmtime)
+    ft_file_name = files_all1[0][:-4] + "-" + files_all1[-1][:-4]
 
     os.chdir(os.path.join(path, "cross_talk_data"))
 
@@ -450,12 +457,32 @@ def plot_cross_talk_peaks(path, pixels, step):
         0
     ]
 
+    ct_output = {}
+    ct_err_output = {}
+
     for i, pix in enumerate(pixels[1:]):
-        data_pix = ft.read_feather(ft_file, columns=[f"{pixels[0]},{pix}"])
+        if pix_on_left:
+
+            data_pix = (
+                ft.read_feather(ft_file, columns=[f"{pix},{pixels[0]}"])
+                .dropna()
+                .values
+            )
+        else:
+            data_pix = (
+                ft.read_feather(ft_file, columns=[f"{pixels[0]},{pix}"])
+                .dropna()
+                .values
+            )
+
+        data_cut = data_pix[(data_pix > -window / 2) & (data_pix < window / 2)]
+
+        if not data_cut.any().any():
+            continue
         counts, bin_edges = np.histogram(
-            data_pix,
+            data_cut,
             bins=(
-                np.arange(np.min(data_pix), np.max(data_pix), step * 17.857)
+                np.arange(np.min(data_cut), np.max(data_cut), step * 17.857)
             ),
         )
         bin_centers = (bin_edges - step * 17.857 / 2)[1:]
@@ -472,6 +499,34 @@ def plot_cross_talk_peaks(path, pixels, step):
             ],
         )
 
+        # Cross-talk probability estimation
+        if senpop is not None:
+            aggressor_pix_tmsps = senpop[pixels[0]]
+            victim_pix_tmsps = senpop[pix]
+
+            peak_population = data_cut[
+                (data_cut > params[1] - params[2] * 2)
+                & (data_cut < params[1] + params[2] * 2)
+            ]
+            bckg = data_cut[
+                (data_cut > params[1] + 15e3 - params[2] * 2)
+                & (data_cut < params[1] + 15e3 + params[2] * 2)
+            ]
+            peak_population_err = np.sqrt(len(peak_population))
+            bckg_err = np.sqrt(len(bckg))
+
+            CT = (
+                (len(peak_population) - len(bckg))
+                * 100
+                / (aggressor_pix_tmsps + victim_pix_tmsps)
+            )
+
+            CT_err = (
+                np.sqrt(peak_population_err**2 + bckg_err**2)
+                * 100
+                / (aggressor_pix_tmsps + victim_pix_tmsps)
+            )
+
         plt.rcParams.update({"font.size": 22})
         plt.figure(figsize=(10, 8))
         plt.step(bin_centers, counts, color="salmon", label="Data")
@@ -481,9 +536,34 @@ def plot_cross_talk_peaks(path, pixels, step):
             color="teal",
             label="Fit",
         )
+        if senpop is not None:
+            plt.title(
+                f"Cross-talk peak, pixels {pixels[0]},{pix}\nCross-talk is {CT:.1e}"
+                + "\u00B1"
+                + f"{CT_err:.1e}"
+                + "%"
+            )
+        else:
+            plt.title(f"Cross-talk peak, pixels {pixels[0]},{pix}")
+
         plt.xlabel("\u0394t [ps]")
         plt.ylabel("# of coincidences [-]")
         plt.legend()
+        try:
+            os.chdir(os.path.join(path, "results/ct_fit"))
+        except:
+            os.makedirs(os.path.join(path, "results/ct_fit"))
+            os.chdir(os.path.join(path, "results/ct_fit"))
+        plt.savefig(f"CT_fit_pixels_{pixels[0]},{pix}.png")
+        os.chdir(os.path.join(path, "cross_talk_data"))
+
+        # ct_output.append(CT)
+        # ct_err_output.append(CT_err)
+
+        ct_output[f"{pixels[0], pix}"] = CT
+        ct_err_output[f"{pixels[0], pix}"] = CT_err
+
+    return ct_output, ct_err_output
 
 
 def plot_cross_talk(path, pix1, scale: str = "linear"):
@@ -514,6 +594,7 @@ def plot_cross_talk(path, pix1, scale: str = "linear"):
     os.chdir(path)
 
     files = glob.glob("*.dat*")
+    files.sort(key=os.path.getmtime)
 
     # os.chdir(path + "/cross_talk_data")
 
@@ -530,8 +611,6 @@ def plot_cross_talk(path, pix1, scale: str = "linear"):
     distance = []
     ct = []
     yerr = []
-
-    pix1 = pix1
 
     data_cut = data.loc[data["Pixel 1"] == pix1]
 
@@ -578,6 +657,106 @@ def plot_cross_talk(path, pix1, scale: str = "linear"):
         os.chdir("../results/cross_talk")
 
     plt.savefig("{plot}_{pix}.png".format(plot=plot_name, pix=pix1))
+
+
+def plot_cross_talk_grid(
+    path,
+    pixels,
+    step,
+    window: int = 50e3,
+    senpop: list = None,
+    pix_on_left: bool = False,
+):
+
+    os.chdir(path)
+    files_all1 = glob.glob("*.dat")
+    files_all1.sort(key=os.path.getmtime)
+    ft_file_name = files_all1[0][:-4] + "-" + files_all1[-1][:-4]
+
+    os.chdir(os.path.join(path, "cross_talk_data"))
+
+    ft_file = glob.glob(f"{ft_file_name}_*{pixels[0]}-{pixels[-1]}*.feather")[
+        0
+    ]
+
+    fig, axes = plt.subplots(2, 5, figsize=(12, 6))
+    plt.rcParams.update({"font.size": 22})
+
+    for i, pix in enumerate(pixels[1:]):
+        if pix_on_left:
+            data_pix = (
+                ft.read_feather(ft_file, columns=[f"{pix},{pixels[0]}"])
+                .dropna()
+                .values
+            )
+        else:
+            data_pix = (
+                ft.read_feather(ft_file, columns=[f"{pixels[0]},{pix}"])
+                .dropna()
+                .values
+            )
+
+        data_cut = data_pix[(data_pix > -window / 2) & (data_pix < window / 2)]
+
+        if not data_cut.any().any():
+            continue
+        counts, bin_edges = np.histogram(
+            data_cut,
+            bins=(
+                np.arange(np.min(data_cut), np.max(data_cut), step * 17.857)
+            ),
+        )
+        bin_centers = (bin_edges - step * 17.857 / 2)[1:]
+
+        params, covs = curve_fit(
+            utils.gaussian,
+            bin_centers,
+            counts,
+            p0=[
+                np.max(counts),
+                bin_centers[np.argmax(counts)],
+                100,
+                np.median(counts),
+            ],
+        )
+
+        if i < 5:
+            axes[0, i].plot(bin_centers, counts, ".", color="salmon")
+            axes[0, i].plot(
+                bin_centers,
+                utils.gaussian(bin_centers, *params),
+                "--",
+                color="teal",
+            )
+            axes[0, i].set_xticks([])
+            axes[0, i].set_yticks([])
+            axes[0, i].set_title(f"{pixels[0]},{pix}")
+
+        else:
+            axes[1, i % 5].plot(bin_centers, counts, ".", color="salmon")
+            axes[1, i % 5].plot(
+                bin_centers,
+                utils.gaussian(bin_centers, *params),
+                "--",
+                color="teal",
+            )
+            axes[1, i % 5].set_xticks([])
+            axes[1, i % 5].set_yticks([])
+            axes[1, i % 5].set_title(f"{pixels[0]},{pix}")
+
+    axes[1, 2].set_xlabel("\u0394t [ps]", fontsize=26)
+    fig.text(0, 0.25, "# of coincidences [-]", fontsize=26, rotation=90)
+
+    # Make plots tight
+    plt.tight_layout()
+
+    try:
+        os.chdir(os.path.join(path, "results/ct_fit"))
+    except:
+        os.makedirs(os.path.join(path, "results/ct_fit"))
+        os.chdir(os.path.join(path, "results/ct_fit"))
+    plt.savefig(f"CT_fit_pixels_{pixels[0]},{pix}_grid.png")
+    os.chdir(os.path.join(path, "cross_talk_data"))
 
 
 def calculate_dark_count_rate(
