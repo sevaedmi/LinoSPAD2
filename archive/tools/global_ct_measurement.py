@@ -68,14 +68,14 @@ for pixels in hot_pixels_plus_20:
     #     step=10,
     # )
 
-    CT, CT_err = cross_talk.plot_cross_talk_peaks(
-        path,
-        pixels=pixels,
-        step=14,
-        window=100e3,
-        senpop=senpop,
-        # pix_on_left=True,
-    )
+    # CT, CT_err = cross_talk.plot_cross_talk_peaks(
+    #     path,
+    #     pixels=pixels,
+    #     step=14,
+    #     window=100e3,
+    #     senpop=senpop,
+    #     # pix_on_left=True,
+    # )
     cross_talk.plot_cross_talk_grid(
         path,
         pixels=pixels,
@@ -252,7 +252,7 @@ on_right1 = {
 }
 
 on_both_average = {key: [] for key in range(1, 21)}
-for key in on_left:
+for key in on_left.keys():
     ct_value_average = (
         on_left[key][0][0]
         + on_right[np.abs(key)][0][0]
@@ -270,6 +270,7 @@ for key in on_left:
     )
     on_both_average[np.abs(key)] = (ct_value_average, ct_error_average)
 
+
 plt.figure(figsize=(10, 8))
 plt.rcParams.update({"font.size": 22})
 plt.title("Average cross-talk probability")
@@ -283,4 +284,123 @@ plt.errorbar(
     fmt=".",
     color="darkred",
 )
+plt.tight_layout()
 plt.savefig(f"Average_cross-talk.png")
+
+from math import exp
+
+from scipy.optimize import curve_fit
+
+
+def exponen(x, a):
+    return a**x
+
+
+def exponen(x):
+    return exp(-0.0025 / x)
+
+
+distance = list(on_both_average.keys())
+CT_measured = [
+    0.2215891803561598,
+    0.012088191269830968,
+    0.0018035955282857206,
+    0.0005700909201064419,
+    0.000178308050988675,
+    8.682284674234989e-05,
+    6.078516676220591e-05,
+    3.730942344956498e-05,
+    1.797065785087754e-05,
+    2.5332947334243387e-05,
+    2.806603141375651e-05,
+    3.801940742920128e-05,
+    3.7576438328276034e-05,
+    2.4433616634739063e-05,
+    2.8634958794184913e-05,
+    3.402696279147671e-05,
+    2.1713188591550668e-05,
+    4.2202950963342604e-05,
+    1.8443692896370576e-05,
+    2.610597489572449e-05,
+]
+
+
+CT_expected = [0.0022 ** (x) * 100 for x in range(0, 21)]
+
+
+plt.figure(figsize=(10, 8))
+plt.rcParams.update({"font.size": 22})
+plt.title("Average cross-talk probability")
+plt.xlabel("Distance in pixels [-]")
+plt.ylabel("Cross-talk probability [%]")
+plt.yscale("log")
+plt.errorbar(
+    on_both_average.keys(),
+    [x[0] for x in on_both_average.values()],
+    yerr=[x[1] for x in on_both_average.values()],
+    fmt=".",
+    color="darkred",
+    label="Measured",
+    markersize=12,
+)
+plt.plot(
+    [x for x in range(0, 21)],
+    CT_expected,
+    color="teal",
+    label="Exponential 0.22%**distance",
+)
+
+plt.tight_layout()
+plt.ylim(1e-6, 120)
+plt.legend()
+
+
+############################
+
+import os
+from glob import glob
+
+from LinoSPAD2.functions import cross_talk, plot_tmsp
+
+path = r"D:\LinoSPAD2\Data\board_NL11\Prague\CT_#33"
+
+os.chdir(path)
+files = glob("*.dat")
+
+# plot_tmsp.collect_data_and_apply_mask(
+#     files,
+#     daughterboard_number="NL11",
+#     motherboard_number="#21",
+#     firmware_version="2212s",
+#     timestamps=1000,
+#     include_offset=False,
+#     app_mask=False,
+#     save_to_file=True,
+# )
+
+hot_pixels = [
+    15,
+    50,
+    52,
+    66,
+    93,
+    98,
+    109,
+    122,
+    210,
+    231,
+    236,
+]
+
+# cross_talk.zero_to_cross_talk_collect(
+#     path,
+#     hot_pixels,
+#     rewrite=True,
+#     daughterboard_number="NL11",
+#     motherboard_number="#33",
+#     firmware_version="2212s",
+#     timestamps=1000,
+#     include_offset=False,
+# )
+
+cross_talk.zero_to_cross_talk_plot(path, hot_pixels, show_plots=False)
