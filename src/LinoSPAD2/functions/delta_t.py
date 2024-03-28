@@ -13,10 +13,23 @@ functions:
     * calculate_and_save_timestamp_differences_full_sensor - unpacks the
     binary data, calculates timestamp differences and saves into a
     '.feather' file. Works with firmware versions '2208', '2212s' and
-    '2212b'. Analyzes data from both sensor halves/both FPGAs.
+    '2212b'. Analyzes data from both sensor halves/both FPGAs. Useful
+    for data where the signal is at 0 across the whole sensor from the
+    start of data collecting.
+    
+    * calculate_and_save_timestamp_differences_full_sensor_alt - unpacks
+    the binary data, calculates timestamp differences and saves into a
+    '.feather' file. Works with firmware versions '2208', '2212s' and
+    '2212b'. Analyzes data from both sensor halves/both FPGAs. Useful
+    for data where signal is above zero right from the start.
 
     * collect_and_plot_timestamp_differences - collect timestamps from a
     '.feather' file and plot them in a grid.
+    
+    * collect_and_plot_timestamp_differences_from_ft_file - unpack the 
+    '.feather' file requested, collect timestamp differences and
+    plot it as a grid of plots. Useful when only the '.feather' file
+    is available and not the raw '.dat' files.
     
     * collect_and_plot_timestamp_differences_full_sensor - collect
     timestamps from a '.feather' file and plot histograms of them
@@ -38,6 +51,33 @@ from tqdm import tqdm
 from LinoSPAD2.functions import calc_diff as cd
 from LinoSPAD2.functions import unpack as f_up
 from LinoSPAD2.functions import utils
+
+
+def flatten(input_list: []):
+    """Flatten the input list.
+
+    Flatten the input list, which can be a list of numbers, lists,
+    or a combination of the two above, and return a list of
+    numbers only, unpacking the lists inside.
+
+    Parameters
+    ----------
+    lst : lsit
+        Input list of numbers, lists of numbers, of a combination of the
+        two.
+
+    Returns
+    -------
+    list
+        Flattened list of numbers only.
+    """
+    flattened = []
+    for item in input_list:
+        if isinstance(item, list):
+            flattened.extend(item)
+        else:
+            flattened.append(item)
+    return flattened
 
 
 def calculate_and_save_timestamp_differences(
@@ -95,7 +135,7 @@ def calculate_and_save_timestamp_differences(
     absolute_timestamps: bool, optional
         Indicator for data with absolute timestamps. The default is
         False.
-    correct_pix_addres : bool, optional
+    correct_pix_address : bool, optional
         Correct pixel address for the FPGA board on side 23. The
         default is False.
 
@@ -628,6 +668,9 @@ def calculate_and_save_timestamp_differences_full_sensor_alt(
     the requested pixels and saves them into a '.feather' table. Works with
     firmware version 2212. Analyzes data from both sensor halves/both
     FPGAs, hence the two input parameters for LinoSPAD2 motherboards.
+    Uses the threshold value to find the first cycle in each sensor half
+    where the signal is above that value. Useful for when the signal
+    is above zero right from the start of data collecting.
 
     Parameters
     ----------
@@ -1080,12 +1123,9 @@ def collect_and_plot_timestamp_differences(
     plt.rcParams.update({"font.size": 22})
     # In the case two lists given - the left and right peaks - flatten
     # into a single list
-    # TODO: check this code
-    # if len(pixels) == 2:
-    #     pixels = [x for sublist in pixels for x in sublist]
 
-    # Prepare the grid for the plots based on the number of pixels
-    # given
+    pixels = flatten(pixels)
+
     if len(pixels) > 2:
         fig, axs = plt.subplots(
             len(pixels) - 1,
@@ -1211,6 +1251,220 @@ def collect_and_plot_timestamp_differences(
     )
 
 
+def collect_and_plot_timestamp_differences_from_ft_file(
+    ft_file,
+    pixels,
+    rewrite: bool,
+    range_left: int = -10e3,
+    range_right: int = 10e3,
+    step: int = 1,
+    same_y: bool = False,
+    color: str = "salmon",
+):
+    """Collect and plot timestamp differences from a '.feather' file.
+
+    Plots timestamp differences from a '.feather' file as a grid of histograms
+    and as a single plot. The plot is saved in the 'results/delta_t' folder,
+    which is created (if it does not already exist) in the same folder
+    where data are.
+
+    Parameters
+    ----------
+    ft_file : str
+        Absolute path to the feather file.
+    pixels : list
+        List of pixel numbers for which the timestamp differences
+        should be plotted.
+    rewrite : bool
+        Switch for rewriting the plot if it already exists.
+    range_left : int, optional
+        Lower limit for timestamp differences, lower values are not used.
+        The default is -10e3.
+    range_right : int, optional
+        Upper limit for timestamp differences, higher values are not used.
+        The default is 10e3.
+    step : int, optional
+        Histogram binning multiplier. The default is 1.
+    same_y : bool, optional
+        Switch for plotting the histograms with the same y-axis.
+        The default is False.
+    color : str, optional
+        Color for the plot. The default is 'salmon'.
+
+    Raises
+    ------
+    TypeError
+        Only boolean values of 'rewrite' are accepted. The error is
+        raised so that the plot does not accidentally get rewritten.
+
+    Returns
+    -------
+    None.
+    """
+    # parameter type check
+    if isinstance(rewrite, bool) is not True:
+        raise TypeError("'rewrite' should be boolean")
+    # plt.ioff()
+
+    path = os.path.dirname(ft_file)
+
+    feather_file_name = ft_file.split("\\")[-1].split(".")[0]
+
+    os.chdir(path)
+
+    # Check if plot exists and if it should be rewritten
+    try:
+        os.chdir("results/delta_t")
+        if os.path.isfile(f"{feather_file_name}_delta_t_grid.png"):
+            if rewrite is True:
+                print(
+                    "\n! ! ! Plot of timestamp differences already"
+                    "exists and will be rewritten ! ! !\n"
+                )
+            else:
+                sys.exit(
+                    "\nPlot already exists, 'rewrite' set to 'False', exiting."
+                )
+        os.chdir("../..")
+    except FileNotFoundError:
+        pass
+
+    print(
+        "\n> > > Plotting timestamps differences as a grid of histograms < < <"
+    )
+
+    plt.rcParams.update({"font.size": 22})
+    # In the case two lists given - the left and right peaks - flatten
+    # into a single list
+    pixels = flatten(pixels)
+
+    # Prepare the grid for the plots based on the number of pixels
+    # given
+    if len(pixels) > 2:
+        fig, axs = plt.subplots(
+            len(pixels) - 1,
+            len(pixels) - 1,
+            figsize=(5.5 * len(pixels), 5.5 * len(pixels)),
+        )
+        for ax in axs:
+            for x in ax:
+                x.axes.set_axis_off()
+    else:
+        fig = plt.figure(figsize=(14, 14))
+
+    # Check if the y limits of all plots should be the same
+    if same_y is True:
+        y_max_all = 0
+
+    for q, _ in tqdm(enumerate(pixels), desc="Row in plot"):
+        for w, _ in enumerate(pixels):
+            if w <= q:
+                continue
+            if len(pixels) > 2:
+                axs[q][w - 1].axes.set_axis_on()
+
+            # Read data from Feather file
+            try:
+                data_to_plot = ft.read_feather(
+                    ft_file,
+                    columns=[f"{pixels[q]},{pixels[w]}"],
+                ).dropna()
+            except ValueError:
+                continue
+
+            # Prepare the data for the plot
+            data_to_plot = np.array(data_to_plot)
+            data_to_plot = np.delete(
+                data_to_plot, np.argwhere(data_to_plot < range_left)
+            )
+            data_to_plot = np.delete(
+                data_to_plot, np.argwhere(data_to_plot > range_right)
+            )
+
+            # Bins should be in units of 17.857 ps - average bin width
+            # of the LinoSPAD2 TDCs
+            try:
+                bins = np.arange(
+                    np.min(data_to_plot),
+                    np.max(data_to_plot),
+                    17.857 * step,
+                )
+            except ValueError:
+                print(
+                    f"\nCouldn't calculate bins for {q}-{w} pair: "
+                    "probably not enough delta ts."
+                )
+                continue
+
+            if len(pixels) > 2:
+                axs[q][w - 1].set_xlabel("\u0394t [ps]")
+                axs[q][w - 1].set_ylabel("# of coincidences [-]")
+                n, b, p = axs[q][w - 1].hist(
+                    data_to_plot,
+                    bins=bins,
+                    color=color,
+                )
+            else:
+                plt.xlabel("\u0394t [ps]")
+                plt.ylabel("# of coincidences [-]")
+                n, b, p = plt.hist(
+                    data_to_plot,
+                    bins=bins,
+                    color=color,
+                )
+
+            # Find number of timestamps differences in a 2 ns window
+            # around the peak (HBT or cross-talk)
+            try:
+                peak_max_pos = np.argmax(n).astype(np.intc)
+                # 2 ns window around peak
+                win = int(1000 / ((range_right - range_left) / 100))
+                peak_max = np.sum(n[peak_max_pos - win : peak_max_pos + win])
+            except ValueError:
+                peak_max = 0
+
+            if same_y is True:
+                try:
+                    y_max = np.max(n)
+                except ValueError:
+                    y_max = 0
+                    print("\nCould not find maximum y value\n")
+                if y_max_all < y_max:
+                    y_max_all = y_max
+                if len(pixels) > 2:
+                    axs[q][w - 1].set_ylim(0, y_max + 4)
+                else:
+                    plt.ylim(0, y_max + 4)
+
+            if len(pixels) > 2:
+                axs[q][w - 1].set_xlim(range_left - 100, range_right + 100)
+                axs[q][w - 1].set_title(
+                    f"Pixels {pixels[q]},{pixels[w]}\nPeak in 2 ns "
+                    f"window: {int(peak_max)}"
+                )
+            else:
+                plt.xlim(range_left - 100, range_right + 100)
+
+                plt.title(f"Pixels {pixels[q]},{pixels[w]}")
+
+            # Save the figure
+            try:
+                os.chdir("results/delta_t")
+            except FileNotFoundError:
+                os.makedirs("results/delta_t")
+                os.chdir("results/delta_t")
+            fig.tight_layout()  # for perfect spacing between the plots
+            plt.savefig(f"{feather_file_name}_delta_t_grid.png")
+            os.chdir("../..")
+
+    print(
+        "\n> > > Plot is saved as {file} in {path}< < <".format(
+            file=feather_file_name + "_delta_t_grid.png",
+            path=path + "/results/delta_t",
+        )
+    )
+
+
 def collect_and_plot_timestamp_differences_full_sensor(
     path,
     pixels,
@@ -1221,7 +1475,6 @@ def collect_and_plot_timestamp_differences_full_sensor(
     same_y: bool = False,
     color: str = "salmon",
 ):
-    # TODO pixel_handling
     """Collect and plot timestamp differences from a '.feather' file.
 
     Plots timestamp differences from a '.feather' file as a grid of
@@ -1267,6 +1520,11 @@ def collect_and_plot_timestamp_differences_full_sensor(
         raise TypeError("'rewrite' should be boolean")
     plt.ioff()
     os.chdir(path)
+
+    # Flatten the input list of pixels: if there are lists of pixels'
+    # numbers inside the list, unpack them so that the output is a list
+    # of numbers only
+    pixels = flatten(pixels)
 
     # Get the data files names for finding the appropriate '.feather'
     # file with timestamps differences, checking both options, depending

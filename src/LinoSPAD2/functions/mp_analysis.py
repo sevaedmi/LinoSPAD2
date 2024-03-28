@@ -8,6 +8,20 @@ This module can be imported with the following functions:
     calculates timestamp differences, and saves into a '.feather' file.
     Works with firmware versions '2208' and '2212b'. The multiprocessing
     version that utilizes all available CPU cores.
+    
+* calculate_and_save_timestamp_differences_full_sensor_mp - unpacks the
+    binary data, calculates timestamp differences and saves into a
+    '.feather' file. Works with firmware versions '2208', '2212s' and
+    '2212b'. Analyzes data from both sensor halves/both FPGAs. Useful
+    for data where the signal is at 0 across the whole sensor from the
+    start of data collecting. The multiprocessing version that
+    utilizies all CPU cores available.
+
+* compact_share_mp - unpacks all '.dat' files in the given folder,
+    collects the number of timestamps in each pixel and packs it into a
+    '.txt' file, calculates timestamp differences and packs them into a 
+    '.feather' file. The multiprocessing version that utilizes all
+    available CPU cores.
 
 """
 
@@ -89,7 +103,7 @@ class DataParamsConfig:
     absolute_timestamps: bool = False
 
 
-def calculate_timestamps_differences(
+def _calculate_timestamps_differences(
     file: str,
     result_queue: multiprocessing.Queue,
     data_params: DataParamsConfig,
@@ -156,7 +170,7 @@ def calculate_timestamps_differences(
     result_queue.put(data_for_plot_df.T)
 
 
-def calculate_timestamps_differences_full_sensor(
+def _calculate_timestamps_differences_full_sensor(
     files: str,
     result_queue: multiprocessing.Queue,
     data_params: DataParamsConfig,
@@ -404,7 +418,7 @@ def calculate_timestamps_differences_full_sensor(
     result_queue.put(data_for_plot_df.T)
 
 
-def write_results_to_feather(result_queue, feather_file, lock) -> None:
+def _write_results_to_feather(result_queue, feather_file, lock) -> None:
     """Save or append data to a Feather file.
 
     Parameters
@@ -446,7 +460,7 @@ def write_results_to_feather(result_queue, feather_file, lock) -> None:
             ft.write_feather(combined_data, feather_file)
 
 
-def write_results_to_txt(result_queue_txt, txt_file, lock) -> None:
+def _write_results_to_txt(result_queue_txt, txt_file, lock) -> None:
     """Save or append data to a txt file.
 
     Parameters
@@ -607,7 +621,7 @@ def calculate_and_save_timestamp_differences_mp(
         with multiprocessing.Pool() as pool:
             # Start the writer process
             writer_process = multiprocessing.Process(
-                target=write_results_to_feather,
+                target=_write_results_to_feather,
                 args=(shared_result_queue, feather_file, shared_lock),
             )
             writer_process.start()
@@ -615,7 +629,7 @@ def calculate_and_save_timestamp_differences_mp(
             # Create a partial function with fixed arguments for
             # process_file
             partial_process_file = functools.partial(
-                calculate_timestamps_differences,
+                _calculate_timestamps_differences,
                 result_queue=shared_result_queue,
                 data_params=data_params,
             )
@@ -783,7 +797,7 @@ def calculate_and_save_timestamp_differences_full_sensor_mp(
         with multiprocessing.Pool() as pool:
             # Start the writer process
             writer_process = multiprocessing.Process(
-                target=write_results_to_feather,
+                target=_write_results_to_feather,
                 args=(shared_result_queue, feather_file, shared_lock),
             )
             writer_process.start()
@@ -791,7 +805,7 @@ def calculate_and_save_timestamp_differences_full_sensor_mp(
             # Create a partial function with fixed arguments for
             # process_file
             partial_process_file = functools.partial(
-                calculate_timestamps_differences_full_sensor,
+                _calculate_timestamps_differences_full_sensor,
                 result_queue=shared_result_queue,
                 data_params=data_params,
             )
@@ -813,7 +827,7 @@ def calculate_and_save_timestamp_differences_full_sensor_mp(
             writer_process.join()
 
 
-def compact_share_collect_data(
+def _compact_share_collect_data(
     file: str,
     result_queue_feather: multiprocessing.Queue,
     result_queue_txt: multiprocessing.Queue,
@@ -1030,7 +1044,7 @@ def compact_share_mp(
         with multiprocessing.Pool() as pool:
             # Start the writer process
             writer_process_feather = multiprocessing.Process(
-                target=write_results_to_feather,
+                target=_write_results_to_feather,
                 args=(
                     shared_result_feather,
                     feather_file,
@@ -1039,7 +1053,7 @@ def compact_share_mp(
             )
 
             writer_process_txt = multiprocessing.Process(
-                target=write_results_to_txt,
+                target=_write_results_to_txt,
                 args=(shared_result_txt, txt_file, shared_lock_txt),
             )
 
@@ -1049,7 +1063,7 @@ def compact_share_mp(
             # Create a partial function with fixed arguments for
             # process_file
             partial_process_file = functools.partial(
-                compact_share_collect_data,
+                _compact_share_collect_data,
                 result_queue_feather=shared_result_feather,
                 result_queue_txt=shared_result_txt,
                 data_params=data_params,
