@@ -6,7 +6,21 @@ cross-talk data for the given data sets.
 This file can also be imported as a module and contains the following
 functions:
 
-    *
+    * calculate_dark_count_rate - calculate the average dark count rate
+    for the given sensor half.
+    
+    * zero_to_cross_talk_collect - collect timestamp differences from
+    the '.dat' with the cross-talk data (preferably, noise only).
+    Timestamp differences are collected for the given hot pixels plus
+    20 pixels to each side of the hot pixel where it is possible. The
+    result is saved into a '.feather' file.
+
+    * zero_to_cross_talk_plot - collect the timestamp differences from
+    the '.feather' file and plot the cross-talk peaks applying a 
+    Gaussian fit where possible, plot the average cross-talk probability
+    vs distance from the hot pixel for each pair of aggressor-victim
+    pixels, and finally plot the average cross-talk probability
+    for the whole sensor half.
 
 """
 

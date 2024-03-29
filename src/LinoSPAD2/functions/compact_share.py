@@ -18,10 +18,9 @@ functions:
     file.
 
     * collect_and_plot_timestamp_differences_shared_feather - plots the
-    delta t histograms from the '.feather' file used for sharing data
+    delta t histograms from the '.feather' file used for sharing data.
 
 """
-
 
 import glob
 import os

@@ -22,17 +22,17 @@ functions:
     picture how the signal oscilates, also plot a moving average in a
     window of 100 cycles. The plot is then saved.
 
-    * get_time_ratios - unpacks data for all files in given folder, calculates
-    the data collection time as the number of cycles in one file * the 
-    length of one cycle,  calculates the total acquisition time as the 
-    difference between the modification times of two subsequent files, 
-    calculates the ratios of these times and calculates the average with 
-    error.
- 
-    * save_file_time - saves the modification and creation times of data 
+    * get_time_ratios - unpack data for all files in given folder,
+    calculate the data collection time as the number of cycles in one
+    file * the length of one cycle,  calculate the total acquisition
+    time as the difference between the modification times of two
+    subsequent files, calculate the ratios of these times and calculates
+    the average with error.
+
+    * save_file_time - save the modification and creation times of data
     files into a feather file for future use.
-    
-    * load_data_from_feather - loads the modification and creation time 
+
+    * load_data_from_feather - load the modification and creation time
     of data files from the feather file.
 
 """
@@ -40,23 +40,16 @@ functions:
 import glob
 import os
 import sys
-
-import numpy as np
-<<<<<<< HEAD
-from matplotlib import pyplot as plt
-from tqdm import tqdm
-import pandas as pd
-import pyarrow.feather as feather
 from datetime import datetime
 
-
-=======
+import numpy as np
 import pandas as pd
->>>>>>> 02cbf3ddad6a5eedb4656aa130165d1d7adf6a20
-from LinoSPAD2.functions import unpack as f_up
-from LinoSPAD2.functions import utils
+import pyarrow.feather as feather
 from matplotlib import pyplot as plt
 from tqdm import tqdm
+
+from LinoSPAD2.functions import unpack as f_up
+from LinoSPAD2.functions import utils
 
 
 def sensor_population_by_cycle(
