@@ -616,6 +616,100 @@ def calculate_dark_count_rate(
     return dcr
 
 
+def collect_dcr_by_file(
+    path,
+    daughterboard_number: str,
+    motherboard_number: str,
+    firmware_version: str,
+    timestamps: int = 512,
+):
+    # TODO update docstring
+    """Calculate dark count rate in counts per second per pixel.
+
+    Calculate dark count rate for the given daughterboard and
+    motherboard.
+
+    Parameters
+    ----------
+    path : str
+        Path to datafiles.
+    daughterboard_number : str
+        LinoSPAD2 daughterboard number.
+    motherboard_number : str
+        LinoSPAD2 motherboard (FPGA) number.
+    firmware_version : str
+        LinoSPAD2 firmware version.
+    timestamps : int, optional
+        Number of timestamps per acquisition cycle per TDC. The default
+        is 512.
+
+    Returns
+    -------
+    dcr : float
+        The dark count rate number per pixel per second.
+
+    Raises
+    ------
+    TypeError
+        Raised if the firmware version given is not recognized.
+    TypeError
+        Raised if the daughterboard number given is not recognized.
+    TypeError
+        Raised if the motherboard number given is not recognized.
+    """
+    # Parameter type check
+    if not isinstance(firmware_version, str):
+        raise TypeError(
+            "'firmware_version' should be a string, '2212b' or '2212s'"
+        )
+    if not isinstance(daughterboard_number, str):
+        raise TypeError(
+            "'daughterboard_number' should be a string, 'NL11' or 'A5'"
+        )
+    if not isinstance(motherboard_number, str):
+        raise TypeError("'motherboard_number' should be a string")
+
+    os.chdir(path)
+
+    files = glob.glob("*.dat*")
+
+    valid_per_pixel = np.zeros(256)
+
+    dcr = []
+
+    for i in tqdm(range(len(files)), desc="Going through files"):
+        # Define matrix of pixel coordinates, where rows are numbers of TDCs
+        # and columns are the pixels that connected to these TDCs
+        if firmware_version == "2212s":
+            pix_coor = np.arange(256).reshape(4, 64).T
+        elif firmware_version == "2212b":
+            pix_coor = np.arange(256).reshape(64, 4)
+        else:
+            print("\nFirmware version is not recognized.")
+            sys.exit()
+
+        data = f_up.unpack_binary_data(
+            files[i],
+            daughterboard_number,
+            motherboard_number,
+            firmware_version,
+            timestamps,
+            include_offset=False,
+        )
+        for i in range(256):
+            tdc, pix = np.argwhere(pix_coor == i)[0]
+            ind = np.where(data[tdc].T[0] == pix)[0]
+            ind1 = np.where(data[tdc].T[1][ind] > 0)[0]
+            valid_per_pixel[i] = len(data[tdc].T[1][ind[ind1]])
+
+        acq_window_length = np.max(data[:].T[1]) * 1e-12
+        number_of_cycles = len(np.where(data[0].T[0] == -2)[0])
+
+        dcr.append(valid_per_pixel / acq_window_length / number_of_cycles)
+
+    return dcr
+
+
 def _calculate_and_plot_cross_talk(
     path,
     pixels,
@@ -1034,3 +1128,5 @@ def zero_to_cross_talk_plot(
     plt.tight_layout()
     os.chdir(os.path.join(path, "ct_vs_distance"))
     plt.savefig("Average_cross-talk.png")
+
+    return on_both_average
