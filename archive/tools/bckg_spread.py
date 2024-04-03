@@ -58,6 +58,12 @@ def sigma_of_count_spread_to_average(
 
     plt.rcParams.update({"font.size": 22})
 
+    try:
+        os.chdir("results/bckg_spread")
+    except Exception:
+        os.makedirs("results/bckg_spread")
+        os.chdir("results/bckg_spread")
+
     # Background histogram
     plt.figure(figsize=(10, 7))
     plt.step(bin_centers, counts, color="tomato")
@@ -102,7 +108,7 @@ def sigma_of_count_spread_to_average(
     ax.set_xlabel("Spread [-]")
     ax.set_ylabel("Counts [-]")
     ax.text(
-        0.59,
+        0.07,
         0.9,
         f"\u03C3={pars[2]:.2f}\u00B1{np.sqrt(covs[2,2]):.2f}",
         transform=ax.transAxes,
