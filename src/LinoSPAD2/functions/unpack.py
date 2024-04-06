@@ -128,7 +128,7 @@ def unpack_binary_data(
     ).astype(np.longlong)
 
     if apply_calibration is False:
-        data_all[:, :, 1] = data_all[:, :, 1] * 17.857
+        data_all[:, :, 1] = data_all[:, :, 1] * 2500 / 140
     else:
         # Path to the calibration data
         pix_coordinates = np.arange(256).reshape(64, 4)
@@ -182,14 +182,15 @@ def unpack_binary_data(
             if include_offset:
                 data_all[tdc].T[1][ind] = (
                     (data_all[tdc].T[1][ind] - data_all[tdc].T[1][ind] % 140)
-                    * 17.857
+                    * 2500
+                    / 140
                     + calibration_matrix[i, (data_all[tdc].T[1][ind] % 140)]
                     + offset_array[i]
                 )
             else:
                 data_all[tdc].T[1][ind] = (
                     data_all[tdc].T[1][ind] - data_all[tdc].T[1][ind] % 140
-                ) * 17.857 + calibration_matrix[
+                ) * 2500 / 140 + calibration_matrix[
                     i, (data_all[tdc].T[1][ind] % 140)
                 ]
 
@@ -353,7 +354,7 @@ def unpack_binary_data_with_absolute_timestamps(
     ).astype(np.longlong)
 
     if apply_calibration is False:
-        data_all[:, :, 1] = data_all[:, :, 1] * 17.857
+        data_all[:, :, 1] = data_all[:, :, 1] * 2500 / 140
     else:
         # Path to the calibration data
         pixel_coordinates = np.arange(256).reshape(64, 4)
@@ -403,14 +404,15 @@ def unpack_binary_data_with_absolute_timestamps(
             if include_offset:
                 data_all[tdc].T[1][ind] = (
                     (data_all[tdc].T[1][ind] - data_all[tdc].T[1][ind] % 140)
-                    * 17.857
+                    * 2500
+                    / 140
                     + calibration_matrix[i, (data_all[tdc].T[1][ind] % 140)]
                     + offset_array[i]
                 )
             else:
                 data_all[tdc].T[1][ind] = (
                     data_all[tdc].T[1][ind] - data_all[tdc].T[1][ind] % 140
-                ) * 17.857 + calibration_matrix[
+                ) * 2500 / 140 + calibration_matrix[
                     i, (data_all[tdc].T[1][ind] % 140)
                 ]
 

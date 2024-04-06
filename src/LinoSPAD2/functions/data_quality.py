@@ -56,7 +56,8 @@ from datetime import datetime
 
 import numpy as np
 import pandas as pd
-import pyarrow.feather as feather
+import pyarrow.feather as ft
+import seaborn as sns
 from matplotlib import pyplot as plt
 from tqdm import tqdm
 
@@ -500,7 +501,7 @@ def save_file_times(path):
     )
 
     feather_filename = f"{first_file_name}_-_{last_file_name}.feather"
-    feather.write_feather(df, os.path.join(path, feather_filename))
+    ft.write_feather(df, os.path.join(path, feather_filename))
 
     return df
 
@@ -517,15 +518,67 @@ def load_data_from_feather(path):
     """
     feather_files = glob.glob(os.path.join(path, "*.feather"))
     if feather_files:
-        df_loaded = feather.read_feather(feather_files[0])
+        df_loaded = ft.read_feather(feather_files[0])
         return df_loaded
     else:
         print("No feather files found.")
         return None
 
 
+def _extend_spread_range(spread_bins, spread_counts, extension: int):
+    """Extend the background spread bins and counts.
+
+    Can be used to extend the background histogram to both sides while
+    keeping the same bin size and assigning zero counts to the newly
+    added bins. Should improve the fit and, therefore, the sigma value.
+
+    Parameters
+    ----------
+    spread_bins : array-like
+        Original bins of the background spread histogram.
+    spread_counts : array-like
+        Original counts of the background spread histogram.
+    extension : int
+        Number of elements to add to the original bins and counts from
+        each side.
+
+    Returns
+    -------
+    array-like, array-like
+        Extended bins and counts of the background spread histogram.
+    """
+    # Calculate the step size between elements
+    step_size = spread_bins[1] - spread_bins[0]
+
+    # Create arrays to add on both sides
+    left_extension = np.arange(
+        spread_bins[0] - extension * step_size,
+        spread_bins[0],
+        step_size,
+    )
+    right_extension = np.arange(
+        spread_bins[-1] + step_size,
+        spread_bins[-1] + (extension + 1) * step_size,
+        step_size,
+    )
+
+    # Concatenate arrays
+    extended_array = np.concatenate(
+        (left_extension, spread_bins, right_extension)
+    )
+    extended_counts = np.concatenate(
+        (np.zeros(extension), spread_counts, np.zeros(extension))
+    )
+
+    return extended_array, extended_counts
+
+
 def sigma_of_count_spread_to_average(
-    path: str, pixels: list, step: int = 10, bins_sigma: int = 20
+    path: str,
+    pixels: list,
+    step: int = 10,
+    bins_sigma: int = 20,
+    extend: int = 0,
 ):
     """Plot and fit background spread from the feather file.
 
@@ -537,6 +590,8 @@ def sigma_of_count_spread_to_average(
 
     Parameters
     ----------
+    path : str
+        Path to the data files.
     ft_file : str
         Feather file with timestamp differences.
     pixels : list
@@ -547,10 +602,13 @@ def sigma_of_count_spread_to_average(
     bins_sigma : int, optional
         Number of bins used for plotting the histogram of the background
         spread. The default 20.
+    extend: int, optional
+        Number of elements to add to the background spread histogram
+        for a better fit. The default is 0, when no elements are added.
     """
     os.chdir(path)
 
-    ft_file = glob("*.feather")[0]
+    ft_file = glob.glob("*.feather")[0]
 
     ft_file_name = ft_file.split(".")[0]
 
@@ -572,6 +630,12 @@ def sigma_of_count_spread_to_average(
     bin_centers = (bin_edges - 2.5 / 140 * 1e3 * step / 2)[1:]
 
     plt.rcParams.update({"font.size": 22})
+
+    try:
+        os.chdir("results/bckg_spread")
+    except Exception:
+        os.makedirs("results/bckg_spread")
+        os.chdir("results/bckg_spread")
 
     # Background histogram
     plt.figure(figsize=(10, 7))
@@ -595,6 +659,11 @@ def sigma_of_count_spread_to_average(
     bin_centers_spread = (
         bin_edges_spread - (bin_edges_spread[1] - bin_edges_spread[0]) / 2
     )[1:]
+
+    if extend > 0:
+        bin_centers_spread, counts_spread = _extend_spread_range(
+            bin_centers_spread, counts_spread, extend
+        )
 
     pars, covs = utils.fit_gaussian(bin_centers_spread, counts_spread)
 
@@ -617,7 +686,7 @@ def sigma_of_count_spread_to_average(
     ax.set_xlabel("Spread [-]")
     ax.set_ylabel("Counts [-]")
     ax.text(
-        0.59,
+        0.07,
         0.9,
         f"\u03C3={pars[2]:.2f}\u00B1{np.sqrt(covs[2,2]):.2f}",
         transform=ax.transAxes,
@@ -630,7 +699,12 @@ def sigma_of_count_spread_to_average(
 
 
 def sigma_of_count_spread_to_average_from_ft_file(
-    ft_file: str, pixels: list, step: int = 10, bins_sigma: int = 20
+    path: str,
+    ft_file: str,
+    pixels: list,
+    step: int = 10,
+    bins_sigma: int = 20,
+    extend: int = 0,
 ):
     """Plot and fit background spread from the feather file.
 
@@ -644,6 +718,8 @@ def sigma_of_count_spread_to_average_from_ft_file(
 
     Parameters
     ----------
+    path : str
+        Path to where the feather file is.
     ft_file : str
         Feather file with timestamp differences.
     pixels : list
@@ -654,11 +730,12 @@ def sigma_of_count_spread_to_average_from_ft_file(
     bins_sigma : int, optional
         Number of bins used for plotting the histogram of the background
         spread. The default 20.
+    extend: int, optional
+        Number of elements to add to the background spread histogram
+        for a better fit. The default is 0, when no elements are added.
     """
 
     ft_file_name = ft_file.split(".")[0]
-
-    path = os.path.dirname(ft_file)
 
     os.chdir(path)
 
@@ -680,6 +757,12 @@ def sigma_of_count_spread_to_average_from_ft_file(
     bin_centers = (bin_edges - 2.5 / 140 * 1e3 * step / 2)[1:]
 
     plt.rcParams.update({"font.size": 22})
+
+    try:
+        os.chdir("results/bckg_spread")
+    except FileNotFoundError:
+        os.makedirs("results/bckg_spread")
+        os.chdir("results/bckg_spread")
 
     # Background histogram
     plt.figure(figsize=(10, 7))
@@ -703,6 +786,13 @@ def sigma_of_count_spread_to_average_from_ft_file(
     bin_centers_spread = (
         bin_edges_spread - (bin_edges_spread[1] - bin_edges_spread[0]) / 2
     )[1:]
+
+    # Extend the range (if required) for the background spread for a
+    # better fit
+    if extend > 0:
+        bin_centers_spread, counts_spread = _extend_spread_range(
+            bin_centers_spread, counts_spread, extend
+        )
 
     pars, covs = utils.fit_gaussian(bin_centers_spread, counts_spread)
 

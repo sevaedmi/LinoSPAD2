@@ -1042,6 +1042,7 @@ def collect_and_plot_timestamp_differences(
     path,
     pixels,
     rewrite: bool,
+    ft_file: list = None,
     range_left: int = -10e3,
     range_right: int = 10e3,
     step: int = 1,
@@ -1057,6 +1058,7 @@ def collect_and_plot_timestamp_differences(
 
     Parameters
     ----------
+    #TODO
     path : str
         Path to data files.
     pixels : list
@@ -1091,30 +1093,31 @@ def collect_and_plot_timestamp_differences(
     # parameter type check
     if isinstance(rewrite, bool) is not True:
         raise TypeError("'rewrite' should be boolean")
-    # plt.ioff()
     os.chdir(path)
 
-    # files_all = sorted(glob.glob("*.dat*"))
-    files_all = glob.glob("*.dat*")
-    files_all.sort(key=os.path.getmtime)
-    feather_file_name = files_all[0][:-4] + "-" + files_all[-1][:-4]
+    if ft_file is not None:
+        feather_file_name = ft_file.split(".")[0]
+    else:
+        files_all = glob.glob("*.dat*")
+        files_all.sort(key=os.path.getmtime)
+        feather_file_name = files_all[0][:-4] + "-" + files_all[-1][:-4]
 
-    # Check if plot exists and if it should be rewritten
-    try:
-        os.chdir("results/delta_t")
-        if os.path.isfile(f"{feather_file_name}_delta_t_grid.png"):
-            if rewrite is True:
-                print(
-                    "\n! ! ! Plot of timestamp differences already"
-                    "exists and will be rewritten ! ! !\n"
-                )
-            else:
-                sys.exit(
-                    "\nPlot already exists, 'rewrite' set to 'False', exiting."
-                )
-        os.chdir("../..")
-    except FileNotFoundError:
-        pass
+        # Check if plot exists and if it should be rewritten
+        try:
+            os.chdir("results/delta_t")
+            if os.path.isfile(f"{feather_file_name}_delta_t_grid.png"):
+                if rewrite is True:
+                    print(
+                        "\n! ! ! Plot of timestamp differences already"
+                        "exists and will be rewritten ! ! !\n"
+                    )
+                else:
+                    sys.exit(
+                        "\nPlot already exists, 'rewrite' set to 'False', exiting."
+                    )
+            os.chdir("../..")
+        except FileNotFoundError:
+            pass
 
     print(
         "\n> > > Plotting timestamps differences as a grid of histograms < < <"
@@ -1150,13 +1153,21 @@ def collect_and_plot_timestamp_differences(
                 axs[q][w - 1].axes.set_axis_on()
 
             # Read data from Feather file
-            try:
-                data_to_plot = ft.read_feather(
-                    f"delta_ts_data/{feather_file_name}.feather",
-                    columns=[f"{pixels[q]},{pixels[w]}"],
-                ).dropna()
-            except ValueError:
-                continue
+            if ft_file is not None:
+                try:
+                    data_to_plot = ft.read_feather(
+                        ft_file, columns=[f"{pixels[q]},{pixels[w]}"]
+                    ).dropna()
+                except ValueError:
+                    continue
+            else:
+                try:
+                    data_to_plot = ft.read_feather(
+                        f"delta_ts_data/{feather_file_name}.feather",
+                        columns=[f"{pixels[q]},{pixels[w]}"],
+                    ).dropna()
+                except ValueError:
+                    continue
 
             # Prepare the data for the plot
             data_to_plot = np.array(data_to_plot)
@@ -1166,6 +1177,7 @@ def collect_and_plot_timestamp_differences(
             data_to_plot = np.delete(
                 data_to_plot, np.argwhere(data_to_plot > range_right)
             )
+            # data_to_plot = data_to_plot + 1e3
 
             # Bins should be in units of 17.857 ps - average bin width
             # of the LinoSPAD2 TDCs
@@ -1173,7 +1185,7 @@ def collect_and_plot_timestamp_differences(
                 bins = np.arange(
                     np.min(data_to_plot),
                     np.max(data_to_plot),
-                    17.857 * step,
+                    2500 / 140 * step,
                 )
             except ValueError:
                 print(

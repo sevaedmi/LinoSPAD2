@@ -28,6 +28,7 @@ functions:
     table.
 
 """
+
 import glob
 import os
 import sys
@@ -346,7 +347,7 @@ def unpack_data_for_offset_calibration(
 
         data_all[tdc].T[1][ind] = (
             data_all[tdc].T[1][ind] - data_all[tdc].T[1][ind] % 140
-        ) * 17.857 + cal_matrix[i, (data_all[tdc].T[1][ind] % 140)]
+        ) * 2500 / 140 + cal_matrix[i, (data_all[tdc].T[1][ind] % 140)]
 
     return data_all
 
@@ -632,7 +633,7 @@ def calculate_and_save_offset_calibration(
             continue
         else:
             bins = np.arange(
-                np.min(dt_nonan_arr), np.max(dt_nonan_arr), 17.857
+                np.min(dt_nonan_arr), np.max(dt_nonan_arr), 2500 / 140
             )
 
             counts, binEdges = np.histogram(dt_nonan_arr, bins=bins)
@@ -673,7 +674,7 @@ def calculate_and_save_offset_calibration(
             continue
         else:
             bins = np.arange(
-                np.min(dt_nonan_arr), np.max(dt_nonan_arr), 17.857
+                np.min(dt_nonan_arr), np.max(dt_nonan_arr), 2500 / 140
             )
 
             counts, binEdges = np.histogram(dt_nonan_arr, bins=bins)

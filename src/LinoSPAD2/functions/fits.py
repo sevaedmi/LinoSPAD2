@@ -22,18 +22,20 @@ import numpy as np
 import pyarrow.feather as feather
 from matplotlib import pyplot as plt
 
-from LinoSPAD2.functions.utils import *
+from LinoSPAD2.functions import utils
 
 
 def fit_with_gaussian(
     path,
     pix_pair: List[int],
+    ft_file: str = None,
     window: float = 5e3,
     step: int = 1,
     color_data: str = "salmon",
     color_fit: str = "teal",
     title_on: bool = True,
 ):
+    # TODO
     """Fit with Gaussian function and plot it.
 
     Fits timestamp differences of a pair of pixels with Gaussian
@@ -79,18 +81,21 @@ def fit_with_gaussian(
     """
     plt.ion()
 
-    # def gaussian(x, A, x0, sigma, C):
-    #     return A * np.exp(-((x - x0) ** 2) / (2 * sigma**2)) + C
-
     os.chdir(path)
 
-    files = sorted(glob.glob("*.dat*"))
-    file_name = files[0][:-4] + "-" + files[-1][:-4]
+    if ft_file is not None:
+        file_name = ft_file.split(".")[0]
+        feather_file_name = ft_file
+    else:
+        files = sorted(glob.glob("*.dat*"))
+        file_name = files[0][:-4] + "-" + files[-1][:-4]
 
-    try:
-        os.chdir("delta_ts_data")
-    except FileNotFoundError:
-        raise ("\nFile with data not found")
+        try:
+            os.chdir("delta_ts_data")
+        except FileNotFoundError:
+            raise ("\nFile with data not found")
+
+        feather_file_name = glob.glob("*{}.feather*".format(file_name))[0]
 
     # Version using csv files instead of feather ones.
     # Left for debugging.
@@ -108,7 +113,6 @@ def fit_with_gaussian(
     #     print("\nThe requested pixel pair is not found")
     # del data
 
-    feather_file_name = glob.glob("*{}.feather*".format(file_name))[0]
     if not feather_file_name:
         raise FileNotFoundError("\nFile with data not found")
 
@@ -127,20 +131,20 @@ def fit_with_gaussian(
     data_to_plot = np.delete(data_to_plot, np.argwhere(data_to_plot < -window))
     data_to_plot = np.delete(data_to_plot, np.argwhere(data_to_plot > window))
 
-    os.chdir("..")
+    os.chdir(path)
     plt.rcParams.update({"font.size": 22})
 
     # bins must be in units of 17.857 ps
-    bins = np.arange(np.min(data_to_plot), np.max(data_to_plot), 17.857 * step)
+    bins = np.arange(
+        np.min(data_to_plot), np.max(data_to_plot), 2.5 / 140 * 1e3 * step
+    )
 
     # Calculate histogram of timestamp differences for primary guess
     # of fit parameters and selecting a narrower window for the fit
     n, b = np.histogram(data_to_plot, bins)
 
-    #
     try:
         n_argmax = np.argmax(n)
-        cp_pos = (bins[n_argmax] + bins[n_argmax + 1]) / 2
     except ValueError:
         print("Couldn't find position of histogram max")
 
@@ -152,19 +156,21 @@ def fit_with_gaussian(
     )
 
     # bins must be in units of 17.857 ps
-    bins = np.arange(np.min(data_to_plot), np.max(data_to_plot), 17.857 * step)
+    bins = np.arange(
+        np.min(data_to_plot), np.max(data_to_plot), 2.5 / 140 * 1e3 * step
+    )
 
     n, b = np.histogram(data_to_plot, bins)
 
-    bin_centers = (b - 17.857 * step / 2)[1:]
+    bin_centers = (b - 2.5 / 140 * 1e3 * step / 2)[1:]
 
-    par, pcov = fit_gaussian(bin_centers, n)
+    par, pcov = utils.fit_gaussian(bin_centers, n)
 
     # interpolate for smoother fit plot
     to_fit_b = np.linspace(
         np.min(bin_centers), np.max(bin_centers), len(bin_centers) * 100
     )
-    to_fit_n = gaussian(to_fit_b, par[0], par[1], par[2], par[3])
+    to_fit_n = utils.gaussian(to_fit_b, par[0], par[1], par[2], par[3])
 
     perr = np.sqrt(np.diag(pcov))
     vis_er = par[0] / par[3] ** 2 * 100 * perr[-1]
@@ -366,13 +372,13 @@ def fit_with_gaussian_full_sensor(
 
     bin_centers = (b - 17.857 * step / 2)[1:]
 
-    par, pcov = fit_gaussian(bin_centers, n)
+    par, pcov = utils.fit_gaussian(bin_centers, n)
 
     # interpolate for smoother fit plot
     to_fit_b = np.linspace(
         np.min(bin_centers), np.max(bin_centers), len(bin_centers) * 100
     )
-    to_fit_n = gaussian(to_fit_b, par[0], par[1], par[2], par[3])
+    to_fit_n = utils.gaussian(to_fit_b, par[0], par[1], par[2], par[3])
 
     perr = np.sqrt(np.diag(pcov))
     vis_er = par[0] / par[3] ** 2 * 100 * perr[-1]

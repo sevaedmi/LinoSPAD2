@@ -8,9 +8,60 @@ from pyarrow import feather as ft
 
 from LinoSPAD2.functions import utils
 
+def _extend_spread_range(spread_bins, spread_counts, extension: int):
+    """Extend the background spread bins and counts.
+
+    Can be used to extend the background histogram to both sides while
+    keeping the same bin size and assigning zero counts to the newly
+    added bins. Should improve the fit and, therefore, the sigma value.
+
+    Parameters
+    ----------
+    spread_bins : array-like
+        Original bins of the background spread histogram.
+    spread_counts : array-like
+        Original counts of the background spread histogram.
+    extension : int
+        Number of elements to add to the original bins and counts from
+        each side.
+
+    Returns
+    -------
+    array-like, array-like
+        Extended bins and counts of the background spread histogram.
+    """
+    # Calculate the step size between elements
+    step_size = spread_bins[1] - spread_bins[0]
+
+    # Create arrays to add on both sides
+    left_extension = np.arange(
+        spread_bins[0] - extension * step_size,
+        spread_bins[0],
+        step_size,
+    )
+    right_extension = np.arange(
+        spread_bins[-1] + step_size,
+        spread_bins[-1] + (extension + 1) * step_size,
+        step_size,
+    )
+
+    # Concatenate arrays
+    extended_array = np.concatenate(
+        (left_extension, spread_bins, right_extension)
+    )
+    extended_counts = np.concatenate(
+        (np.zeros(extension), spread_counts, np.zeros(extension))
+    )
+
+    return extended_array, extended_counts
+
 
 def sigma_of_count_spread_to_average(
-    path: str, pixels: list, step: int = 10, bins_sigma: int = 20
+    path: str,
+    pixels: list,
+    step: int = 10,
+    bins_sigma: int = 20,
+    extend: int = 0,
 ):
     """Plot and fit background spread from the feather file.
 
@@ -22,6 +73,8 @@ def sigma_of_count_spread_to_average(
 
     Parameters
     ----------
+    path : str
+        Path to the data files.
     ft_file : str
         Feather file with timestamp differences.
     pixels : list
@@ -32,10 +85,13 @@ def sigma_of_count_spread_to_average(
     bins_sigma : int, optional
         Number of bins used for plotting the histogram of the background
         spread. The default 20.
+    extend: int, optional
+        Number of elements to add to the background spread histogram
+        for a better fit. The default is 0, when no elements are added.
     """
     os.chdir(path)
 
-    ft_file = glob("*.feather")[0]
+    ft_file = glob.glob("*.feather")[0]
 
     ft_file_name = ft_file.split(".")[0]
 
@@ -87,6 +143,11 @@ def sigma_of_count_spread_to_average(
         bin_edges_spread - (bin_edges_spread[1] - bin_edges_spread[0]) / 2
     )[1:]
 
+    if extend > 0:
+        bin_centers_spread, counts_spread = _extend_spread_range(
+            bin_centers_spread, counts_spread, extend
+        )
+
     pars, covs = utils.fit_gaussian(bin_centers_spread, counts_spread)
 
     fig, ax = plt.subplots(figsize=(10, 7))
@@ -121,7 +182,12 @@ def sigma_of_count_spread_to_average(
 
 
 def sigma_of_count_spread_to_average_from_ft_file(
-    ft_file: str, pixels: list, step: int = 10, bins_sigma: int = 20
+    path: str,
+    ft_file: str,
+    pixels: list,
+    step: int = 10,
+    bins_sigma: int = 20,
+    extend: int = 0,
 ):
     """Plot and fit background spread from the feather file.
 
@@ -135,6 +201,8 @@ def sigma_of_count_spread_to_average_from_ft_file(
 
     Parameters
     ----------
+    path : str
+        Path to where the feather file is.
     ft_file : str
         Feather file with timestamp differences.
     pixels : list
@@ -145,11 +213,12 @@ def sigma_of_count_spread_to_average_from_ft_file(
     bins_sigma : int, optional
         Number of bins used for plotting the histogram of the background
         spread. The default 20.
+    extend: int, optional
+        Number of elements to add to the background spread histogram
+        for a better fit. The default is 0, when no elements are added.
     """
 
     ft_file_name = ft_file.split(".")[0]
-
-    path = os.path.dirname(ft_file)
 
     os.chdir(path)
 
@@ -171,6 +240,12 @@ def sigma_of_count_spread_to_average_from_ft_file(
     bin_centers = (bin_edges - 2.5 / 140 * 1e3 * step / 2)[1:]
 
     plt.rcParams.update({"font.size": 22})
+
+    try:
+        os.chdir("results/bckg_spread")
+    except FileNotFoundError:
+        os.makedirs("results/bckg_spread")
+        os.chdir("results/bckg_spread")
 
     # Background histogram
     plt.figure(figsize=(10, 7))
@@ -194,6 +269,13 @@ def sigma_of_count_spread_to_average_from_ft_file(
     bin_centers_spread = (
         bin_edges_spread - (bin_edges_spread[1] - bin_edges_spread[0]) / 2
     )[1:]
+
+    # Extend the range (if required) for the background spread for a
+    # better fit
+    if extend > 0:
+        bin_centers_spread, counts_spread = _extend_spread_range(
+            bin_centers_spread, counts_spread, extend
+        )
 
     pars, covs = utils.fit_gaussian(bin_centers_spread, counts_spread)
 
@@ -228,8 +310,59 @@ def sigma_of_count_spread_to_average_from_ft_file(
     plt.savefig(f"{ft_file_name}_bckg_spread_hist_.png")
 
 
-path = r"D:\LinoSPAD2\Data\board_NL11\Prague\Halogen_HBT\Halogen_HBT"
-ft_file = os.path.join(path, r"10247000-10247220.feather")
-sigma_of_count_spread_to_average_from_ft_file(
-    ft_file, pixels=[144, 171], step=10
+
+# %matplotlib qt
+# path = r"D:\LinoSPAD2\Data\board_NL11\Prague\Halogen_HBT\Halogen_HBT"
+path = r"D:\LinoSPAD2\Data\board_NL11\Prague\Halogen_HBT"
+path = r'C:\Users\bruce\Downloads\Ha_HBT(2)'
+ft_file = r"combined_file.feather"
+
+sigma_of_count_spread_to_average_from_ft_file(path,
+    ft_file, pixels=[144, 171], step=10, bins_sigma=40, extend=100
 )
+
+#####
+
+
+from LinoSPAD2.functions import fits, delta_t
+
+# path = r"D:\LinoSPAD2\Data\board_NL11\Prague\Halogen_HBT"
+path = r'C:\Users\bruce\Downloads\Ha_HBT(2)'
+
+ft_file = r"combined_file.feather"
+
+# ft_file = r"combined_file_grid.feather"
+
+fits.fit_with_gaussian(path, ft_file=ft_file, pix_pair=[144, 171], window=20e3, step=11)
+
+# delta_t.collect_and_plot_timestamp_differences(
+#     path,
+#     pixels=[[143, 144, 145], [170, 171, 172]],
+#     rewrite=True,
+#     ft_file=ft_file,
+#     step=5,
+# )
+
+%matplotlib qt
+
+delta_t.collect_and_plot_timestamp_differences(
+    path,
+    pixels=[145, 171],
+    rewrite=True,
+    ft_file=ft_file,
+    step=7,
+)
+
+
+path = r'C:\Users\bruce\Downloads\Ha_HBT(2)'
+os.chdir(path)
+# ft_file1 = r'0000247988-0000248184.feather'
+ft_file2 = r'combined_file.feather'
+
+# df1 = ft.read_feather(ft_file1)
+df2 = ft.read_feather(ft_file2, columns=['144,171'])
+
+import pandas as pd
+
+pd.plotting.lag_plot(df2, lag=10)
+plt.show()
