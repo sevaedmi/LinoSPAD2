@@ -310,15 +310,15 @@ def sigma_of_count_spread_to_average_from_ft_file(
     plt.savefig(f"{ft_file_name}_bckg_spread_hist_.png")
 
 
+# path = r'/home/sj/Shared/Halogen_HBT/05.04.2024/delta_ts_data'
+path = r'/media/sj/King4TB/LS2_Data/Halogen HBT/delayed/feather_combine'
 
-# %matplotlib qt
-# path = r"D:\LinoSPAD2\Data\board_NL11\Prague\Halogen_HBT\Halogen_HBT"
-path = r"D:\LinoSPAD2\Data\board_NL11\Prague\Halogen_HBT"
-path = r'C:\Users\bruce\Downloads\Ha_HBT(2)'
-ft_file = r"combined_file.feather"
+# ft_file = r"0000248690-0000248869.feather"
+ft_file = r'combined_file.feather'
+
 
 sigma_of_count_spread_to_average_from_ft_file(path,
-    ft_file, pixels=[144, 171], step=10, bins_sigma=40, extend=100
+    ft_file, pixels=[144, 171], step=10, bins_sigma=30, extend=50
 )
 
 #####
@@ -354,15 +354,3 @@ delta_t.collect_and_plot_timestamp_differences(
 )
 
 
-path = r'C:\Users\bruce\Downloads\Ha_HBT(2)'
-os.chdir(path)
-# ft_file1 = r'0000247988-0000248184.feather'
-ft_file2 = r'combined_file.feather'
-
-# df1 = ft.read_feather(ft_file1)
-df2 = ft.read_feather(ft_file2, columns=['144,171'])
-
-import pandas as pd
-
-pd.plotting.lag_plot(df2, lag=10)
-plt.show()

@@ -660,7 +660,7 @@ def collect_dcr_by_file(
     Returns
     -------
     dcr : float
-        The dark count rate number per pixel per second.
+        The dark count rate number in counts per second.
 
     Raises
     ------

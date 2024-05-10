@@ -618,7 +618,7 @@ def calculate_and_save_timestamp_differences_mp(
         shared_result_queue = manager.Queue()
         shared_lock = manager.Lock()
 
-        with multiprocessing.Pool() as pool:
+        with multiprocessing.Pool(maxtasksperchild=1000) as pool:
             # Start the writer process
             writer_process = multiprocessing.Process(
                 target=_write_results_to_feather,
