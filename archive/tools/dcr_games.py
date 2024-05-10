@@ -6,41 +6,11 @@ from matplotlib import pyplot as plt
 
 from LinoSPAD2.functions import cross_talk, plot_tmsp
 
-path = r"/media/sj/King4TB/LS2_Data/CT/#33/CT_#33"
-path = r"/media/sj/King4TB/LS2_Data/CT/#21"
-
-plot_tmsp.plot_sensor_population(
-    path,
-    daughterboard_number="NL11",
-    motherboard_number="#21",
-    firmware_version="2212s",
-    timestamps=1000,
-    include_offset=False,
-    pickle_fig=True,
-    app_mask=False,
-    correct_pixel_addressing=True,
-)
-
-path = r"/media/sj/King4TB/LS2_Data/CT"
-
-plot_tmsp.plot_sensor_population_full_sensor(
-    path,
-    daughterboard_number="NL11",
-    motherboard_number1="#33",
-    motherboard_number2="#21",
-    firmware_version="2212s",
-    timestamps=1000,
-    include_offset=False,
-    pickle_fig=True,
-    app_mask=False,
-)
-
-### DCR COLLECTION ###
-# 31
-path = r"/media/sj/King4TB/LS2_Data/CT/#33/CT_#33"
+path33 = r"D:\LinoSPAD2\Data\board_NL11\Prague\DCR\#33"
+path21 = r"D:\LinoSPAD2\Data\board_NL11\Prague\DCR\#21"
 
 dcr33 = cross_talk.collect_dcr_by_file(
-    path,
+    path33,
     daughterboard_number="NL11",
     motherboard_number="#33",
     firmware_version="2212s",
@@ -52,11 +22,8 @@ os.chdir(path)
 with open(file_path, "wb") as file:
     pickle.dump(dcr33, file)
 
-# 21
-path = r"/media/sj/King4TB/LS2_Data/CT/#21"
-
 dcr21 = cross_talk.collect_dcr_by_file(
-    path,
+    path21,
     daughterboard_number="NL11",
     motherboard_number="#21",
     firmware_version="2212s",
@@ -64,11 +31,25 @@ dcr21 = cross_talk.collect_dcr_by_file(
 )
 
 file_path = "DCR_#21.pkl"
-os.chdir(path)
+
 with open(file_path, "wb") as file:
     pickle.dump(dcr21, file)
-### PLOTTING ###
 
+
+path = r"D:\LinoSPAD2\Data\board_NL11\Prague\DCR"
+
+plot_tmsp.plot_sensor_population_full_sensor(
+    path,
+    daughterboard_number="NL11",
+    motherboard_number1="#33",
+    motherboard_number2="#21",
+    firmware_version="2212s",
+    timestamps=1000,
+    include_offset=False,
+    app_mask=False,
+)
+
+##################
 hot_pixels_21 = [5, 7, 35, 100, 121, 189, 198, 220, 225, 228, 229, 247]
 hot_pixels_33 = [15, 50, 52, 66, 93, 98, 109, 122, 210, 231, 236]
 

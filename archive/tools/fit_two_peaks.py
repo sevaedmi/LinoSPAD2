@@ -304,13 +304,13 @@ def fit_wg_all(
 
     """
 
-    # def gauss(x, A, x0, sigma, C):
-    #     return A * np.exp(-((x - x0) ** 2) / (2 * sigma**2)) + C
-    def gauss_CT(x, A, x0, C):
-        return A * np.exp(-((x - x0) ** 2) / (2 * 90**2)) + C
+    def gauss(x, A, x0, sigma, C):
+        return A * np.exp(-((x - x0) ** 2) / (2 * sigma**2)) + C
+    # def gauss_CT(x, A, x0, C):
+    #     return A * np.exp(-((x - x0) ** 2) / (2 * 90**2)) + C
 
-    def gauss_HBT(x, A, x0, C):
-        return A * np.exp(-((x - x0) ** 2) / (2 * 120**2)) + C
+    # def gauss_HBT(x, A, x0, C):
+    #     return A * np.exp(-((x - x0) ** 2) / (2 * 120**2)) + C
 
     os.chdir(path)
 
@@ -345,7 +345,7 @@ def fit_wg_all(
     plt.rcParams.update({"font.size": 22})
 
     # bins must be in units of 17.857 ps
-    bins = np.arange(np.min(data_to_plot), np.max(data_to_plot), 17.857 * step)
+    bins = np.arange(np.min(data_to_plot), np.max(data_to_plot), 2500/140 * step)
 
     # Calculate histogram of timestamp differences for primary guess
     # of fit parameters and selecting a narrower window for the fit
@@ -385,47 +385,49 @@ def fit_wg_all(
 
         # bins must be in units of 17.857 ps
         bins = np.arange(
-            np.min(data_to_plot), np.max(data_to_plot), 17.857 * step
+            np.min(data_to_plot), np.max(data_to_plot), 2500/140 * step
         )
 
         n1, b1 = np.histogram(data_to_fit1, bins)
 
-        b11 = (b1 - 17.857 * step / 2)[1:]
+        b11 = (b1 - 2500/140 * step / 2)[1:]
 
-        # if np.std(b11) > 150:
-        #     sigma = 150
-        # else:
-        #     sigma = np.std(b11)
+        if np.std(b11) > 150:
+            sigma = 150
+        else:
+            sigma = np.std(b11)
 
         av_bkg = np.average(n)
 
-        sigma_values = np.sqrt(n)
+        # sigma_values = np.sqrt(n)
         if peak_ind < 0:
             par1, pcov1 = curve_fit(
-                gauss_HBT,
+                # gauss_HBT,
+                gauss,
                 b11,
                 n,
-                # p0=[max(n), b[peak_pos[k]], sigma, av_bkg],
-                p0=[max(n), b[peak_pos[k]], av_bkg],
-                sigma=sigma_values,
+                p0=[max(n), b[peak_pos[k]], sigma, av_bkg],
+                # p0=[max(n), b[peak_pos[k]], av_bkg],
+                # sigma=sigma_values,
             )
         else:
             par1, pcov1 = curve_fit(
-                gauss_CT,
+                # gauss_CT,
+                gauss,
                 b11,
                 n,
-                # p0=[max(n), b[peak_pos[k]], sigma, av_bkg],
-                p0=[max(n), b[peak_pos[k]], av_bkg],
-                sigma=sigma_values,
+                p0=[max(n), b[peak_pos[k]], sigma, av_bkg],
+                # p0=[max(n), b[peak_pos[k]], av_bkg],
+                # sigma=sigma_values,
             )
 
         # interpolate for smoother fit plot
         to_fit_b1 = np.linspace(np.min(b11), np.max(b11), len(b11) * 1)
-        # to_fit_n1 = gauss(to_fit_b1, par1[0], par1[1], par1[2], par1[3])
-        if peak_ind < 0:
-            to_fit_n1 = gauss_HBT(to_fit_b1, par1[0], par1[1], par1[-1])
-        else:
-            to_fit_n1 = gauss_CT(to_fit_b1, par1[0], par1[1], par1[-1])
+        to_fit_n1 = gauss(to_fit_b1, par1[0], par1[1], par1[2], par1[3])
+        # if peak_ind < 0:
+        #     to_fit_n1 = gauss_HBT(to_fit_b1, par1[0], par1[1], par1[-1])
+        # else:
+        #     to_fit_n1 = gauss_CT(to_fit_b1, par1[0], par1[1], par1[-1])
 
         perr1 = np.sqrt(np.diag(pcov1))
         vis_er1 = par1[0] / par1[-1] ** 2 * 100 * perr1[-1]
@@ -438,14 +440,14 @@ def fit_wg_all(
             "-",
             color=color_f[k],
             label="CT\n"
-            # "\u03C3={p1}\u00B1{pe1} ps\n"
+            "\u03C3={p1}\u00B1{pe1} ps\n"
             "\u03BC={p2}\u00B1{pe2} ps\n"
             "vis={vis}\u00B1{vis_er} %\n"
             "bkg={bkg}\u00B1{bkg_er}".format(
                 # "\u03C3_s={p3} ps".format(
-                # p1=format(par1[2], ".1f"),
+                p1=format(par1[2], ".1f"),
                 p2=format(par1[1], ".1f"),
-                # pe1=format(perr1[2], ".1f"),
+                pe1=format(perr1[2], ".1f"),
                 pe2=format(perr1[1], ".1f"),
                 bkg=format(par1[-1], ".1f"),
                 bkg_er=format(perr1[-1], ".1f"),
@@ -455,36 +457,36 @@ def fit_wg_all(
             ),
         )
         # plt.vlines((par1[1]-2*par1[2], par1[1]+2*par1[2]), ymin =par1[3] ,ymax=par1[0]+par1[3])
-        # lower_limit = par1[1] - 2 * par1[2]
-        # upper_limit = par1[1] + 2 * par1[2]
-        if peak_ind < 0:
-            lower_limit = par1[1] - 2 * 120
-            upper_limit = par1[1] + 2 * 120
-        else:
-            lower_limit = par1[1] - 2 * 90
-            upper_limit = par1[1] + 2 * 90
+        lower_limit = par1[1] - 2 * par1[2]
+        upper_limit = par1[1] + 2 * par1[2]
+        # if peak_ind < 0:
+        #     lower_limit = par1[1] - 2 * 120
+        #     upper_limit = par1[1] + 2 * 120
+        # else:
+        #     lower_limit = par1[1] - 2 * 90
+        #     upper_limit = par1[1] + 2 * 90
 
         data_in_interval = data_to_plot[
             (data_to_plot >= lower_limit) & (data_to_plot <= upper_limit)
         ]
 
-        # bckg_center_position = par1[1] - 7 * par1[2]
-        if peak_ind < 0:
-            bckg_center_position = par1[1] - 7 * 120
-            bckg_in_2sigma = data_to_plot[
-                (data_to_plot > bckg_center_position - 2 * 120)
-                & (data_to_plot < bckg_center_position + 2 * 120)
-            ]
-        else:
-            bckg_center_position = par1[1] + 7 * 90
-            bckg_in_2sigma = data_to_plot[
-                (data_to_plot > bckg_center_position - 2 * 90)
-                & (data_to_plot < bckg_center_position + 2 * 90)
-            ]
-        # bckg_in_2sigma = data_to_plot[
-        #     (data_to_plot > bckg_center_position - 2 * par1[2])
-        #     & (data_to_plot < bckg_center_position + 2 * par1[2])
-        # ]
+        bckg_center_position = par1[1] - 7 * par1[2]
+        # if peak_ind < 0:
+        #     bckg_center_position = par1[1] - 7 * 120
+        #     bckg_in_2sigma = data_to_plot[
+        #         (data_to_plot > bckg_center_position - 2 * 120)
+        #         & (data_to_plot < bckg_center_position + 2 * 120)
+        #     ]
+        # else:
+        #     bckg_center_position = par1[1] + 7 * 90
+        #     bckg_in_2sigma = data_to_plot[
+        #         (data_to_plot > bckg_center_position - 2 * 90)
+        #         & (data_to_plot < bckg_center_position + 2 * 90)
+            # ]
+        bckg_in_2sigma = data_to_plot[
+            (data_to_plot > bckg_center_position - 2 * par1[2])
+            & (data_to_plot < bckg_center_position + 2 * par1[2])
+        ]
 
         # Plot the Gaussian fit and the 2-sigma interval
         plt.axvline(lower_limit, color="gray", linestyle="--")
@@ -756,7 +758,7 @@ paths = [path0, path1, path2, path3, path4, path5, path6, path7, path8, path9]
 
 from LinoSPAD2.functions import delta_t, plot_tmsp
 
-for path in paths:
+# for path in paths:
 
     # plot_tmsp.plot_sensor_population(
     #     path,
@@ -790,4 +792,4 @@ for path in paths:
     #     rewrite=True,
     #     step=3,
     # )
-    fit_wg_all(path1, pix_pair=[170, 174], window=20e3, step=9, thrs=1.25)
+fit_wg_all(path1, pix_pair=[170, 174], window=20e3, step=9, thrs=1.25)
