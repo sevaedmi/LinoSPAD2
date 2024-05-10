@@ -25,6 +25,9 @@ functions:
     * file_rewrite_handling - based on the file name given and the
     boolean paramter 'rewrite', handles the file overwriting based on
     its' existence. Introduced for clearer code and modularity.
+    
+    * error_propagation_division - propagate error for the division
+    operation
 """
 
 import glob
@@ -262,3 +265,48 @@ def file_rewrite_handling(file: str, rewrite: bool):
         # os.chdir("..")
     except FileNotFoundError:
         pass
+
+
+def error_propagation_division(x, sigma_x, y, sigma_y, rho_xy=0):
+    """Calculate error propagation for division operation.
+
+    Parameters
+    ----------
+    x : float
+        Numerator value.
+    sigma_x : float
+        Uncertainty (standard deviation) associated with x.
+    y : float
+        Denominator value.
+    sigma_y : float
+        Uncertainty (standard deviation) associated with y.
+    rho_xy : float, optional
+        Correlation coefficient between x and y (default is 0).
+
+    Returns
+    -------
+    float
+        The uncertainty (standard deviation) of the result of the division.
+
+    Raises
+    ------
+    ValueError
+        If any of the input values are non-numeric.
+    """
+    partial_derivative_x = 1 / y
+    partial_derivative_y = -x / (y**2)
+
+    term1 = (partial_derivative_x**2) * (sigma_x**2)
+    term2 = (partial_derivative_y**2) * (sigma_y**2)
+    term3 = (
+        2
+        * partial_derivative_x
+        * partial_derivative_y
+        * rho_xy
+        * sigma_x
+        * sigma_y
+    )
+
+    sigma_f = np.sqrt(term1 + term2 - term3)
+
+    return sigma_f

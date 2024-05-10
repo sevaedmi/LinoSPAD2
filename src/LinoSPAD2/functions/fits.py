@@ -173,7 +173,7 @@ def fit_with_gaussian(
     to_fit_n = utils.gaussian(to_fit_b, par[0], par[1], par[2], par[3])
 
     perr = np.sqrt(np.diag(pcov))
-    vis_er = par[0] / par[3] ** 2 * 100 * perr[-1]
+    vis_er = utils.error_propagation_division(par[0].perr[0], par[3], perr[3])
 
     plt.figure(figsize=(16, 10))
     plt.xlabel(r"$\Delta$t [ps]")
@@ -192,7 +192,7 @@ def fit_with_gaussian(
         label="fit\n"
         "\u03C3={p1}\u00B1{pe1} ps\n"
         "\u03BC={p2}\u00B1{pe2} ps\n"
-        "vis={vis}\u00B1{vis_er} %\n"
+        "C={vis}\u00B1{vis_er} %\n"
         "bkg={bkg}\u00B1{bkg_er}".format(
             p1=format(par[2], ".1f"),
             p2=format(par[1], ".1f"),
@@ -381,7 +381,7 @@ def fit_with_gaussian_full_sensor(
     to_fit_n = utils.gaussian(to_fit_b, par[0], par[1], par[2], par[3])
 
     perr = np.sqrt(np.diag(pcov))
-    vis_er = par[0] / par[3] ** 2 * 100 * perr[-1]
+    vis_er = utils.error_propagation_division(par[0].perr[0], par[3], perr[3])
 
     plt.figure(figsize=(16, 10))
     plt.xlabel(r"$\Delta$t [ps]")
@@ -400,7 +400,7 @@ def fit_with_gaussian_full_sensor(
         label="fit\n"
         "\u03C3={p1}\u00B1{pe1} ps\n"
         "\u03BC={p2}\u00B1{pe2} ps\n"
-        "vis={vis}\u00B1{vis_er} %\n"
+        "C={vis}\u00B1{vis_er} %\n"
         "bkg={bkg}\u00B1{bkg_er}".format(
             p1=format(par[2], ".1f"),
             p2=format(par[1], ".1f"),

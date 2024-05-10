@@ -317,6 +317,7 @@ def plot_sensor_population(
     threshold_multiplier: int = 10,
     pickle_fig: bool = False,
     absolute_timestamps: bool = False,
+    single_file: bool = False,
 ) -> None:
     """Plot number of timestamps in each pixel for all datafiles.
 
@@ -375,6 +376,9 @@ def plot_sensor_population(
     absolute_timestamps : bool, optional
         Indicator for data files with absolute timestamps. Default is
         False.
+    single_file : optional
+        Switch for using only the first file in the folder. Can be
+        utilized for a quick plot. The default is False.
 
     Returns
     -------
@@ -401,6 +405,9 @@ def plot_sensor_population(
     # files = glob.glob("*.dat*")
     files = glob.glob("*.dat*")
     files.sort(key=os.path.getmtime)
+
+    if single_file:
+        files = files[0]
 
     plot_name = files[0][:-4] + "-" + files[-1][:-4]
 
