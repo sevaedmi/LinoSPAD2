@@ -1034,14 +1034,14 @@ def zero_to_cross_talk_plot(
 ):
     """Plot cross-talk peaks and as average vs distance from aggressor.
 
-    For the given pixels, looks for the timestamp differences in
-    feather files, plots histograms and fits with gaussian of cross-talk
+    For the given pixels, look for the timestamp differences in
+    feather files, plot histograms and fits with Gaussian of cross-talk
     peaks for each pair of pixels (aggressor-victim), collects
     cross-talk peak population in a 2*sigma window, plots as average
     vs distance from the aggressor for each aggressor pixel and to each
     side (to the left and to the right). Finally, averages all numbers
     and produces a single plot of average cross-talk vs distance from
-    the aggressor accross all hot pixels.
+    the aggressor across all hot pixels.
 
     Parameters
     ----------
@@ -1143,4 +1143,4 @@ def zero_to_cross_talk_plot(
     os.chdir(os.path.join(path, "ct_vs_distance"))
     plt.savefig("Average_cross-talk.png")
 
-    return on_both_average
+    return on_both_average, ct_right, ct_left
