@@ -6,8 +6,10 @@ from matplotlib import pyplot as plt
 
 from LinoSPAD2.functions import cross_talk, plot_tmsp
 
-path33 = r"D:\LinoSPAD2\Data\board_NL11\Prague\DCR\#33"
-path21 = r"D:\LinoSPAD2\Data\board_NL11\Prague\DCR\#21"
+# path33 = r"D:\LinoSPAD2\Data\board_NL11\Prague\DCR\#33"
+# path21 = r"D:\LinoSPAD2\Data\board_NL11\Prague\DCR\#21"
+path33 = r"/media/sj/King4TB/LS2_Data/CT/#33"
+path21 = r"/media/sj/King4TB/LS2_Data/CT/#21"
 
 dcr33 = cross_talk.collect_dcr_by_file(
     path33,
@@ -18,7 +20,7 @@ dcr33 = cross_talk.collect_dcr_by_file(
 )
 
 file_path = "DCR_#33.pkl"
-os.chdir(path)
+# os.chdir(file_path)
 with open(file_path, "wb") as file:
     pickle.dump(dcr33, file)
 
@@ -130,17 +132,20 @@ plt.legend()
 
 
 ### OPEN PKL
-os.chdir(r"/media/sj/King4TB/LS2_Data/CT/#21")
+os.chdir(r"/media/sj/King4TB/LS2_Data/CT/#33")
+# os.chdir(r"/media/sj/King4TB/LS2_Data/CT/#21")
 
-with open("DCR_#21.pkl", "rb") as f:
+# os.chdir(r'/home/sj/Documents/Quantum_astrometry/CT/DCR')
+
+with open("DCR_#33.pkl", "rb") as f:
     data = pickle.load(f)
 
 
 plt.rcParams.update({"font.size": 22})
 plt.figure(figsize=(12, 8))
 plt.plot(
-    [x * 4 / 60 for x in range(len(dcr21))],
-    np.average(dcr21, axis=1),
+    [x for x in range(len(data))],
+    np.median(data, axis=1),
     color="darkslateblue",
 )
 plt.title("NL11 #21")
@@ -151,7 +156,7 @@ plt.ylabel("Median DCR [cps]")
 #### TESTING PLOTTING AND MASKING ####
 path = r"/media/sj/King4TB/LS2_Data/CT/#33/CT_#33"
 os.chdir(path)
-files = r"0000015843.dat"
+files = r"0000015843.dat
 data = plot_tmsp.collect_data_and_apply_mask(
     files,
     daughterboard_number="NL11",
@@ -162,16 +167,128 @@ data = plot_tmsp.collect_data_and_apply_mask(
     app_mask=False,
 )
 
-plot_tmsp.plot_sensor_population(
-    path,
-    daughterboard_number="NL11",
-    motherboard_number="#33",
-    firmware_version="2212s",
-    timestamps=1000,
-    include_offset=False,
-    single_file=True,
-)
+# plot_tmsp.plot_sensor_population(
+#     path,
+#     daughterboard_number="NL11",
+#     motherboard_number="#33",
+#     firmware_version="2212s",
+#     timestamps=1000,
+#     include_offset=False,
+#     single_file=True,
+# )
 plt.plot(data)
 
 # os.chdir("/home/sj/GitHub/LinoSPAD2/src/LinoSPAD2/params/masks")
 # mask = np.genfromtxt("mask_NL11_#33.txt").astype(int)
+
+
+### DCR histogram
+
+plt.figure(figsize=(12, 8))
+plt.rcParams.update({"font.size": 22})
+plt.hist(
+    np.average(data, axis=0),
+    # np.concatenate(data),
+    # data,
+    bins=np.logspace(np.log10(0.1), np.log10(np.max(data)), 200),
+    # stacked=True,
+    color='teal'
+)
+plt.xlim(10)
+plt.xscale("log")
+plt.yscale("log")
+plt.xlabel("DCR [cps/pixel]")
+plt.ylabel("Count [-]")
+
+# custom_xticks = [1, 10, 100, 1000, 10000]
+# custom_xlabels = ["{:.0e}".format(y) for y in custom_xticks]
+# plt.xticks(custom_xticks, custom_xlabels)
+
+index_hot = np.where(data[0]> 1000 )[0]
+data_hot = data[0][index_hot]
+
+index_cut = np.unique(np.concatenate([np.arange(x-1, x+2, 1) for x in np.where(data[0]> 1000 )[0]]))
+index_left = np.delete(np.arange(0,256,1), index_cut)
+
+data_cut = data[0][index_cut]
+data_left = data[0][index_left]
+
+plt.hist(
+    data_cut,
+    bins=np.logspace(np.log10(0.1), np.log10(np.max(data_cut)), 200),
+)
+plt.xscale("log")
+plt.yscale("log")
+
+plt.hist(
+    data_left,
+    bins=np.logspace(np.log10(0.1), np.log10(np.max(data_cut)), 200),
+)
+plt.xscale("log")
+plt.yscale("log")
+
+### Full and hot+neighbors
+plt.figure(figsize=(12, 8))
+plt.rcParams.update({"font.size": 22})
+plt.hist(
+    data[0],
+    bins=np.logspace(np.log10(0.1), np.log10(np.max(data[0])), 200), label='All'
+)
+# plt.hist(
+#         data_hot,
+#         bins=np.logspace(np.log10(0.1), np.log10(np.max(data_hot)), 200),
+#         color='lightblue', alpha=0.5, label="Hot"
+# )
+# plt.hist(
+#         data_cut,
+#         bins=np.logspace(np.log10(0.1), np.log10(np.max(data_cut)), 200),
+#         color='orange', alpha=0.5, label="Hot+/-1"
+# )
+plt.plot(bins[1:], cumul)
+# plt.hist(
+#     [data[0], data_hot, data_cut],
+#     bins=np.logspace(np.log10(0.1), np.log10(np.max(data[0])), 200),
+#     stacked=True,
+#     color=['blue', 'purple', 'orange'],
+#     label=['All', 'Hot', 'Hot+/-1']
+# )
+plt.legend(loc="best")
+plt.xlim(10)
+plt.xscale("log")
+plt.yscale("log")
+plt.xlabel("DCR [cps/pixel]")
+plt.ylabel("Count [-]")
+
+custom_xticks = [1, 10, 100, 1000, 10000]
+custom_xlabels = ["{:.0e}".format(y) for y in custom_xticks]
+
+
+### With integral of histogram
+plt.rcParams.update({"font.size": 22})
+
+bins = np.logspace(np.log10(0.1), np.log10(np.max(data[0])), 200)
+
+hist, bin_edges = np.histogram(np.average(data, axis=0), bins=bins)
+
+bin_centers = (bin_edges - (bin_edges[1] - bin_edges[0])/2)[1:]
+
+# Plot the histogram
+fig, ax = plt.subplots(figsize=(12,8))
+# ax.bar(bin_centers, hist, width=np.diff(bin_edges), edgecolor='black', align='edge', label='All', color='salmon')
+ax.bar(bin_centers, hist, width=np.diff(bin_edges), label='All', color='salmon')
+cumul = np.cumsum(hist)
+ax1 = ax.twinx()
+ax1.plot(bin_centers, cumul/256*100, color="teal", linewidth=3)
+# ax.step(bin_centers, hist, label='All', color='salmon', fill=True,  alpha=0.7)
+
+ax.set_xlim(10)
+ax1.set_xlim(10)
+ax.set_ylim(0)
+ax1.set_ylim(0)
+ax.set_xscale('log')
+# ax.set_yscale('log')
+# ax1.set_yscale('log')
+ax.set_xlabel('DCR [cps/pixel]')
+ax.set_ylabel("Count [-]")
+ax1.set_ylabel('Integral [%]')
+plt.show()

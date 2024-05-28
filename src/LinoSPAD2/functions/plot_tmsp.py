@@ -251,7 +251,7 @@ def plot_single_pix_hist(
             pixels = np.arange(145, 165, 1)
 
         for i, _ in enumerate(pixels):
-            plt.figure(figsize=(16, 10))
+            plt.figure(figsize=(12, 10))
             plt.rcParams.update({"font.size": 22})
             # Define matrix of pixel coordinates, where rows are numbers of TDCs
             # and columns are the pixels that connected to these TDCs
@@ -441,8 +441,8 @@ def plot_sensor_population(
 
     # Plotting
     print("\n> > > Plotting < < <\n")
-    plt.rcParams.update({"font.size": 24})
-    fig = plt.figure(figsize=(12, 8))
+    plt.rcParams.update({"font.size": 22})
+    fig = plt.figure(figsize=(12, 10))
     if scale == "log":
         plt.yscale("log")
     plt.plot(timestamps_per_pixel, style, color=color)
@@ -852,7 +852,7 @@ def plot_sensor_population_full_sensor(
     print("\n> > > Plotting < < <\n")
 
     plt.rcParams.update({"font.size": 22})
-    fig = plt.figure(figsize=(16, 10))
+    fig = plt.figure(figsize=(12, 10))
     if scale == "log":
         plt.yscale("log")
     plt.plot(valid_per_pixel, style, color=color)

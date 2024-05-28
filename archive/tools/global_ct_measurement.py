@@ -7,7 +7,7 @@ from pyarrow import feather as ft
 
 from LinoSPAD2.functions import cross_talk, delta_t, plot_tmsp
 
-path = r"/media/sj/King4TB/LS2_Data/CT"
+path = r"/media/sj/King4TB/LS2_Data/CT/#21"
 
 os.chdir(path)
 files = glob("*.dat")
@@ -105,6 +105,7 @@ for i, (CT, CT_err) in enumerate(zip(CT_all, CT_err_all)):
 
     plt.figure(figsize=(10, 8))
     plt.rcParams.update({"font.size": 22})
+    plt.yscale("log")
     plt.errorbar(
         differences,
         list(CT.values()),
@@ -116,7 +117,7 @@ for i, (CT, CT_err) in enumerate(zip(CT_all, CT_err_all)):
     plt.title(f"Cross-talk probability for aggressor pixel {aggressor_pix}")
     plt.xlabel("Distance in pixels [-]")
     plt.ylabel("Cross-talk probability [%]")
-    plt.savefig(f"Cross-talk_aggressor_pixel_{aggressor_pix}_onright.png")
+    # plt.savefig(f"Cross-talk_aggressor_pixel_{aggressor_pix}_onright.png")
 
 
 final_result = {key: [] for key in range(1, 21)}
@@ -405,7 +406,7 @@ hot_pixels = [5, 7, 35, 121, 225, 228, 247]
 #     include_offset=False,
 # )
 
-on_both_average = cross_talk.zero_to_cross_talk_plot(
+on_both_average, ctr, ctl = cross_talk.zero_to_cross_talk_plot(
     path, hot_pixels, show_plots=False
 )
 
@@ -470,6 +471,72 @@ CT_expected = [0.0022 ** (x) * 100 for x in range(0, 20)]
 
 distance = list(ct_final.keys())
 
+# For fill in between
+##+++### 
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.interpolate import interp1d
+
+import re
+
+def extract_integers(text):
+    return [int(x) for x in re.findall(r"\d+", text)]
+
+beet = {}
+
+for i in range(len(ctr)):
+    keys = list(ctr[i].keys())
+    for j in range(len(keys)):
+        dist = np.abs(
+            extract_integers(keys[j])[1] - extract_integers(keys[j])[0]
+        )
+        if f"{dist}" not in beet:
+            beet[f"{dist}"] = []
+        beet[f"{dist}"].append(list(ctr[i].values())[j])
+
+for i in range(len(ctl)):
+    keys = list(ctl[i].keys())
+    for j in range(len(keys)):
+        dist = np.abs(
+            extract_integers(keys[j])[1] - extract_integers(keys[j])[0]
+        )
+        if f"{dist}" not in beet:
+            beet[f"{dist}"] = []
+        beet[f"{dist}"].append(list(ctl[i].values())[j])
+
+min_values = {
+    key: min([v for v in values if v > 0]) for key, values in beet.items()
+}
+min_values = [
+    min_values[key] for key in sorted(min_values.keys(), key=lambda x: int(x))
+]
+max_values = {
+    key: max([v for v in values if v > 0]) for key, values in beet.items()
+}
+max_values = [
+    max_values[key] for key in sorted(max_values.keys(), key=lambda x: int(x))
+]
+
+distances = np.arange(1, 21)
+average_values = [x[0] for x in ct_final.values()]
+errors = [x[1] for x in ct_final.values()]
+# Interpolate average values
+interp_distances = np.linspace(distances.min(), distances.max(), 1000)
+interp_function_min = interp1d(distances, min_values, kind="linear")
+interp_function_max = interp1d(distances, max_values, kind="linear")
+interp_min_values = interp_function_min(interp_distances)
+interp_max_values = interp_function_max(interp_distances)
+
+# Interpolate max and min values
+# interp_max_values = interp_average_values + np.interp(
+#     interp_distances, distances, errors
+# )
+# interp_min_values = interp_average_values - np.interp(
+#     interp_distances, distances, errors
+# )
+##+++###
+
+%matplotlib qt
 plt.figure(figsize=(10, 8))
 plt.rcParams.update({"font.size": 22})
 # plt.title("Average cross-talk probability for LS2 NL11")
@@ -491,8 +558,113 @@ plt.plot(
     color="teal",
     label="0.22%**distance",
 )
+# plt.fill_between(
+#     ct_final.keys(), min_values, max_values, alpha=0.2, interpolate=True
+# )
+# plt.fill_between(
+#     interp_distances,
+#     interp_min_values,
+#     interp_max_values,
+#     alpha=0.5,
+# )
 
 plt.tight_layout()
 plt.xlim(0, 21)
 plt.ylim(1e-6, 120)
+# plt.ylim(1e-6, 1e-1)
 plt.legend()
+
+
+### Insert into the main plot ###
+
+%matplotlib qt
+fix, ax = plt.subplots(figsize=(10, 8))
+plt.rcParams.update({"font.size": 22})
+# plt.title("Average cross-talk probability for LS2 NL11")
+ax.set_xlabel("Distance in pixels [-]")
+ax.set_ylabel("Cross-talk probability [%]")
+ax.set_yscale("log")
+ax.errorbar(
+    ct_final.keys(),
+    [x[0] for x in ct_final.values()],
+    yerr=[x[1] for x in ct_final.values()],
+    fmt=".",
+    color="salmon",
+    label="Measured",
+    markersize=12,
+)
+ax.plot(
+    [x for x in range(0, 20)],
+    CT_expected,
+    color="teal",
+    # label="0.22%**distance",
+    label="$0.0022^{\mathrm{distance}}$",
+)
+# plt.fill_between(
+#     ct_final.keys(), min_values, max_values, alpha=0.2, interpolate=True
+# )
+# plt.fill_between(
+#     interp_distances,
+#     interp_min_values,
+#     interp_max_values,
+#     alpha=0.5,
+# )
+
+plt.tight_layout()
+ax.set_xlim(0, 21)
+ax.set_ylim(1e-6, 120)
+# plt.ylim(1e-6, 1e-1)
+ax.set_title('')
+ax.legend(loc='upper center')
+
+os.chdir(r'/media/sj/King4TB/LS2_Data/CT/#33/cross_talk_data')
+
+ins_data = r'0000015843-0000016492_pixels_15-35.feather'
+
+data = ft.read_feather(ins_data, columns=['15,16', '15,18', '15,30'])
+
+step = 14
+bins = np.arange(-10e3, 10e3, 2500/140*step)
+
+# Vertical
+ins1 = ax.inset_axes([0.75, 0.7, 0.2, 0.2])
+ins1.hist(data['15,16'], bins=bins, color='#509def', label='15, 16')
+ins1.set_xticks([], [])
+ins1.set_yticks([], [])
+ins1.legend(loc='upper left', fontsize=8)
+ins2 = ax.inset_axes([0.75, 0.48, 0.2, 0.2])
+ins2.hist(data['15,18'], bins=bins, color='#509def', label='15,18')
+ins2.set_xticks([], [])
+ins2.set_yticks([], [])
+ins2.legend(loc='upper right', fontsize=8)
+ins3 = ax.inset_axes([0.75, 0.26, 0.2, 0.2])
+ins3.hist(data['15,30'], bins=bins, color='#509def', label='15,30')
+ins3.set_xticks([], [])
+ins3.set_yticks([], [])
+ins3.legend(loc='upper right', fontsize=8)
+
+# Horizontal
+# ins1 = ax.inset_axes([0.31, 0.6, 0.2, 0.2])
+# ins1.hist(data['15,16'], bins=bins, color='#509def', label='15, 16')
+# ins1.set_xticks([], [])
+# ins1.set_yticks([], [])
+# ins1.legend(loc='upper left', fontsize=8)
+# ins2 = ax.inset_axes([0.53, 0.6, 0.2, 0.2])
+# ins2.hist(data['15,18'], bins=bins, color='#509def', label='15,18')
+# ins2.set_xticks([], [])
+# ins2.set_yticks([], [])
+# ins2.legend(loc='upper right', fontsize=8)
+# ins3 = ax.inset_axes([0.75, 0.6, 0.2, 0.2])
+# ins3.hist(data['15,30'], bins=bins, color='#509def', label='15,30')
+# ins3.set_xticks([], [])
+# ins3.set_yticks([], [])
+# ins3.legend(loc='upper right', fontsize=8)
+
+# Add arrows from the inserted plot to certain data points of the main plot
+arrow_start_x = [6.57, 11.18, 15.78]  # ref to data points
+arrow_end_x = [1, 3, 15]  # ref to data points
+arrow_end_y = [0.21, 0.00167, 2.48e-5] # red to data points
+arrow_colors = ['red', 'green', 'blue']  # Colors of the arrows
+
+for start_x, end_x, end_y, color in zip(arrow_start_x, arrow_end_x, arrow_end_y, arrow_colors):
+    ax.annotate('', xy=(end_x, end_y), xytext=(start_x, 0.072), arrowprops=dict(facecolor=color, arrowstyle='->'))
