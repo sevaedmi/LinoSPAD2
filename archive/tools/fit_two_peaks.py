@@ -20,7 +20,7 @@ from pyarrow import feather as ft
 from scipy import signal as sg
 from scipy.optimize import curve_fit
 
-from LinoSPAD2.functions.utils import gaussian
+from LinoSPAD2.functions.utils import error_propagation_division, gaussian
 
 
 def fit_wg_double(
@@ -174,7 +174,7 @@ def fit_wg_double(
     perr2 = np.sqrt(np.diag(pcov2))
     vis_er2 = par2[0] / par2[3] ** 2 * 100 * perr2[-1]
 
-    plt.figure(figsize=(16, 10))
+    plt.figure(figsize=(12, 8))
     plt.xlabel(r"$\Delta$t [ps]")
     plt.ylabel("# of coincidences [-]")
     plt.step(
@@ -306,6 +306,7 @@ def fit_wg_all(
 
     def gauss(x, A, x0, sigma, C):
         return A * np.exp(-((x - x0) ** 2) / (2 * sigma**2)) + C
+
     # def gauss_CT(x, A, x0, C):
     #     return A * np.exp(-((x - x0) ** 2) / (2 * 90**2)) + C
 
@@ -345,7 +346,9 @@ def fit_wg_all(
     plt.rcParams.update({"font.size": 22})
 
     # bins must be in units of 17.857 ps
-    bins = np.arange(np.min(data_to_plot), np.max(data_to_plot), 2500/140 * step)
+    bins = np.arange(
+        np.min(data_to_plot), np.max(data_to_plot), 2500 / 140 * step
+    )
 
     # Calculate histogram of timestamp differences for primary guess
     # of fit parameters and selecting a narrower window for the fit
@@ -355,7 +358,7 @@ def fit_wg_all(
 
     # print(peak_pos)
 
-    plt.figure(figsize=(16, 10))
+    plt.figure(figsize=(12, 8))
     plt.xlabel(r"$\Delta$t [ps]")
     plt.ylabel("# of coincidences [-]")
     plt.step(
@@ -374,6 +377,17 @@ def fit_wg_all(
         "gold",
         "royalblue",
     ]
+    plt.xticks(
+        [-20e3, -10e3, 0, 10e3, 20e3],
+        [
+            f"{-20e3:.0f}",
+            f"{-10e3:.0f}",
+            f"{0:.0f}",
+            f"{10e3:.0f}",
+            f"{20e3:.0f}",
+        ],
+    )
+    labels = ["HBT", "Cross-talk", "BS1", "BS2", "BS3"]
 
     for k, peak_ind in enumerate(peak_pos):
         data_to_fit1 = np.delete(
@@ -385,12 +399,12 @@ def fit_wg_all(
 
         # bins must be in units of 17.857 ps
         bins = np.arange(
-            np.min(data_to_plot), np.max(data_to_plot), 2500/140 * step
+            np.min(data_to_plot), np.max(data_to_plot), 2500 / 140 * step
         )
 
         n1, b1 = np.histogram(data_to_fit1, bins)
 
-        b11 = (b1 - 2500/140 * step / 2)[1:]
+        b11 = (b1 - 2500 / 140 * step / 2)[1:]
 
         if np.std(b11) > 150:
             sigma = 150
@@ -430,7 +444,13 @@ def fit_wg_all(
         #     to_fit_n1 = gauss_CT(to_fit_b1, par1[0], par1[1], par1[-1])
 
         perr1 = np.sqrt(np.diag(pcov1))
-        vis_er1 = par1[0] / par1[-1] ** 2 * 100 * perr1[-1]
+
+        vis = par1[0] / par1[-1] * 100
+
+        vis_er1 = error_propagation_division(
+            par1[0], perr1[0], par1[3], perr1[3]
+        )
+        vis_er1 = vis_er1 / (vis / 100) * 100
 
         plt.plot(
             # b,
@@ -439,19 +459,21 @@ def fit_wg_all(
             to_fit_n1,
             "-",
             color=color_f[k],
-            label="CT\n"
+            label=f"{labels[k]}\n"
             "\u03C3={p1}\u00B1{pe1} ps\n"
             "\u03BC={p2}\u00B1{pe2} ps\n"
-            "vis={vis}\u00B1{vis_er} %\n"
-            "bkg={bkg}\u00B1{bkg_er}".format(
+            "C={vis}\u00B1{vis_er} %"
+            # "bkg={bkg}\u00B1{bkg_er}"
+            .format(
+                labels,
                 # "\u03C3_s={p3} ps".format(
-                p1=format(par1[2], ".1f"),
-                p2=format(par1[1], ".1f"),
-                pe1=format(perr1[2], ".1f"),
-                pe2=format(perr1[1], ".1f"),
-                bkg=format(par1[-1], ".1f"),
-                bkg_er=format(perr1[-1], ".1f"),
-                vis=format(par1[0] / par1[-1] * 100, ".1f"),
+                p1=format(par1[2], ".0f"),
+                p2=format(par1[1], ".0f"),
+                pe1=format(perr1[2], ".0f"),
+                pe2=format(perr1[1], ".0f"),
+                # bkg=format(par1[-1], ".1f"),
+                # bkg_er=format(perr1[-1], ".1f"),
+                vis=format(vis, ".1f"),
                 vis_er=format(vis_er1, ".1f"),
                 # p3=format(st_dev, ".2f"),
             ),
@@ -482,15 +504,15 @@ def fit_wg_all(
         #     bckg_in_2sigma = data_to_plot[
         #         (data_to_plot > bckg_center_position - 2 * 90)
         #         & (data_to_plot < bckg_center_position + 2 * 90)
-            # ]
+        # ]
         bckg_in_2sigma = data_to_plot[
             (data_to_plot > bckg_center_position - 2 * par1[2])
             & (data_to_plot < bckg_center_position + 2 * par1[2])
         ]
 
         # Plot the Gaussian fit and the 2-sigma interval
-        plt.axvline(lower_limit, color="gray", linestyle="--")
-        plt.axvline(upper_limit, color="gray", linestyle="--")
+        # plt.axvline(lower_limit, color="gray", linestyle="--")
+        # plt.axvline(upper_limit, color="gray", linestyle="--")
         # print(len(data_in_interval), len(bckg_in_2sigma))
         er1 = np.sqrt(len(data_in_interval))
         er2 = np.sqrt(len(bckg_in_2sigma))
@@ -500,6 +522,7 @@ def fit_wg_all(
             + f"{np.sqrt(er1**2+er2**2):.2f}"
         )
 
+    plt.xlim(-window, window)
     plt.legend(loc="best")
     if title_on is True:
         plt.title(
@@ -754,12 +777,26 @@ path7 = r"D:\LinoSPAD2\Data\board_NL11\Prague\CT_HBT\Second try\CT_HBT_2-0m_70%_
 path8 = r"D:\LinoSPAD2\Data\board_NL11\Prague\CT_HBT\Second try\CT_HBT_2-0m_60%_int"
 path9 = r"D:\LinoSPAD2\Data\board_NL11\Prague\CT_HBT\Second try\CT_HBT_2-0m_50%_int"
 
+# path0 = r"D:\LinoSPAD2\Data\board_NL11\Prague\CT_HBT\Second try\CT_HBT_3-0m_full_int"
+# path1 = (
+#     r"D:\LinoSPAD2\Data\board_NL11\Prague\CT_HBT\Second try\CT_HBT_3-0m_90%"
+# )
+# path2 = (
+#     r"D:\LinoSPAD2\Data\board_NL11\Prague\CT_HBT\Second try\CT_HBT_3-0m_70%"
+# )
+# path3 = (
+#     r"D:\LinoSPAD2\Data\board_NL11\Prague\CT_HBT\Second try\CT_HBT_3-0m_60%"
+# )
+# path4 = (
+#     r"D:\LinoSPAD2\Data\board_NL11\Prague\CT_HBT\Second try\CT_HBT_3-0m_50%"
+# )
+
 paths = [path0, path1, path2, path3, path4, path5, path6, path7, path8, path9]
+# paths = [path0, path1, path2, path3, path4]
 
 from LinoSPAD2.functions import delta_t, plot_tmsp
 
-# for path in paths:
-
+for path in paths:
     # plot_tmsp.plot_sensor_population(
     #     path,
     #     daughterboard_number="NL11",
@@ -792,4 +829,32 @@ from LinoSPAD2.functions import delta_t, plot_tmsp
     #     rewrite=True,
     #     step=3,
     # )
-fit_wg_all(path1, pix_pair=[170, 174], window=20e3, step=9, thrs=1.25)
+
+    fit_wg_all(
+        path,
+        pix_pair=[170, 174],
+        window=20e3,
+        step=10,
+        thrs=1.25,
+        title_on=False,
+    )
+
+
+### Full intensity only
+
+path0 = r"D:\LinoSPAD2\Data\board_NL11\Prague\CT_HBT\Second try\CT_HBT_1-0m_full_int"
+path1 = r"D:\LinoSPAD2\Data\board_NL11\Prague\CT_HBT\Second try\CT_HBT_2-0m_full_int"
+path2 = r"D:\LinoSPAD2\Data\board_NL11\Prague\CT_HBT\Second try\CT_HBT_3-0m_full_int"
+
+paths = [path0, path1, path2]
+
+for path in paths:
+
+    fit_wg_all(
+        path,
+        pix_pair=[170, 174],
+        window=20e3,
+        step=10,
+        thrs=1.25,
+        title_on=False,
+    )

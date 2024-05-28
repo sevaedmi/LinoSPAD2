@@ -376,9 +376,9 @@ def plot_sensor_population(
     absolute_timestamps : bool, optional
         Indicator for data files with absolute timestamps. Default is
         False.
-    single_file : bool, optional
-        Switch for processing only the first file in the given folder.
-        Could be used for a quick plot. The default is False.
+    single_file : optional
+        Switch for using only the first file in the folder. Can be
+        utilized for a quick plot. The default is False.
 
     Returns
     -------
@@ -432,7 +432,6 @@ def plot_sensor_population(
         correct_pixel_addressing=correct_pixel_addressing,
     )
 
-    # TODO clean up; check functionality
     # if correct_pixel_addressing:
     #     fix = np.zeros(len(timestamps_per_pixel))
     #     fix[:128] = timestamps_per_pixel[128:]
@@ -442,8 +441,8 @@ def plot_sensor_population(
 
     # Plotting
     print("\n> > > Plotting < < <\n")
-    plt.rcParams.update({"font.size": 22})
-    fig = plt.figure(figsize=(16, 10))
+    plt.rcParams.update({"font.size": 24})
+    fig = plt.figure(figsize=(12, 8))
     if scale == "log":
         plt.yscale("log")
     plt.plot(timestamps_per_pixel, style, color=color)
