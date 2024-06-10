@@ -848,13 +848,19 @@ path2 = r"D:\LinoSPAD2\Data\board_NL11\Prague\CT_HBT\Second try\CT_HBT_3-0m_full
 
 paths = [path0, path1, path2]
 
-for path in paths:
+import itertools
 
+pix_pairs = list(itertools.product([169, 170, 171], [173, 174, 175]))
+pix_pairs = [[x,y] for x, y in pix_pairs]
+
+# for path in paths:
+for pix_pair in pix_pairs:
     fit_wg_all(
-        path,
-        pix_pair=[170, 174],
+        path1,
+        pix_pair=[171, 173],
+        # pix_pair=pix_pair,
         window=20e3,
-        step=10,
-        thrs=1.25,
+        step=7,
+        thrs=1.35,
         title_on=False,
     )

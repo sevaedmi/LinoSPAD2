@@ -172,8 +172,8 @@ def fit_gaussian(x, y):
     # Initial guess for the parameters
     amp_guess = np.max(y)
     mu_guess = x[np.argmax(y)]
-    # As std sometimes gives nonsense, 200 ps is added as balancing
-    sigma_guess = min(np.std(x), 200)
+    # As std sometimes gives nonsense, 150 ps is added as balancing
+    sigma_guess = min(np.std(x), 150)
     bkg_guess = np.median(y)
 
     # Perform the curve fitting

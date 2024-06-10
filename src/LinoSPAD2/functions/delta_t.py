@@ -198,6 +198,13 @@ def calculate_and_save_timestamp_differences(
         print("\nFirmware version is not recognized.")
         sys.exit()
 
+    if correct_pix_address:
+        for i, pixel in enumerate(pixels):
+            if pixel > 127:
+                pixels[i] = 255 - pixels[i]
+            else:
+                pixels[i] = pixels[i] + 128
+
     # Mask the hot/warm pixels
     if app_mask is True:
         mask = utils.apply_mask(daughterboard_number, motherboard_number)
@@ -234,13 +241,6 @@ def calculate_and_save_timestamp_differences(
                 include_offset,
                 apply_calibration,
             )
-
-        if correct_pix_address:
-            for i, pixel in enumerate(pixels):
-                if pixel > 127:
-                    pixels[i] = 255 - pixels[i]
-                else:
-                    pixels[i] = pixels[i] + 128
 
         deltas_all = cd.calculate_differences_2212(
             data_all, pixels, pix_coor, delta_window
@@ -1048,6 +1048,7 @@ def collect_and_plot_timestamp_differences(
     step: int = 1,
     same_y: bool = False,
     color: str = "salmon",
+    correct_pix_address: bool = False,
 ):
     """Collect and plot timestamp differences from a '.feather' file.
 
@@ -1079,6 +1080,10 @@ def collect_and_plot_timestamp_differences(
         The default is False.
     color : str, optional
         Color for the plot. The default is 'salmon'.
+    correct_pix_address : bool, optional
+        Correct pixel address for the FPGA board on side 23. The
+        default is False.
+
 
     Raises
     ------
@@ -1126,6 +1131,13 @@ def collect_and_plot_timestamp_differences(
     plt.rcParams.update({"font.size": 22})
     # In the case two lists given - the left and right peaks - flatten
     # into a single list
+
+    if correct_pix_address:
+        for i, pixel in enumerate(pixels):
+            if pixel > 127:
+                pixels[i] = 255 - pixels[i]
+            else:
+                pixels[i] = pixels[i] + 128
 
     pixels = flatten(pixels)
 
