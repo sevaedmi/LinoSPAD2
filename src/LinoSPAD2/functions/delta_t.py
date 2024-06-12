@@ -1132,6 +1132,9 @@ def collect_and_plot_timestamp_differences(
     # In the case two lists given - the left and right peaks - flatten
     # into a single list
 
+    # Save to use in the title
+    pixels_title = np.copy(pixels)
+
     if correct_pix_address:
         for i, pixel in enumerate(pixels):
             if pixel > 127:
@@ -1249,13 +1252,13 @@ def collect_and_plot_timestamp_differences(
             if len(pixels) > 2:
                 axs[q][w - 1].set_xlim(range_left - 100, range_right + 100)
                 axs[q][w - 1].set_title(
-                    f"Pixels {pixels[q]},{pixels[w]}\nPeak in 2 ns "
+                    f"Pixels {pixels_title[q]},{pixels_title[w]}\nPeak in 2 ns "
                     f"window: {int(peak_max)}"
                 )
             else:
                 plt.xlim(range_left - 100, range_right + 100)
 
-                plt.title(f"Pixels {pixels[q]},{pixels[w]}")
+                plt.title(f"Pixels {pixels_title[q]},{pixels_title[w]}")
 
             # Save the figure
             try:
