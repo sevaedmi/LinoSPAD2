@@ -35,6 +35,7 @@ def fit_with_gaussian(
     color_data: str = "salmon",
     color_fit: str = "teal",
     title_on: bool = True,
+    correct_pix_address: bool = False,
 ):
     # TODO
     """Fit with Gaussian function and plot it.
@@ -64,6 +65,9 @@ def fit_with_gaussian(
     title_on : bool, optional
         Switch for turning on/off the title of the plot, the title
         shows the pixels for which the fit is done. The default is True.
+    correct_pix_address : bool, optional
+        Correct pixel address for the FPGA board on side 23. The
+        default is False.
 
     Raises
     ------
@@ -116,6 +120,13 @@ def fit_with_gaussian(
 
     if not feather_file_name:
         raise FileNotFoundError("\nFile with data not found")
+
+    if correct_pix_address:
+        for i, pixel in enumerate(pix_pair):
+            if pixel > 127:
+                pix_pair[i] = 255 - pix_pair[i]
+            else:
+                pix_pair[i] = pix_pair[i] + 128
 
     data_to_plot = feather.read_feather(
         "{}".format(feather_file_name),

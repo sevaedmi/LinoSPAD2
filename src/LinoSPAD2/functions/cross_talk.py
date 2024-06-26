@@ -619,7 +619,7 @@ def calculate_dark_count_rate(
 
     acq_window_length = np.max(data[:].T[1])
 
-    dcr = (
+    dcr_average = (
         np.average(valid_per_pixel)
         / len(files)
         / len(np.where(data[0].T[0] == -2)[0])
@@ -627,7 +627,15 @@ def calculate_dark_count_rate(
         / 1e-12
     )
 
-    return dcr
+    dcr_median = (
+        np.median(valid_per_pixel)
+        / len(files)
+        / len(np.where(data[0].T[0] == -2)[0])
+        / acq_window_length
+        / 1e-12
+    )
+
+    return dcr_average, dcr_median
 
 
 def collect_dcr_by_file(
@@ -944,6 +952,7 @@ def zero_to_cross_talk_collect(
     delta_window: float = 50e3,
     apply_calibration: bool = True,
     absolute_timestamps: bool = False,
+    correct_pix_address: bool = False,
 ):
     """Collect timestamp differences from cross-talk data.
 
@@ -981,8 +990,21 @@ def zero_to_cross_talk_collect(
     absolute_timestamps : bool, optional
         Indicator of data collected with absolute timestamps. The
         default is False.
+    correct_pix_address : bool, optional
+        Correct pixel address for the FPGA board on side 23. Here
+        used to reverse the correction. The default is False.
     """
     print("\n> > > Collecting cross-talk data < < <\n")
+
+    # Reverse correction if the motherboard connected to side "23" of the
+    # daughterboard
+    if correct_pix_address:
+        for i, pixel in enumerate(hot_pixels):
+            if pixel > 127:
+                hot_pixels[i] = 255 - pixel
+            else:
+                hot_pixels[i] = pixel + 128
+
     hot_pixels_plus_20 = [
         [x + i for i in range(0, 21)] for x in hot_pixels if x <= 235
     ]
