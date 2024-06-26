@@ -84,6 +84,7 @@ def unpack_binary_data(
     data_timestamps = (raw_data & 0xFFFFFFF).astype(np.longlong)
     # Pixel address in the given TDC is 2 bits above timestamp
     data_pixels = ((raw_data >> 28) & 0x3).astype(np.longlong)
+    # Check the top bit, assign '-1' to invalid timestamps
     data_timestamps[np.where(raw_data < 0x80000000)] = -1
     del raw_data
     # Number of acquisition cycles in each data file
