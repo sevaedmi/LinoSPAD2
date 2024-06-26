@@ -188,9 +188,7 @@ def calibrate_and_save_TDC_data(
             if not np.any(ind):
                 continue
 
-            counts, bin_edges = np.histogram(
-                data_all[tdc].T[1][ind], bins=bins
-            )
+            counts, _ = np.histogram(data_all[tdc].T[1][ind], bins=bins)
             cal_mat[i] = np.cumsum(counts) / np.cumsum(counts).max() * 2500
 
         cal_mat_df = pd.DataFrame(cal_mat)

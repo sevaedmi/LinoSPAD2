@@ -81,60 +81,61 @@ def unpack_binary_data(
     # Unpack binary data
     raw_data = np.fromfile(file, dtype=np.uint32)
     # Timestamps are stored in the lower 28 bits
-    data_timestamps = (raw_data & 0xFFFFFFF).astype(np.longlong)
+    data_timestamps = (raw_data & 0xFFFFFFF).astype(np.int64)
     # Pixel address in the given TDC is 2 bits above timestamp
-    data_pixels = ((raw_data >> 28) & 0x3).astype(np.longlong)
-    data_timestamps[np.where(raw_data < 0x80000000)] = -1
+    data_pixels = ((raw_data >> 28) & 0x3).astype(np.int8)
+    data_timestamps[raw_data < 0x80000000] = -1
+    # Free up memory
     del raw_data
+
     # Number of acquisition cycles in each data file
-    cycles = int(len(data_timestamps) / timestamps / 65)
+    cycles = len(data_timestamps) // (timestamps * 65)
     # Transform into a matrix of size 65 by cycles*timestamps
-    data_matrix_pixels = (
+    data_pixels = (
         data_pixels.reshape(cycles, 65, timestamps)
         .transpose((1, 0, 2))
-        .reshape(65, timestamps * cycles)
+        .reshape(65, -1)
     )
 
-    data_matrix_timestamps = (
+    data_timestamps = (
         data_timestamps.reshape(cycles, 65, timestamps)
         .transpose((1, 0, 2))
-        .reshape(65, timestamps * cycles)
+        .reshape(65, -1)
     )
+
     # Cut the 65th TDC that does not hold any actual data from pixels
-    data_matrix_pixels = data_matrix_pixels[:-1]
-    data_matrix_timestamps = data_matrix_timestamps[:-1]
+    data_pixels = data_pixels[:-1]
+    data_timestamps = data_timestamps[:-1]
+
     # Insert '-2' at the end of each cycle
-    data_matrix_pixels = np.insert(
-        data_matrix_pixels,
-        np.linspace(timestamps, cycles * timestamps, cycles).astype(
-            np.longlong
-        ),
+    insert_indices = np.linspace(
+        timestamps, cycles * timestamps, cycles
+    ).astype(np.int64)
+
+    data_pixels = np.insert(
+        data_pixels,
+        insert_indices,
+        -2,
+        1,
+    )
+    data_timestamps = np.insert(
+        data_timestamps,
+        insert_indices,
         -2,
         1,
     )
 
-    data_matrix_timestamps = np.insert(
-        data_matrix_timestamps,
-        np.linspace(timestamps, cycles * timestamps, cycles).astype(
-            np.longlong
-        ),
-        -2,
-        1,
-    )
     # Combine both matrices into a single one, where each cell holds pixel
     # coordinates in the TDC and the timestamp
-    data_all = np.stack(
-        (data_matrix_pixels, data_matrix_timestamps), axis=2
-    ).astype(np.longlong)
+    data_all = np.stack((data_pixels, data_timestamps), axis=2).astype(
+        np.int64
+    )
 
     if apply_calibration is False:
         data_all[:, :, 1] = data_all[:, :, 1] * 2500 / 140
     else:
         # Path to the calibration data
         pix_coordinates = np.arange(256).reshape(64, 4)
-        # path_calibration_data = (
-        #     os.path.realpath(__file__) + "/../.." + "/params/calibration_data"
-        # )
 
         path_calibration_data = os.path.join(
             os.path.dirname(os.path.realpath(__file__)),
@@ -174,25 +175,22 @@ def unpack_binary_data(
             # Find data from that pixel
             ind = np.where(data_all[tdc].T[0] == pix)[0]
             # Cut non-valid timestamps ('-1's)
-            ind = ind[np.where(data_all[tdc].T[1][ind] >= 0)[0]]
+            ind = ind[data_all[tdc].T[1][ind] >= 0]
             if not np.any(ind):
                 continue
+            data_cut = data_all[tdc].T[1][ind]
             # Apply calibration; offset is added due to how delta ts are
             # calculated
             if include_offset:
                 data_all[tdc].T[1][ind] = (
-                    (data_all[tdc].T[1][ind] - data_all[tdc].T[1][ind] % 140)
-                    * 2500
-                    / 140
-                    + calibration_matrix[i, (data_all[tdc].T[1][ind] % 140)]
+                    (data_cut - data_cut % 140) * 2500 / 140
+                    + calibration_matrix[i, (data_cut % 140)]
                     + offset_array[i]
                 )
             else:
                 data_all[tdc].T[1][ind] = (
-                    data_all[tdc].T[1][ind] - data_all[tdc].T[1][ind] % 140
-                ) * 2500 / 140 + calibration_matrix[
-                    i, (data_all[tdc].T[1][ind] % 140)
-                ]
+                    data_cut - data_cut % 140
+                ) * 2500 / 140 + calibration_matrix[i, (data_cut % 140)]
 
     return data_all
 
@@ -269,9 +267,9 @@ def unpack_binary_data_with_absolute_timestamps(
     # Unpack binary data
     raw_data = np.fromfile(file_path, dtype=np.uint32)
     # Timestamps are stored in the lower 28 bits
-    data_timestamps_all = (raw_data & 0xFFFFFFF).astype(np.longlong)
+    data_timestamps_all = (raw_data & 0xFFFFFFF).astype(np.int64)
     # Number of acquisition cycles in each data file
-    cycles = int(len(data_timestamps_all) / (timestamps * 65 + 2))
+    cycles = len(data_timestamps_all) // (timestamps * 65 + 2)
 
     # List of indices of absolute timestamps
     ind = []
@@ -307,10 +305,10 @@ def unpack_binary_data_with_absolute_timestamps(
 
     # Cut the absolute timestamps, collect the timestamps
     raw_data_cut = np.delete(raw_data, ind)
-    data_timestamps_cut = (raw_data_cut & 0xFFFFFFF).astype(np.longlong)
-    data_timestamps_cut[np.where(raw_data_cut < 0x80000000)] = -1
+    data_timestamps_cut = (raw_data_cut & 0xFFFFFFF).astype(np.int64)
+    data_timestamps_cut[raw_data_cut < 0x80000000] = -1
     # Pixel address in the given TDC is 2 bits above timestamp
-    data_pixels = ((raw_data_cut >> 28) & 0x3).astype(np.longlong)
+    data_pixels = ((raw_data_cut >> 28) & 0x3).astype(np.int8)
     del raw_data
     # Standard data: everything besides the absolute timestamps
 
@@ -318,32 +316,31 @@ def unpack_binary_data_with_absolute_timestamps(
     data_matrix_pixels = (
         data_pixels.reshape(cycles, 65, timestamps)
         .transpose((1, 0, 2))
-        .reshape(65, timestamps * cycles)
+        .reshape(65, -1)
     )
 
     data_matrix_timestamps = (
         data_timestamps_cut.reshape(cycles, 65, timestamps)
         .transpose((1, 0, 2))
-        .reshape(65, timestamps * cycles)
+        .reshape(65, -1)
     )
     # Cut the 65th TDC that does not hold any actual data from pixels
     data_matrix_pixels = data_matrix_pixels[:-1]
     data_matrix_timestamps = data_matrix_timestamps[:-1]
     # Insert '-2' at the end of each cycle
+    insert_indices = np.linspace(
+        timestamps, cycles * timestamps, cycles
+    ).astype(np.longlong)
     data_matrix_pixels = np.insert(
         data_matrix_pixels,
-        np.linspace(timestamps, cycles * timestamps, cycles).astype(
-            np.longlong
-        ),
+        insert_indices,
         -2,
         1,
     )
 
     data_matrix_timestamps = np.insert(
         data_matrix_timestamps,
-        np.linspace(timestamps, cycles * timestamps, cycles).astype(
-            np.longlong
-        ),
+        insert_indices,
         -2,
         1,
     )
@@ -351,7 +348,7 @@ def unpack_binary_data_with_absolute_timestamps(
     # coordinates in the TDC and the timestamp
     data_all = np.stack(
         (data_matrix_pixels, data_matrix_timestamps), axis=2
-    ).astype(np.longlong)
+    ).astype(np.int64)
 
     if apply_calibration is False:
         data_all[:, :, 1] = data_all[:, :, 1] * 2500 / 140
@@ -399,21 +396,18 @@ def unpack_binary_data_with_absolute_timestamps(
             ind = ind[np.where(data_all[tdc].T[1][ind] >= 0)[0]]
             if not np.any(ind):
                 continue
+            data_cut = data_all[tdc].T[1][ind]
             # Apply calibration; offset is added due to how delta ts are
             # calculated
             if include_offset:
                 data_all[tdc].T[1][ind] = (
-                    (data_all[tdc].T[1][ind] - data_all[tdc].T[1][ind] % 140)
-                    * 2500
-                    / 140
-                    + calibration_matrix[i, (data_all[tdc].T[1][ind] % 140)]
+                    (data_cut - data_cut % 140) * 2500 / 140
+                    + calibration_matrix[i, (data_cut % 140)]
                     + offset_array[i]
                 )
             else:
                 data_all[tdc].T[1][ind] = (
-                    data_all[tdc].T[1][ind] - data_all[tdc].T[1][ind] % 140
-                ) * 2500 / 140 + calibration_matrix[
-                    i, (data_all[tdc].T[1][ind] % 140)
-                ]
+                    data_cut - data_cut % 140
+                ) * 2500 / 140 + calibration_matrix[i, (data_cut % 140)]
 
     return data_all, absolute_timestamps
