@@ -48,58 +48,42 @@ def calculate_differences_2212(
     """
     deltas_all = {}
 
-    # if isinstance(pixels[0], list) and isinstance(pixels[1], list) is True:
-    #     pixels_left, pixels_right = sorted(pixels)
-    # elif isinstance(pixels[0], int) and isinstance(pixels[1], list) is True:
-    #     pixels_left, pixels_right = sorted([[pixels[0]], pixels[1]])
-    # elif isinstance(pixels[0], list) and isinstance(pixels[1], int) is True:
-    #     pixels_left, pixels_right = sorted([pixels[0], [pixels[1]]])
-    # elif isinstance(pixels[0], int) and isinstance(pixels[1], int) is True:
-    #     pixels_left = pixels
-    #     pixels_right = pixels
-
     pixels_left, pixels_right = utils.pixel_list_transform(pixels)
 
+    # Find ends of cycles
+    cycle_ends = np.argwhere(data[0].T[0] == -2)
+    cycle_ends = np.insert(cycle_ends, 0, 0)
+
     for q in pixels_left:
+        # First pixel in the pair
+        tdc1, pix_c1 = np.argwhere(pix_coor == q)[0]
+        pix1 = np.where(data[tdc1].T[0] == pix_c1)[0]
         for w in pixels_right:
             if w <= q:
                 continue
             deltas_all["{},{}".format(q, w)] = []
-            # Find ends of cycles
-            cycle_ends = np.argwhere(data[0].T[0] == -2)
-            cycle_ends = np.insert(cycle_ends, 0, 0)
-            # First pixel in the pair
-            tdc1, pix_c1 = np.argwhere(pix_coor == q)[0]
-            pix1 = np.where(data[tdc1].T[0] == pix_c1)[0]
+
             # Second pixel in the pair
             tdc2, pix_c2 = np.argwhere(pix_coor == w)[0]
             pix2 = np.where(data[tdc2].T[0] == pix_c2)[0]
-            # Get timestamp for both pixels in the given cycle
 
             # Go over cycles, getting data for the appropriate cycle
             # only
             for cyc in range(len(cycle_ends) - 1):
-                pix1_ = pix1[
-                    np.logical_and(
-                        pix1 >= cycle_ends[cyc], pix1 < cycle_ends[cyc + 1]
-                    )
-                ]
-                if not np.any(pix1_):
+                slice_from = cycle_ends[cyc]
+                slice_to = cycle_ends[cyc + 1]
+                pix1_slice = pix1[(pix1 >= slice_from) & (pix1 < slice_to)]
+                if not np.any(pix1_slice):
                     continue
-                pix2_ = pix2[
-                    np.logical_and(
-                        pix2 >= cycle_ends[cyc], pix2 < cycle_ends[cyc + 1]
-                    )
-                ]
-                if not np.any(pix2_):
+                pix2_slice = pix2[(pix2 >= slice_from) & (pix2 < slice_to)]
+                if not np.any(pix2_slice):
                     continue
+
                 # Calculate delta t
-                tmsp1 = data[tdc1].T[1][
-                    pix1_[np.where(data[tdc1].T[1][pix1_] > 0)[0]]
-                ]
-                tmsp2 = data[tdc2].T[1][
-                    pix2_[np.where(data[tdc2].T[1][pix2_] > 0)[0]]
-                ]
+                tmsp1 = data[tdc1].T[1][pix1_slice]
+                tmsp1 = tmsp1[tmsp1 > 0]
+                tmsp2 = data[tdc2].T[1][pix2_slice]
+                tmsp2 = tmsp2[tmsp2 > 0]
                 for t1 in tmsp1:
                     deltas = tmsp2 - t1
                     ind = np.where(np.abs(deltas) < delta_window)[0]
