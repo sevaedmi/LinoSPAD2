@@ -9,6 +9,13 @@ functions:
     * calculate_dark_count_rate - calculate the average dark count rate
     for the given sensor half.
     
+    * collect_dcr_by_file - calculate the DCR for each file in the
+    given folder and save the result into a .pkl file
+    
+    * plot_dcr_histogram_and_stability - plot the DCR vs file to check
+    setup stability, and plot histogram of DCR averaged over files
+    together with integral over pixels
+    
     * zero_to_cross_talk_collect - collect timestamp differences from
     the '.dat' with the cross-talk data (preferably, noise only).
     Timestamp differences are collected for the given hot pixels plus
@@ -26,6 +33,7 @@ functions:
 
 import glob
 import os
+import pickle
 import sys
 
 import numpy as np
@@ -33,7 +41,6 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from pyarrow import feather as ft
 from scipy.optimize import curve_fit
-from scipy.stats import sem
 from tqdm import tqdm
 
 from LinoSPAD2.functions import calc_diff as cd
@@ -373,7 +380,7 @@ def _plot_cross_talk_peaks(
         plt.legend()
         try:
             os.chdir(os.path.join(path, "results/ct_fit"))
-        except:
+        except FileNotFoundError as _:
             os.makedirs(os.path.join(path, "results/ct_fit"))
             os.chdir(os.path.join(path, "results/ct_fit"))
         plt.savefig(f"CT_fit_pixels_{pixels[0]},{pix}.png")
@@ -639,17 +646,17 @@ def calculate_dark_count_rate(
 
 
 def collect_dcr_by_file(
-    path,
+    path: str,
     daughterboard_number: str,
     motherboard_number: str,
     firmware_version: str,
     timestamps: int = 512,
 ):
-    # TODO update docstring
     """Calculate dark count rate in counts per second per pixel.
 
     Calculate dark count rate for the given daughterboard and
-    motherboard.
+    motherboard in units of counts per second per pixel for each file
+    in the given folder and save the resulting list as a .pkl file.
 
     Parameters
     ----------
@@ -695,6 +702,8 @@ def collect_dcr_by_file(
 
     files = glob.glob("*.dat*")
 
+    output_file_name = files[0][:-4] + "-" + files[-1][:-4]
+
     valid_per_pixel = np.zeros(256)
 
     dcr = []
@@ -710,6 +719,7 @@ def collect_dcr_by_file(
             print("\nFirmware version is not recognized.")
             sys.exit()
 
+        # Unpack the data; offset calibration is not necessary
         data = f_up.unpack_binary_data(
             files[i],
             daughterboard_number,
@@ -718,6 +728,8 @@ def collect_dcr_by_file(
             timestamps,
             include_offset=False,
         )
+
+        # Collect number of timestamps in each pixel - DCR
         for i in range(256):
             tdc, pix = np.argwhere(pix_coor == i)[0]
             ind = np.where(data[tdc].T[0] == pix)[0]
@@ -729,7 +741,129 @@ def collect_dcr_by_file(
 
         dcr.append(valid_per_pixel / acq_window_length / number_of_cycles)
 
-    return dcr
+    # Save the results into a .pkl file
+    try:
+        os.chdir("dcr_data")
+    except FileNotFoundError as _:
+        os.mkdir("dcr_data")
+        os.chdir("dcr_data")
+
+    file_with_dcr = f"{output_file_name}_dcr_data.pkl"
+
+    with open(file_with_dcr, "wb") as f:
+        pickle.dump(dcr, f)
+
+    # Check, if the file was created
+    absolute_address = os.path.join(path, "dcr_data", file_with_dcr)
+    if os.path.isfile(absolute_address) is True:
+        print(f"\n> > > DCR data are saved in {absolute_address} < < <")
+
+    else:
+        print("File wasn't generated. Check input parameters.")
+
+
+def plot_dcr_histogram_and_stability(
+    path: str,
+    hist_number_of_bins: int = 200,
+):
+    """Plot median DCR vs file and histogram of DCR with integral.
+
+    Plot median DCR vs file for checking the setup stability. Also, plot
+    a histogram of DCR together with intergral over pixels in units of
+    %.
+
+    Parameters
+    ----------
+    path : str
+        Path to data files.
+    daughterboard_number : str
+        LinoSPAD2 daughterboard number.
+    motherboard_number : str
+        LinoSPAD2 motherboard (FPGA) number.
+    hist_number_of_bins : int, optional
+        Number of bins for the DCR histogram. The default is 200.
+
+    Raises
+    ------
+    FileNotFoundError
+        Raised if the folder with the DCR data was not found.
+    FileNotFoundError
+        Raised if the .pkl file with the DCR data was not found.
+    """
+
+    os.chdir(path)
+
+    # Collect all files in the given folder
+    files = glob.glob("*.dat")
+
+    # Find the file with the DCR data for the found files
+    dcr_file_name = files[0][:-4] + "-" + files[-1][:-4]
+    file_with_dcr = f"{dcr_file_name}_dcr_data.pkl"
+
+    try:
+        os.chdir("dcr_data")
+    except FileNotFoundError as _:
+        raise FileNotFoundError("The folder with DCR data was not found.")
+
+    try:
+        with open(file_with_dcr, "rb") as f:
+            data = pickle.load(f)
+    except FileNotFoundError as _:
+        raise FileNotFoundError(f"{file_with_dcr} was not found")
+
+    # Plot the DCR stability graph: median DCR vs file
+    plt.rcParams.update({"font.size": 25})
+    plt.figure(figsize=(12, 8))
+    plt.plot(
+        [x for x in range(len(data))],
+        np.median(data, axis=1),
+        color="darkslateblue",
+    )
+    plt.title("DCR stability graph")
+    plt.xlabel("File [-]")
+    plt.ylabel("Median DCR [cps]")
+
+    # Save the plot to "results/dcr"
+    try:
+        os.chdir("../results/dcr")
+    except FileNotFoundError as _:
+        os.makedirs("../results/dcr")
+        os.chdir("../results/dcr")
+    plt.savefig("DCR_stability_graph.png")
+
+    # DCR histogram with integral
+    # Compute the histogram
+    bins = np.logspace(
+        np.log10(0.1), np.log10(np.max(data[0])), hist_number_of_bins
+    )
+    hist, bin_edges = np.histogram(np.average(data, axis=0), bins=bins)
+    bin_centers = (bin_edges - (bin_edges[1] - bin_edges[0]) / 2)[1:]
+
+    # Plot the histogram
+    fig, ax = plt.subplots(figsize=(12, 8))
+    ax.bar(
+        bin_centers,
+        hist,
+        width=np.diff(bin_edges),
+        label="All",
+        color="salmon",
+    )
+    # Calculate and plot the integral
+    cumul = np.cumsum(hist)
+    ax1 = ax.twinx()
+    ax1.plot(bin_centers, cumul / 256 * 100, color="teal", linewidth=3)
+    ax.set_xlim(10)
+    ax1.set_xlim(10)
+    ax.set_ylim(0)
+    ax1.set_ylim(0)
+    ax.set_xscale("log")
+    ax.set_xlabel("DCR [cps/pixel]")
+    ax.set_ylabel("Count [-]")
+    ax1.set_ylabel("Integral [%]")
+    plt.show()
+
+    # Save the plot to "results/dcr"
+    fig.savefig("DCR_histogram_w_integral.png")
 
 
 def _calculate_and_plot_cross_talk(

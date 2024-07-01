@@ -121,6 +121,9 @@ def fit_with_gaussian(
     if not feather_file_name:
         raise FileNotFoundError("\nFile with data not found")
 
+    # Save to use in the title
+    pixels_title = np.copy(pix_pair)
+
     if correct_pix_address:
         for i, pixel in enumerate(pix_pair):
             if pixel > 127:
@@ -223,7 +226,7 @@ def fit_with_gaussian(
     if title_on is True:
         plt.title(
             "Gaussian fit of delta t histogram, pixels {}, {}".format(
-                pix_pair[0], pix_pair[1]
+                pixels_title[0], pixels_title[1]
             )
         )
 

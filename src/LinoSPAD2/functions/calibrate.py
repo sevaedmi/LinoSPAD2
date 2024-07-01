@@ -44,7 +44,7 @@ from LinoSPAD2.functions import utils
 
 
 def calibrate_and_save_TDC_data(
-    data_path: str,
+    path: str,
     daughterboard_number: str,
     motherboard_number: str,
     firmware_version: str,
@@ -58,7 +58,7 @@ def calibrate_and_save_TDC_data(
 
     Parameters
     ----------
-    data_path : str
+    path : str
         Path to the data file.
     daughterboard_number : str
         LinoSPAD2 daughterboard number.
@@ -99,7 +99,7 @@ def calibrate_and_save_TDC_data(
             "'firmware_version' should be a string, '2208', '2212b' or '2212s'."
         )
 
-    os.chdir(data_path)
+    os.chdir(path)
     filename = glob.glob("*.dat*")[0]
 
     if firmware_version == "2208":
@@ -202,7 +202,7 @@ def calibrate_and_save_TDC_data(
 
 
 def unpack_data_for_offset_calibration(
-    data_file_path: str,
+    path: str,
     daughterboard_number: str,
     motherboard_number: str,
     firmware_version: str,
@@ -218,7 +218,7 @@ def unpack_data_for_offset_calibration(
 
     Parameters
     ----------
-    data_file_path : str
+    path : str
         Path to the '.dat' data file.
     daughterboard_number : str
         LinoSPAD2 daughterboard number.
@@ -265,7 +265,7 @@ def unpack_data_for_offset_calibration(
         )
 
     # Unpack binary data
-    raw_file_data = np.fromfile(data_file_path, dtype=np.uint32)
+    raw_file_data = np.fromfile(path, dtype=np.uint32)
     # Timestamps are lower 28 bits
     data_timestamps = (raw_file_data & 0xFFFFFFF).astype(np.longlong)
     # Pix address in the given TDC is 2 bits above timestamp
@@ -351,7 +351,7 @@ def unpack_data_for_offset_calibration(
 
 
 def save_offset_timestamp_differences(
-    data_path: str,
+    path: str,
     pixels: list,
     overwrite: bool,
     daughterboard_number: str,
@@ -369,7 +369,7 @@ def save_offset_timestamp_differences(
 
     Parameters
     ----------
-    data_path : str
+    path : str
         Path to data files.
     pixels : list
         List of pixel numbers for which the timestamp differences should
@@ -420,7 +420,7 @@ def save_offset_timestamp_differences(
             "'daughterboard_number' should be a string, either 'NL11' or 'A5'."
         )
 
-    os.chdir(data_path)
+    os.chdir(path)
 
     all_files = glob.glob("*.dat*")
 
@@ -562,15 +562,13 @@ def save_offset_timestamp_differences(
         os.chdir("..")
 
     if (
-        os.path.isfile(
-            data_path + "/offset_deltas/{}.csv".format(output_file_name)
-        )
+        os.path.isfile(path + "/offset_deltas/{}.csv".format(output_file_name))
         is True
     ):
         print(
             "\n> > > Timestamp differences are saved as {file}.csv in "
             "{path} < < <".format(
-                file=output_file_name, path=data_path + "\offset_deltas"
+                file=output_file_name, path=path + "\offset_deltas"
             )
         )
     else:
@@ -578,7 +576,7 @@ def save_offset_timestamp_differences(
 
 
 def calculate_and_save_offset_calibration(
-    data_path: str,
+    path: str,
     daughterboard_number: str,
     motherboard_number: str,
     firmware_version: str,
@@ -591,7 +589,7 @@ def calculate_and_save_offset_calibration(
 
     Parameters
     ----------
-    data_path : str
+    path : str
         Path to the data files.
     daughterboard_number : str
         LinoSPAD2 daughterboard number.
@@ -608,7 +606,7 @@ def calculate_and_save_offset_calibration(
 
     # Calculate delta ts for pixels 0 and 4-255
     save_offset_timestamp_differences(
-        data_path,
+        path,
         pixels=[[0], [x for x in range(1, 256)]],
         db_num=daughterboard_number,
         mb_num=motherboard_number,
@@ -616,7 +614,7 @@ def calculate_and_save_offset_calibration(
         rewrite=True,
         timestamps=timestamps,
     )
-    os.chdir(data_path + r"/offset_deltas/")
+    os.chdir(path + r"/offset_deltas/")
     file_csv = glob.glob("*Offset_*.csv*")[0]
     dt_all = np.array(pd.read_csv(file_csv))
     os.chdir("..")
@@ -650,7 +648,7 @@ def calculate_and_save_offset_calibration(
 
     # Calculate delta ts for pixels 1,2,3
     save_offset_timestamp_differences(
-        data_path,
+        path,
         pixels=[[1, 2, 3], [4]],
         db_num=daughterboard_number,
         mb_num=motherboard_number,
@@ -658,7 +656,7 @@ def calculate_and_save_offset_calibration(
         rewrite=True,
         timestamps=timestamps,
     )
-    os.chdir(data_path + r"/offset_deltas/")
+    os.chdir(path + r"/offset_deltas/")
     file_csv = glob.glob("*.csv*")[0]
     dt_all = np.array(pd.read_csv(file_csv))
     os.chdir("..")
