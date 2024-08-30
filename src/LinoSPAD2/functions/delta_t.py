@@ -41,6 +41,7 @@ import glob
 import os
 import sys
 from math import ceil, floor
+from typing import List
 
 import numpy as np
 import pandas as pd
@@ -53,7 +54,7 @@ from LinoSPAD2.functions import unpack as f_up
 from LinoSPAD2.functions import utils
 
 
-def flatten(input_list: []):
+def _flatten(input_list: List[int]):
     """Flatten the input list.
 
     Flatten the input list, which can be a list of numbers, lists,
@@ -82,7 +83,7 @@ def flatten(input_list: []):
 
 def calculate_and_save_timestamp_differences(
     path: str,
-    pixels: list,
+    pixels: List[int] | List[List[int]],
     rewrite: bool,
     daughterboard_number: str,
     motherboard_number: str,
@@ -103,9 +104,10 @@ def calculate_and_save_timestamp_differences(
 
     Parameters
     ----------
+    #TODO
     path : str
         Path to data files.
-    pixels : list
+    pixels : List[int] | List[List[int]]
         List of pixel numbers for which the timestamp differences should
         be calculated and saved or list of two lists with pixel numbers
         for peak vs. peak calculations.
@@ -150,6 +152,31 @@ def calculate_and_save_timestamp_differences(
     Returns
     -------
     None.
+
+    Examples
+    -------
+    For the sensor half on the '23' side of the daughterboard, the
+    pixel addressing should be correct. Let's assume the offset
+    calibration was not done for this sensor and, therefore, the
+    calibration matrix is not available - it should be passed as False.
+    Let's collect timestamp differences for pairs of pixels 15-25,
+    15-26, and 15-27.
+
+    First, get the absolute path to where the '.dat' files are.
+    >>> path = r'C:/Path/To/Data'
+
+    Now to the function itself.
+    >>> calculate_and_save_timestamp_differences(
+    >>> path,
+    >>> pixels = [15, [25,26,27]],
+    >>> rewrite = True,
+    >>> daughterboard_number="NL11",
+    >>> motherboard_number="#21",
+    >>> firmware_version="2212s",
+    >>> timestamps = 1000,
+    >>> include_offset = False,
+    >>> correct_pixel_addressing = True,
+    >>> )
     """
     # parameter type check
     if isinstance(pixels, list) is False:
@@ -167,16 +194,15 @@ def calculate_and_save_timestamp_differences(
 
     os.chdir(path)
 
-    # files_all = sorted(glob.glob("*.dat*"))
+    # Handle the input list
+    pixels = utils.pixel_list_transform(pixels)
+
     files_all = glob.glob("*.dat*")
     files_all.sort(key=os.path.getmtime)
 
     out_file_name = files_all[0][:-4] + "-" + files_all[-1][:-4]
 
     # Check if the feather file exists and if it should be rewrited
-
-    # feather_file = f"{out_file_name}.feather"
-
     feather_file = os.path.join(
         path, "delta_ts_data", f"{out_file_name}.feather"
     )
@@ -198,12 +224,9 @@ def calculate_and_save_timestamp_differences(
         print("\nFirmware version is not recognized.")
         sys.exit()
 
+    # TODO fix pix add corection with input type (int+list, etc..)
     if correct_pix_address:
-        for i, pixel in enumerate(pixels):
-            if pixel > 127:
-                pixels[i] = 255 - pixels[i]
-            else:
-                pixels[i] = pixels[i] + 128
+        pixels = utils.correct_pixels_address(pixels)
 
     # Mask the hot/warm pixels
     if app_mask is True:
@@ -416,9 +439,6 @@ def calculate_and_save_timestamp_differences_full_sensor(
 
     # Check if '.feather' file with timestamps differences already
     # exists
-    # feather_file = f"{out_file_name}.feather"
-
-    # utils.file_rewrite_handling(feather_file, rewrite)
 
     feather_file = os.path.join(
         path, "delta_ts_data", f"{out_file_name}.feather"
@@ -1128,8 +1148,8 @@ def collect_and_plot_timestamp_differences(
         "\n> > > Plotting timestamps differences as a grid of histograms < < <"
     )
 
-    plt.rcParams.update({"font.size": 22})
-    # In the case two lists given - the left and right peaks - flatten
+    plt.rcParams.update({"font.size": 25})
+    # In the case two lists given - the left and right peaks - _flatten
     # into a single list
 
     # Save to use in the title
@@ -1142,7 +1162,7 @@ def collect_and_plot_timestamp_differences(
             else:
                 pixels[i] = pixels[i] + 128
 
-    pixels = flatten(pixels)
+    pixels = _flatten(pixels)
 
     if len(pixels) > 2:
         fig, axs = plt.subplots(
@@ -1361,9 +1381,9 @@ def collect_and_plot_timestamp_differences_from_ft_file(
     )
 
     plt.rcParams.update({"font.size": 22})
-    # In the case two lists given - the left and right peaks - flatten
+    # In the case two lists given - the left and right peaks - _flatten
     # into a single list
-    pixels = flatten(pixels)
+    pixels = _flatten(pixels)
 
     # Prepare the grid for the plots based on the number of pixels
     # given
@@ -1551,7 +1571,7 @@ def collect_and_plot_timestamp_differences_full_sensor(
     # Flatten the input list of pixels: if there are lists of pixels'
     # numbers inside the list, unpack them so that the output is a list
     # of numbers only
-    pixels = flatten(pixels)
+    pixels = _flatten(pixels)
 
     # Get the data files names for finding the appropriate '.feather'
     # file with timestamps differences, checking both options, depending

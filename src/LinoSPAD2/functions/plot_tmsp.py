@@ -163,12 +163,15 @@ def plot_single_pix_hist(
     motherboard_number: str,
     firmware_version: str,
     timestamps: int = 512,
+    cycle_length: float = 4e9,
+    step: int = 1e6,
     show_fig: bool = False,
     include_offset: bool = True,
     apply_calibration: bool = True,
     fit_average: bool = False,
     color: str = "teal",
 ):
+    # TODO update docstring
     """Plot a histogram for each pixel in the given range.
 
     Used mainly for checking the homogeneity of the LinoSPAD2 output
@@ -245,7 +248,9 @@ def plot_single_pix_hist(
             apply_calibration,
         )
 
-        bins = np.arange(0, 4e9, 17.867 * 1e6)  # bin size of 17.867 us
+        bins = np.arange(
+            0, cycle_length, 2500 / 140 * step
+        )  # bin size of 17.867 us
 
         if pixels is None:
             pixels = np.arange(145, 165, 1)
@@ -383,6 +388,34 @@ def plot_sensor_population(
     Returns
     -------
     None.
+
+    Examples
+    -------
+    An example how the function can be used to get the sensor
+    occupation from a single file while looking for peaks - the most
+    quick and straightforward approach to find where the beams were
+    focused and get the peak position for further use in, e.g., delta_t
+    functions. Here, the data were collected using the '23'-side
+    sensor half which required correction of the pixel addressing.
+    Offset calibration for the sensor is not available therefore
+    it should be skipped.
+
+    First, get the absolute path to where the '.dat' files are.
+    >>> path = r'C:/Path/To/Data'
+
+    Now to the function itself.
+    >>> plot_sensor_popuation(
+    >>> path,
+    >>> daughterboard_number="NL11",
+    >>> motherboard_number="#21",
+    >>> firmware_version="2212s",
+    >>> timestamps = 1000,
+    >>> show_fig = True,
+    >>> include_offset = False,
+    >>> correct_pixel_addressing = True,
+    >>> fit_peaks = True,
+    >>> single_file = True,
+    >>> )
     """
     # parameter type check
     if not isinstance(firmware_version, str):
@@ -408,8 +441,9 @@ def plot_sensor_population(
 
     if single_file:
         files = files[0]
-
-    plot_name = files[0][:-4] + "-" + files[-1][:-4]
+        plot_name = files[:-4]
+    else:
+        plot_name = files[0][:-4] + "-" + files[-1][:-4]
 
     # valid_per_pixel = np.zeros(256)
 
@@ -432,16 +466,9 @@ def plot_sensor_population(
         correct_pixel_addressing=correct_pixel_addressing,
     )
 
-    # if correct_pixel_addressing:
-    #     fix = np.zeros(len(timestamps_per_pixel))
-    #     fix[:128] = timestamps_per_pixel[128:]
-    #     fix[128:] = np.flip(timestamps_per_pixel[:128])
-    #     timestamps_per_pixel = fix
-    #     del fix
-
     # Plotting
     print("\n> > > Plotting < < <\n")
-    plt.rcParams.update({"font.size": 22})
+    plt.rcParams.update({"font.size": 25})
     fig = plt.figure(figsize=(12, 10))
     if scale == "log":
         plt.yscale("log")
@@ -456,12 +483,8 @@ def plot_sensor_population(
         peaks, _ = find_peaks(timestamps_per_pixel, height=threshold)
         peaks = np.unique(peaks)
 
-        # valid_per_pixel_tmp = np.zeros(256)
-
         print("Fitting the peaks with gaussian")
         for peak_index in peaks:
-            # ind = peaks - peak_index
-            # valid_per_pixel_tmp[ind] = np.median(timestamps_per_pixel)
             x_fit = np.arange(
                 peak_index - fit_width, peak_index + fit_width + 1
             )
@@ -472,9 +495,6 @@ def plot_sensor_population(
                 params, _ = utils.fit_gaussian(x_fit, y_fit)
             except Exception as _:
                 continue
-
-            # amplitude, position, width = params
-            # position = np.clip(int(position), 0, 255)
 
             plt.plot(
                 x_fit,
@@ -492,14 +512,24 @@ def plot_sensor_population(
         os.makedirs("results/sensor_population")
         os.chdir("results/sensor_population")
     fig.tight_layout()
-    plt.savefig("{}.png".format(plot_name))
-    print(
-        "> > > The plot is saved as '{file}.png' in {path} < < <".format(
-            file=plot_name, path=os.getcwd()
+    if single_file:
+        plt.savefig("{}_single_file.png".format(plot_name))
+        print(
+            "> > > The plot is saved as '{file}_single_file.png' in {path} < < <".format(
+                file=plot_name, path=os.getcwd()
+            )
         )
-    )
-    if pickle_fig:
-        pickle.dump(fig, open(f"{plot_name}.pickle", "wb"))
+        if pickle_fig:
+            pickle.dump(fig, open(f"{plot_name}_single_file.pickle", "wb"))
+    else:
+        plt.savefig("{}.png".format(plot_name))
+        print(
+            "> > > The plot is saved as '{file}.png' in {path} < < <".format(
+                file=plot_name, path=os.getcwd()
+            )
+        )
+        if pickle_fig:
+            pickle.dump(fig, open(f"{plot_name}.pickle", "wb"))
 
     os.chdir("../..")
 
