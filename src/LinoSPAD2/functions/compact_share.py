@@ -254,7 +254,7 @@ def plot_shared(
     motherboard_number: str,
     show_fig: bool = False,
     app_mask: bool = True,
-    color: str = "salmon",
+    color: str = "rebeccapurple",
 ):
     """Plots sensor population from a '.txt' file.
 
@@ -314,8 +314,8 @@ def plot_shared(
 
     plt.rcParams.update({"font.size": 22})
     plt.figure(figsize=(16, 10))
-    plt.xlabel("Pixel [-]")
-    plt.ylabel("Counts [-]")
+    plt.xlabel("Pixel (-)")
+    plt.ylabel("Photons (-)")
     plt.plot(data, "o-", color=color)
 
     try:
@@ -335,7 +335,7 @@ def collect_and_plot_timestamp_differences_shared_feather(
     range_right: int = 10e3,
     step: int = 1,
     same_y: bool = False,
-    color: str = "salmon",
+    color: str = "rebeccapurple",
 ):
     """Collect and plot timestamp differences from a '.feather' file.
 
@@ -364,7 +364,7 @@ def collect_and_plot_timestamp_differences_shared_feather(
         Switch for plotting the histograms with the same y-axis.
         The default is False.
     color : str, optional
-        Color for the plot. The default is 'salmon'.
+        Color for the plot. The default is 'rebeccapurple'.
 
     Raises
     ------
@@ -445,16 +445,16 @@ def collect_and_plot_timestamp_differences_shared_feather(
                 continue
 
             if len(pixels) > 2:
-                axs[q][w - 1].set_xlabel("\u0394t [ps]")
-                axs[q][w - 1].set_ylabel("# of coincidences [-]")
+                axs[q][w - 1].set_xlabel("\u0394t (ps)")
+                axs[q][w - 1].set_ylabel("# of coincidences (-)")
                 n, b, p = axs[q][w - 1].hist(
                     data_to_plot,
                     bins=bins,
                     color=chosen_color,
                 )
             else:
-                plt.xlabel("\u0394t [ps]")
-                plt.ylabel("# of coincidences [-]")
+                plt.xlabel("\u0394t (ps)")
+                plt.ylabel("# of coincidences (-)")
                 n, b, p = plt.hist(
                     data_to_plot,
                     bins=bins,

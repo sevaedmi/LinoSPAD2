@@ -256,8 +256,8 @@ def plot_single_pix_hist(
             pixels = np.arange(145, 165, 1)
 
         for i, _ in enumerate(pixels):
-            plt.figure(figsize=(12, 10))
-            plt.rcParams.update({"font.size": 22})
+            plt.figure(figsize=(16, 10))
+            plt.rcParams.update({"font.size": 27})
             # Define matrix of pixel coordinates, where rows are numbers of TDCs
             # and columns are the pixels that connected to these TDCs
             if firmware_version == "2212s":
@@ -287,8 +287,8 @@ def plot_single_pix_hist(
 
                 av_win_fit = lin_fit(av_win_in, par[0], par[1])
 
-            plt.xlabel("Time [ps]")
-            plt.ylabel("Counts [-]")
+            plt.xlabel("Time (ps)")
+            plt.ylabel("Counts (-)")
             # plt.plot(av_win_in, av_win, color="black", linewidth=8)
             if fit_average is True:
                 plt.gcf()
@@ -316,7 +316,7 @@ def plot_sensor_population(
     app_mask: bool = True,
     include_offset: bool = True,
     apply_calibration: bool = True,
-    color: str = "salmon",
+    color: str = "rebeccapurple",
     correct_pixel_addressing: bool = False,
     fit_peaks: bool = False,
     threshold_multiplier: int = 10,
@@ -364,7 +364,7 @@ def plot_sensor_population(
         while include_offset is set to 'False', only the TDC calibration is
         applied. The default is True.
     color : str, optional
-        Color for the plot. The default is 'salmon'.
+        Color for the plot. The default is 'rebeccapurple'.
     correct_pixel_addressing : bool, optional
         Switch for correcting pixel addressing for the faulty firmware
         version for the 23 side of the daughterboard. The default is
@@ -468,13 +468,13 @@ def plot_sensor_population(
 
     # Plotting
     print("\n> > > Plotting < < <\n")
-    plt.rcParams.update({"font.size": 25})
-    fig = plt.figure(figsize=(12, 10))
+    plt.rcParams.update({"font.size": 27})
+    fig = plt.figure(figsize=(16, 10))
     if scale == "log":
         plt.yscale("log")
     plt.plot(timestamps_per_pixel, style, color=color)
-    plt.xlabel("Pixel number [-]")
-    plt.ylabel("Timestamps [-]")
+    plt.xlabel("Pixel number (-)")
+    plt.ylabel("Photons (-)")
 
     # Find and fit peaks if fit_peaks is True
     if fit_peaks:
@@ -881,13 +881,13 @@ def plot_sensor_population_full_sensor(
 
     print("\n> > > Plotting < < <\n")
 
-    plt.rcParams.update({"font.size": 22})
-    fig = plt.figure(figsize=(12, 10))
+    plt.rcParams.update({"font.size": 27})
+    fig = plt.figure(figsize=(16, 10))
     if scale == "log":
         plt.yscale("log")
     plt.plot(valid_per_pixel, style, color=color)
-    plt.xlabel("Pixel number [-]")
-    plt.ylabel("Timestamps [-]")
+    plt.xlabel("Pixel number (-)")
+    plt.ylabel("Photons (-)")
 
     # Find and fit peaks if fit_peaks is True
     if fit_peaks:

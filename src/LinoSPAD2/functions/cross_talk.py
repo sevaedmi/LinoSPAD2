@@ -356,13 +356,13 @@ def _plot_cross_talk_peaks(
                 / (aggressor_pix_tmsps + victim_pix_tmsps)
             )
 
-        plt.rcParams.update({"font.size": 22})
-        plt.figure(figsize=(10, 8))
-        plt.step(bin_centers, counts, color="salmon", label="Data")
+        plt.rcParams.update({"font.size": 27})
+        plt.figure(figsize=(16, 10))
+        plt.step(bin_centers, counts, color="rebeccapurple", label="Data")
         plt.plot(
             bin_centers,
             utils.gaussian(bin_centers, *params),
-            color="teal",
+            color="darkorange",
             label="Fit",
         )
         if senpop is not None:
@@ -375,8 +375,8 @@ def _plot_cross_talk_peaks(
         else:
             plt.title(f"Cross-talk peak, pixels {pixels[0]},{pix}")
 
-        plt.xlabel("\u0394t [ps]")
-        plt.ylabel("# of coincidences [-]")
+        plt.xlabel("\u0394t (ps)")
+        plt.ylabel("# of coincidences (-)")
         plt.legend()
         try:
             os.chdir(os.path.join(path, "results/ct_fit"))
@@ -432,8 +432,8 @@ def _plot_cross_talk_grid(
         0
     ]
 
-    fig, axes = plt.subplots(4, 5, figsize=(12, 6))
-    plt.rcParams.update({"font.size": 22})
+    fig, axes = plt.subplots(4, 5, figsize=(16, 10))
+    plt.rcParams.update({"font.size": 27})
 
     for i, pix in enumerate(pixels[1:]):
         if pix_on_left:
@@ -479,52 +479,58 @@ def _plot_cross_talk_grid(
             continue
 
         if i < 5:
-            axes[0, i].plot(bin_centers, counts, ".", color="salmon")
+            axes[0, i].plot(bin_centers, counts, ".", color="rebeccapurple")
             axes[0, i].plot(
                 bin_centers,
                 utils.gaussian(bin_centers, *params),
                 "--",
-                color="teal",
+                color="darkorange",
             )
             axes[0, i].set_xticks([])
             axes[0, i].set_yticks([])
             axes[0, i].set_title(f"{pixels[0]},{pix}")
         elif i >= 5 and i < 10:
-            axes[1, i % 5].plot(bin_centers, counts, ".", color="salmon")
+            axes[1, i % 5].plot(
+                bin_centers, counts, ".", color="rebeccapurple"
+            )
             axes[1, i % 5].plot(
                 bin_centers,
                 utils.gaussian(bin_centers, *params),
                 "--",
-                color="teal",
+                color="darkorange",
             )
             axes[1, i % 5].set_xticks([])
             axes[1, i % 5].set_yticks([])
             axes[1, i % 5].set_title(f"{pixels[0]},{pix}")
         elif i >= 10 and i < 15:
-            axes[2, i % 5].plot(bin_centers, counts, ".", color="salmon")
+            axes[2, i % 5].plot(
+                bin_centers, counts, ".", color="rebeccapurple"
+            )
             axes[2, i % 5].plot(
                 bin_centers,
                 utils.gaussian(bin_centers, *params),
                 "--",
-                color="teal",
+                color="darkorange",
             )
             axes[2, i % 5].set_xticks([])
             axes[2, i % 5].set_yticks([])
             axes[2, i % 5].set_title(f"{pixels[0]},{pix}")
         else:
-            axes[3, i % 5].plot(bin_centers, counts, ".", color="salmon")
+            axes[3, i % 5].plot(
+                bin_centers, counts, ".", color="rebeccapurple"
+            )
             axes[3, i % 5].plot(
                 bin_centers,
                 utils.gaussian(bin_centers, *params),
                 "--",
-                color="teal",
+                color="darkorange",
             )
             axes[3, i % 5].set_xticks([])
             axes[3, i % 5].set_yticks([])
             axes[3, i % 5].set_title(f"{pixels[0]},{pix}")
 
-    axes[1, 2].set_xlabel("\u0394t [ps]", fontsize=26)
-    fig.text(0, 0.25, "# of coincidences [-]", fontsize=26, rotation=90)
+    axes[1, 2].set_xlabel("\u0394t (ps)", fontsize=26)
+    fig.text(0, 0.25, "# of coincidences (-)", fontsize=26, rotation=90)
 
     # Make plots tight
     plt.tight_layout()
@@ -812,16 +818,16 @@ def plot_dcr_histogram_and_stability(
         raise FileNotFoundError(f"{file_with_dcr} was not found")
 
     # Plot the DCR stability graph: median DCR vs file
-    plt.rcParams.update({"font.size": 25})
-    plt.figure(figsize=(12, 8))
+    plt.rcParams.update({"font.size": 27})
+    plt.figure(figsize=(16, 10))
     plt.plot(
         [x for x in range(len(data))],
         np.median(data, axis=1),
         color="darkslateblue",
     )
     plt.title("DCR stability graph")
-    plt.xlabel("File [-]")
-    plt.ylabel("Median DCR [cps]")
+    plt.xlabel("File (-)")
+    plt.ylabel("Median DCR (cps)")
 
     # Save the plot to "results/dcr"
     try:
@@ -840,26 +846,26 @@ def plot_dcr_histogram_and_stability(
     bin_centers = (bin_edges - (bin_edges[1] - bin_edges[0]) / 2)[1:]
 
     # Plot the histogram
-    fig, ax = plt.subplots(figsize=(12, 8))
+    fig, ax = plt.subplots(figsize=(16, 10))
     ax.bar(
         bin_centers,
         hist,
         width=np.diff(bin_edges),
         label="All",
-        color="salmon",
+        color="rebeccapurple",
     )
     # Calculate and plot the integral
     cumul = np.cumsum(hist)
     ax1 = ax.twinx()
-    ax1.plot(bin_centers, cumul / 256 * 100, color="teal", linewidth=3)
+    ax1.plot(bin_centers, cumul / 256 * 100, color="darkorange", linewidth=3)
     ax.set_xlim(10)
     ax1.set_xlim(10)
     ax.set_ylim(0)
     ax1.set_ylim(0)
     ax.set_xscale("log")
-    ax.set_xlabel("DCR [cps/pixel]")
-    ax.set_ylabel("Count [-]")
-    ax1.set_ylabel("Integral [%]")
+    ax.set_xlabel("DCR (cps/pixel)")
+    ax.set_ylabel("Count (-)")
+    ax1.set_ylabel("Integral (%)")
     plt.show()
 
     # Save the plot to "results/dcr"
@@ -972,8 +978,8 @@ def _plot_cross_talk_vs_distance(path, ct, ct_err, pix_on_left: bool = False):
             # Extract the difference and append it to the list
             differences.append(key_tuple[1] - key_tuple[0])
 
-        plt.figure(figsize=(10, 8))
-        plt.rcParams.update({"font.size": 22})
+        plt.figure(figsize=(16, 10))
+        plt.rcParams.update({"font.size": 27})
         plt.errorbar(
             differences,
             list(CT.values()),
@@ -985,8 +991,8 @@ def _plot_cross_talk_vs_distance(path, ct, ct_err, pix_on_left: bool = False):
         plt.title(
             f"Cross-talk probability for aggressor pixel {aggressor_pix}"
         )
-        plt.xlabel("Distance in pixels [-]")
-        plt.ylabel("Cross-talk probability [%]")
+        plt.xlabel("Distance in pixels (-)")
+        plt.ylabel("Cross-talk probability (%)")
         if pix_on_left:
             plt.savefig(
                 f"Cross-talk_aggressor_pixel_{aggressor_pix}_onleft.png"
@@ -1054,11 +1060,11 @@ def _plot_average_cross_talk_vs_distance(
         )
         final_result_averages[key].append((value, error))
 
-    plt.figure(figsize=(10, 8))
-    plt.rcParams.update({"font.size": 22})
+    plt.figure(figsize=(16, 10))
+    plt.rcParams.update({"font.size": 27})
     plt.title("Average cross-talk probability")
-    plt.xlabel("Distance in pixels [-]")
-    plt.ylabel("Cross-talk probability [%]")
+    plt.xlabel("Distance in pixels (-)")
+    plt.ylabel("Cross-talk probability (%)")
     plt.errorbar(
         final_result_averages.keys(),
         [x[0][0] for x in final_result_averages.values()],
@@ -1282,11 +1288,11 @@ def zero_to_cross_talk_plot(
         )
         on_both_average[np.abs(key)] = (ct_value_average, ct_error_average)
 
-    plt.figure(figsize=(10, 8))
-    plt.rcParams.update({"font.size": 22})
+    plt.figure(figsize=(16, 10))
+    plt.rcParams.update({"font.size": 27})
     plt.title("Average cross-talk probability")
-    plt.xlabel("Distance in pixels [-]")
-    plt.ylabel("Cross-talk probability [%]")
+    plt.xlabel("Distance in pixels (-)")
+    plt.ylabel("Cross-talk probability (%)")
     plt.yscale("log")
     plt.errorbar(
         on_both_average.keys(),

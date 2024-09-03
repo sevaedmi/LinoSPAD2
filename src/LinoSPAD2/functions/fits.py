@@ -19,7 +19,7 @@ functions:
 
 import glob
 import os
-from typing import List
+from typing import List, Tuple
 
 import numpy as np
 import pyarrow.feather as feather
@@ -35,12 +35,12 @@ def fit_with_gaussian(
     ft_file: str = None,
     window: float = 5e3,
     step: int = 1,
-    color_data: str = "salmon",
-    color_fit: str = "teal",
+    color_data: str = "rebeccapurple",
+    color_fit: str = "darkorange",
     title_on: bool = True,
     correct_pix_address: bool = False,
     return_fit_params: bool = False,
-):
+) -> Tuple[np.ndarray, np.ndarray]:
     """Fit with Gaussian function and plot it.
 
     Fits timestamp differences of a pair of pixels with Gaussian
@@ -62,9 +62,9 @@ def fit_with_gaussian(
         LinoSPAD2 TDC bin width), this parameter helps with changing the
         bin size while maintaining that rule. Default is 1.
     color_data : str, optional
-        For changing the color of the data. The default is "salmon".
+        For changing the color of the data. The default is "rebeccapurple".
     color_fit : str, optional
-        For changing the color of the fit. The default is "teal".
+        For changing the color of the fit. The default is "darkorange".
     title_on : bool, optional
         Switch for turning on/off the title of the plot, the title
         shows the pixels for which the fit is done. The default is True.
@@ -138,7 +138,7 @@ def fit_with_gaussian(
     data_to_plot = np.delete(data_to_plot, np.argwhere(data_to_plot > window))
 
     os.chdir(path)
-    plt.rcParams.update({"font.size": 25})
+    plt.rcParams.update({"font.size": 27})
 
     # Bins must be in units of 17.857 ps (2500/140)
     bins = np.arange(
@@ -185,9 +185,10 @@ def fit_with_gaussian(
     # Contrast error in %
     vis_er = vis_er / (contrast / 100) * 100
 
-    plt.figure(figsize=(16, 10))
-    plt.xlabel(r"$\Delta$t [ps]")
-    plt.ylabel("# of coincidences [-]")
+    fig = plt.figure(figsize=(16, 10))
+    plt.locator_params(axis="x", nbins=5)
+    plt.xlabel(r"$\Delta$t (ps)")
+    plt.ylabel("# of coincidences (-)")
     plt.step(
         b[1:],
         n,
@@ -200,16 +201,16 @@ def fit_with_gaussian(
         "-",
         color=color_fit,
         label="fit\n"
-        "\u03C3={p1}\u00B1{pe1} ps\n"
-        "\u03BC={p2}\u00B1{pe2} ps\n"
-        "C={contrast}\u00B1{vis_er} %\n"
+        "\u03C3=({p1}\u00B1{pe1}) ps\n"
+        "\u03BC=({p2}\u00B1{pe2}) ps\n"
+        "C=({contrast}\u00B1{vis_er}) %\n"
         "bkg={bkg}\u00B1{bkg_er}".format(
-            p1=format(par[2], ".1f"),
-            p2=format(par[1], ".1f"),
-            pe1=format(perr[2], ".1f"),
-            pe2=format(perr[1], ".1f"),
-            bkg=format(par[3], ".1f"),
-            bkg_er=format(perr[3], ".1f"),
+            p1=format(par[2], ".0f"),
+            p2=format(par[1], ".0f"),
+            pe1=format(perr[2], ".0f"),
+            pe2=format(perr[1], ".0f"),
+            bkg=format(par[3], ".0f"),
+            bkg_er=format(perr[3], ".0f"),
             contrast=format(contrast, ".1f"),
             vis_er=format(vis_er, ".1f"),
         ),
@@ -227,6 +228,8 @@ def fit_with_gaussian(
     except Exception:
         os.makedirs("results/fits")
         os.chdir("results/fits")
+
+    fig.tight_layout()  # for perfect spacing between the plots
 
     plt.savefig(
         "{file}_pixels_"
@@ -247,8 +250,8 @@ def fit_wg_all(
     threshold: float = 1.2,
     window: float = 5e3,
     step: int = 1,
-    color_d: str = "salmon",
-    color_f: str = "teal",
+    color_d: str = "rebeccapurple",
+    color_f: str = "darkorange",
     title_on: bool = True,
     correct_pix_address: bool = False,
     return_fit_params: bool = False,
@@ -275,9 +278,9 @@ def fit_wg_all(
         Bins of delta t histogram should be in units of 17.857 (average
         LinoSPAD2 TDC bin width). Default is 1.
     color_d : str, optional
-        Color for the histogram. The default is "salmon".
+        Color for the histogram. The default is "rebeccapurple".
     color_f : str, optional
-        Color for the fit with Gaussian. The default is "teal".
+        Color for the fit with Gaussian. The default is "darkorange".
     title_on : bool, optional
         Switch for showing the plot title. The default is "True".
     correct_pix_address : bool, optional
@@ -345,7 +348,7 @@ def fit_wg_all(
     data_to_plot = np.delete(data_to_plot, np.argwhere(data_to_plot > window))
 
     os.chdir("..")
-    plt.rcParams.update({"font.size": 22})
+    plt.rcParams.update({"font.size": 27})
 
     # Bins must be in units of 17.857 ps (2500/140)
     bins = np.arange(
@@ -360,9 +363,9 @@ def fit_wg_all(
 
     peak_pos = sg.find_peaks(n, height=np.median(n) * threshold)[0]
 
-    plt.figure(figsize=(12, 8))
-    plt.xlabel(r"$\Delta$t [ps]")
-    plt.ylabel("# of coincidences [-]")
+    fig = plt.figure(figsize=(16, 10))
+    plt.xlabel(r"$\Delta$t (ps)")
+    plt.ylabel("# of coincidences (-)")
     plt.step(
         bin_c,
         n,
@@ -371,7 +374,7 @@ def fit_wg_all(
     )
 
     color_f = [
-        "teal",
+        "darkorange",
         "navy",
         "limegreen",
         "orchid",
@@ -436,9 +439,9 @@ def fit_wg_all(
             "-",
             color=color_f[k],
             label=f"{labels[k]}\n"
-            "\u03C3={p1}\u00B1{pe1} ps\n"
-            "\u03BC={p2}\u00B1{pe2} ps\n"
-            "C={contrast}\u00B1{vis_er} %".format(
+            "\u03C3=({p1}\u00B1{pe1}) ps\n"
+            "\u03BC=({p2}\u00B1{pe2}) ps\n"
+            "C=({contrast}\u00B1{vis_er}) %".format(
                 labels,
                 p1=format(par[2], ".0f"),
                 p2=format(par[1], ".0f"),
@@ -487,6 +490,8 @@ def fit_wg_all(
         os.makedirs("results/fits")
         os.chdir("results/fits")
 
+    fig.tight_layout()  # for perfect spacing between the plots
+
     plt.savefig(
         "{file}_pixels_"
         "{pix1},{pix2}_fit.png".format(
@@ -505,8 +510,8 @@ def fit_with_gaussian_full_sensor(
     pix_pair: List[int],
     window: float = 5e3,
     step: int = 1,
-    color_data: str = "salmon",
-    color_fit: str = "teal",
+    color_data: str = "rebeccapurple",
+    color_fit: str = "darkorange",
     title_on: bool = True,
 ):
     """Fit with Gaussian function and plot it.
@@ -530,9 +535,9 @@ def fit_with_gaussian_full_sensor(
         LinoSPAD2 TDC bin width), this parameter helps with changing the
         bin size while maintaining that rule. Default is 1.
     color_data : str, optional
-        For changing the color of the data. The default is "salmon".
+        For changing the color of the data. The default is "rebeccapurple".
     color_fit : str, optional
-        For changing the color of the fit. The default is "teal".
+        For changing the color of the fit. The default is "darkorange".
     title_on : bool, optional
         Switch for turning on/off the title of the plot, the title
         shows the pixels for which the fit is done. The default is True.
@@ -611,7 +616,7 @@ def fit_with_gaussian_full_sensor(
     data_to_plot = np.delete(data_to_plot, np.argwhere(data_to_plot > window))
 
     os.chdir("..")
-    plt.rcParams.update({"font.size": 22})
+    plt.rcParams.update({"font.size": 27})
 
     # Bins must be in units of 17.857 ps (2500/140)
     bins = np.arange(np.min(data_to_plot), np.max(data_to_plot), 17.857 * step)
@@ -655,9 +660,9 @@ def fit_with_gaussian_full_sensor(
     # Contrast error in %
     vis_er = vis_er / (contrast / 100) * 100
 
-    plt.figure(figsize=(16, 10))
-    plt.xlabel(r"$\Delta$t [ps]")
-    plt.ylabel("# of coincidences [-]")
+    fig = plt.figure(figsize=(16, 10))
+    plt.xlabel(r"$\Delta$t (ps)")
+    plt.ylabel("# of coincidences (-)")
     plt.step(
         b[1:],
         n,
@@ -670,16 +675,16 @@ def fit_with_gaussian_full_sensor(
         "-",
         color=color_fit,
         label="fit\n"
-        "\u03C3={p1}\u00B1{pe1} ps\n"
-        "\u03BC={p2}\u00B1{pe2} ps\n"
-        "C={contrast}\u00B1{vis_er} %\n"
+        "\u03C3=({p1}\u00B1{pe1}) ps\n"
+        "\u03BC=({p2}\u00B1{pe2}) ps\n"
+        "C=({contrast}\u00B1{vis_er}) %\n"
         "bkg={bkg}\u00B1{bkg_er}".format(
-            p1=format(par[2], ".1f"),
-            p2=format(par[1], ".1f"),
-            pe1=format(perr[2], ".1f"),
-            pe2=format(perr[1], ".1f"),
-            bkg=format(par[3], ".1f"),
-            bkg_er=format(perr[3], ".1f"),
+            p1=format(par[2], ".0f"),
+            p2=format(par[1], ".0f"),
+            pe1=format(perr[2], ".0f"),
+            pe2=format(perr[1], ".0f"),
+            bkg=format(par[3], ".0f"),
+            bkg_er=format(perr[3], ".0f"),
             contrast=format(contrast, ".1f"),
             vis_er=format(vis_er, ".1f"),
         ),
@@ -697,6 +702,8 @@ def fit_with_gaussian_full_sensor(
     except FileNotFoundError as _:
         os.makedirs(os.path.join(path, r"results/fits"))
         os.chdir(os.path.join(path, r"results/fits"))
+
+    fig.tight_layout()  # for perfect spacing between the plots
 
     plt.savefig(
         "{file}_pixels_"

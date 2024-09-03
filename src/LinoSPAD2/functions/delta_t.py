@@ -1067,7 +1067,7 @@ def collect_and_plot_timestamp_differences(
     range_right: int = 10e3,
     step: int = 1,
     same_y: bool = False,
-    color: str = "salmon",
+    color: str = "rebeccapurple",
     correct_pix_address: bool = False,
 ):
     """Collect and plot timestamp differences from a '.feather' file.
@@ -1099,7 +1099,7 @@ def collect_and_plot_timestamp_differences(
         Switch for plotting the histograms with the same y-axis.
         The default is False.
     color : str, optional
-        Color for the plot. The default is 'salmon'.
+        Color for the plot. The default is 'rebeccapurple'.
     correct_pix_address : bool, optional
         Correct pixel address for the FPGA board on side 23. The
         default is False.
@@ -1148,7 +1148,7 @@ def collect_and_plot_timestamp_differences(
         "\n> > > Plotting timestamps differences as a grid of histograms < < <"
     )
 
-    plt.rcParams.update({"font.size": 25})
+    plt.rcParams.update({"font.size": 27})
     # In the case two lists given - the left and right peaks - _flatten
     # into a single list
 
@@ -1174,7 +1174,7 @@ def collect_and_plot_timestamp_differences(
             for x in ax:
                 x.axes.set_axis_off()
     else:
-        fig = plt.figure(figsize=(14, 14))
+        fig = plt.figure(figsize=(16, 10))
 
     # Check if the y limits of all plots should be the same
     if same_y is True:
@@ -1230,16 +1230,16 @@ def collect_and_plot_timestamp_differences(
                 continue
 
             if len(pixels) > 2:
-                axs[q][w - 1].set_xlabel("\u0394t [ps]")
-                axs[q][w - 1].set_ylabel("# of coincidences [-]")
+                axs[q][w - 1].set_xlabel("\u0394t (ps)")
+                axs[q][w - 1].set_ylabel("# of coincidences (-)")
                 n, b, p = axs[q][w - 1].hist(
                     data_to_plot,
                     bins=bins,
                     color=color,
                 )
             else:
-                plt.xlabel("\u0394t [ps]")
-                plt.ylabel("# of coincidences [-]")
+                plt.xlabel("\u0394t (ps)")
+                plt.ylabel("# of coincidences (-)")
                 n, b, p = plt.hist(
                     data_to_plot,
                     bins=bins,
@@ -1277,6 +1277,12 @@ def collect_and_plot_timestamp_differences(
                 )
             else:
                 plt.xlim(range_left - 100, range_right + 100)
+                # Cut the first x tick label to avoid overlapping with
+                # y-axis ticks
+                ax = plt.gca()
+                ticks = ax.get_xticks()
+                tick_labels = ax.get_xticklabels()
+                ax.set_xticks(ticks[2:-1], tick_labels[2:-1])
 
                 plt.title(f"Pixels {pixels_title[q]},{pixels_title[w]}")
 
@@ -1306,7 +1312,7 @@ def collect_and_plot_timestamp_differences_from_ft_file(
     range_right: int = 10e3,
     step: int = 1,
     same_y: bool = False,
-    color: str = "salmon",
+    color: str = "rebeccapurple",
 ):
     """Collect and plot timestamp differences from a '.feather' file.
 
@@ -1336,7 +1342,7 @@ def collect_and_plot_timestamp_differences_from_ft_file(
         Switch for plotting the histograms with the same y-axis.
         The default is False.
     color : str, optional
-        Color for the plot. The default is 'salmon'.
+        Color for the plot. The default is 'rebeccapurple'.
 
     Raises
     ------
@@ -1380,7 +1386,7 @@ def collect_and_plot_timestamp_differences_from_ft_file(
         "\n> > > Plotting timestamps differences as a grid of histograms < < <"
     )
 
-    plt.rcParams.update({"font.size": 22})
+    plt.rcParams.update({"font.size": 27})
     # In the case two lists given - the left and right peaks - _flatten
     # into a single list
     pixels = _flatten(pixels)
@@ -1397,7 +1403,7 @@ def collect_and_plot_timestamp_differences_from_ft_file(
             for x in ax:
                 x.axes.set_axis_off()
     else:
-        fig = plt.figure(figsize=(14, 14))
+        fig = plt.figure(figsize=(16, 16))
 
     # Check if the y limits of all plots should be the same
     if same_y is True:
@@ -1444,16 +1450,16 @@ def collect_and_plot_timestamp_differences_from_ft_file(
                 continue
 
             if len(pixels) > 2:
-                axs[q][w - 1].set_xlabel("\u0394t [ps]")
-                axs[q][w - 1].set_ylabel("# of coincidences [-]")
+                axs[q][w - 1].set_xlabel("\u0394t (ps)")
+                axs[q][w - 1].set_ylabel("# of coincidences (-)")
                 n, b, p = axs[q][w - 1].hist(
                     data_to_plot,
                     bins=bins,
                     color=color,
                 )
             else:
-                plt.xlabel("\u0394t [ps]")
-                plt.ylabel("# of coincidences [-]")
+                plt.xlabel("\u0394t (ps)")
+                plt.ylabel("# of coincidences (-)")
                 n, b, p = plt.hist(
                     data_to_plot,
                     bins=bins,
@@ -1520,7 +1526,7 @@ def collect_and_plot_timestamp_differences_full_sensor(
     range_right: int = 10e3,
     step: int = 1,
     same_y: bool = False,
-    color: str = "salmon",
+    color: str = "rebeccapurple",
 ):
     """Collect and plot timestamp differences from a '.feather' file.
 
@@ -1550,7 +1556,7 @@ def collect_and_plot_timestamp_differences_full_sensor(
         Switch for plotting the histograms with the same y-axis.
         The default is False.
     color : str, optional
-        Color for the plot. The default is 'salmon'.
+        Color for the plot. The default is 'rebeccapurple'.
 
     Raises
     ------
@@ -1633,7 +1639,7 @@ def collect_and_plot_timestamp_differences_full_sensor(
         "\n> > > Plotting timestamps differences as a grid of histograms < < <"
     )
 
-    plt.rcParams.update({"font.size": 22})
+    plt.rcParams.update({"font.size": 27})
     # Prepare the grid for the plots based on the number of pixels
     # given
     if len(pixels) > 2:
@@ -1646,7 +1652,7 @@ def collect_and_plot_timestamp_differences_full_sensor(
             for x in ax:
                 x.axes.set_axis_off()
     else:
-        fig = plt.figure(figsize=(14, 14))
+        fig = plt.figure(figsize=(16, 16))
 
     # Check if the y limits of all plots should be the same
     if same_y is True:
@@ -1712,16 +1718,16 @@ def collect_and_plot_timestamp_differences_full_sensor(
                 continue
 
             if len(pixels) > 2:
-                axs[q][w - 1].set_xlabel("\u0394t [ps]")
-                axs[q][w - 1].set_ylabel("# of coincidences [-]")
+                axs[q][w - 1].set_xlabel("\u0394t (ps)")
+                axs[q][w - 1].set_ylabel("# of coincidences (-)")
                 n, b, p = axs[q][w - 1].hist(
                     data_to_plot,
                     bins=bins,
                     color=color,
                 )
             else:
-                plt.xlabel("\u0394t [ps]")
-                plt.ylabel("# of coincidences [-]")
+                plt.xlabel("\u0394t (ps)")
+                plt.ylabel("# of coincidences (-)")
                 n, b, p = plt.hist(
                     data_to_plot,
                     bins=bins,
