@@ -12,13 +12,18 @@ functions:
 
 """
 
+from typing import List
+
 import numpy as np
 
 from LinoSPAD2.functions import utils
 
 
 def calculate_differences_2212(
-    data, pixels, pix_coor, delta_window: float = 50e3
+    data: List[float],
+    pixels: List[int] | List[List[int]],
+    pix_coor,
+    delta_window: float = 50e3,
 ):
     """Calculate timestamp differences for firmware version 2212.
 
@@ -29,7 +34,7 @@ def calculate_differences_2212(
     ----------
     data : list of array-like
         List of data arrays, each corresponding to a different TDC.
-    pixels : list
+    pixels : List[int] | List[List[int]]
         List of pixel numbers for which the timestamp differences should
         be calculated or list of two lists with pixel numbers for peak
         vs. peak calculations.

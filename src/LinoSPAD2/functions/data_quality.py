@@ -217,12 +217,12 @@ def sensor_population_by_cycle(
         ].min()
         cycle_range = [x for x in range(cycle_start - 3, cycle_start + 3)]
 
-    plt.rcParams.update({"font.size": 22})
+    plt.rcParams.update({"font.size": 27})
     for _, cycle in enumerate(cycle_range):
-        fig = plt.figure(figsize=(10, 6))
-        plt.plot(sensor_population[:, cycle], "-.", color="salmon")
-        plt.xlabel("Pixel Index")
-        plt.ylabel("Sensor Population")
+        fig = plt.figure(figsize=(16, 10))
+        plt.plot(sensor_population[:, cycle], "-.", color="rebeccapurple")
+        plt.xlabel("Pixel index (-)")
+        plt.ylabel("Sensor population (-)")
         plt.title(f"Cycle {cycle}")
         plt.tight_layout()
 
@@ -243,7 +243,7 @@ def pixel_population_by_cycle(
     include_offset: bool = True,
     apply_calibration: bool = True,
     absolute_timestamps: bool = False,
-    color: str = "salmon",
+    color: str = "rebeccapurple",
 ):
     """
     Collect and plot pixel population data by acquisition cycle.
@@ -276,7 +276,7 @@ def pixel_population_by_cycle(
         Indicator for data with absolute timestamps. The default is
         False.
     color : str, optional
-        Color for the plot. The default is "salmon".
+        Color for the plot. The default is "rebeccapurple".
 
     Returns
     -------
@@ -358,17 +358,17 @@ def pixel_population_by_cycle(
         )
         os.chdir(os.path.join(path, "results", "data_quality", "pixpop_cycle"))
 
-    plt.rcParams.update({"font.size": 22})
+    plt.rcParams.update({"font.size": 27})
     plt.figure(figsize=(16, 10))
     plt.plot(pixel_pop, "-.", color=color, label="Pixel population")
     plt.plot(
         range(offset, len(moving_average) + offset),
         moving_average,
-        color="teal",
+        color="darkorange",
         label="Average in 100 cycles",
     )
-    plt.xlabel("Acquisition cycle [-]")
-    plt.ylabel("# of timestamps [-]")
+    plt.xlabel("Acquisition cycle (-)")
+    plt.ylabel("# of timestamps (-)")
     plt.legend()
     plt.title(f"Pixel {pix_to_plot}")
 
@@ -629,7 +629,7 @@ def sigma_of_count_spread_to_average(
 
     bin_centers = (bin_edges - 2.5 / 140 * 1e3 * step / 2)[1:]
 
-    plt.rcParams.update({"font.size": 22})
+    plt.rcParams.update({"font.size": 27})
 
     try:
         os.chdir("results/bckg_spread")
@@ -638,20 +638,20 @@ def sigma_of_count_spread_to_average(
         os.chdir("results/bckg_spread")
 
     # Background histogram
-    plt.figure(figsize=(10, 7))
+    plt.figure(figsize=(16, 10))
     plt.step(bin_centers, counts, color="tomato")
     plt.title(f"Histogram of delta ts\nBin size is {bins[1] - bins[0]:.2f} ps")
-    plt.xlabel(r"$\Delta$t [ps]")
-    plt.ylabel("# of coincidences [-]")
+    plt.xlabel(r"$\Delta$t (ps)")
+    plt.ylabel("# of coincidences (-)")
     plt.savefig(f"{ft_file_name}_bckg_hist.png")
 
     # Seaborn join histograms of background including the spread
     sns.jointplot(
         x=bin_centers, y=counts, height=10, marginal_kws=dict(bins=bins_sigma)
     )
-    plt.title("Histogram of delta ts with histograms of spread", fontsize=20)
-    plt.xlabel(r"$\Delta$t [ps]", fontsize=20)
-    plt.ylabel("# of coincidences [-]", fontsize=20)
+    plt.title("Histogram of delta ts with histograms of spread", fontsize=27)
+    plt.xlabel(r"$\Delta$t (ps)", fontsize=27)
+    plt.ylabel("# of coincidences (-)", fontsize=27)
     plt.savefig(f"{ft_file_name}_bckg_hist_joint.png")
 
     # Histogram of the spread plus Gaussian fit
@@ -667,7 +667,7 @@ def sigma_of_count_spread_to_average(
 
     pars, covs = utils.fit_gaussian(bin_centers_spread, counts_spread)
 
-    fig, ax = plt.subplots(figsize=(10, 7))
+    fig, ax = plt.subplots(figsize=(16, 10))
     ax.step(
         bin_centers_spread,
         counts_spread,
@@ -683,8 +683,8 @@ def sigma_of_count_spread_to_average(
     ax.set_title(
         f"Ratio of spread to average: {pars[2] / np.mean(counts) * 100:.1f} %"
     )
-    ax.set_xlabel("Spread [-]")
-    ax.set_ylabel("Counts [-]")
+    ax.set_xlabel("Spread (-)")
+    ax.set_ylabel("Counts (-)")
     ax.text(
         0.07,
         0.9,
@@ -756,7 +756,7 @@ def sigma_of_count_spread_to_average_from_ft_file(
 
     bin_centers = (bin_edges - 2.5 / 140 * 1e3 * step / 2)[1:]
 
-    plt.rcParams.update({"font.size": 22})
+    plt.rcParams.update({"font.size": 27})
 
     try:
         os.chdir("results/bckg_spread")
@@ -765,20 +765,20 @@ def sigma_of_count_spread_to_average_from_ft_file(
         os.chdir("results/bckg_spread")
 
     # Background histogram
-    plt.figure(figsize=(10, 7))
+    plt.figure(figsize=(16, 10))
     plt.step(bin_centers, counts, color="tomato")
     plt.title(f"Histogram of delta ts\nBin size is {bins[1] - bins[0]:.2f} ps")
-    plt.xlabel(r"$\Delta$t [ps]")
-    plt.ylabel("# of coincidences [-]")
+    plt.xlabel(r"$\Delta$t (ps)")
+    plt.ylabel("# of coincidences (-)")
     plt.savefig(f"{ft_file_name}_bckg_hist.png")
 
     # Seaborn join histograms of background including the spread
     sns.jointplot(
         x=bin_centers, y=counts, height=10, marginal_kws=dict(bins=bins_sigma)
     )
-    plt.title("Histogram of delta ts with histograms of spread", fontsize=20)
-    plt.xlabel(r"$\Delta$t [ps]", fontsize=20)
-    plt.ylabel("# of coincidences [-]", fontsize=20)
+    plt.title("Histogram of delta ts with histograms of spread", fontsize=27)
+    plt.xlabel(r"$\Delta$t (ps)", fontsize=27)
+    plt.ylabel("# of coincidences (-)", fontsize=27)
     plt.savefig(f"{ft_file_name}_bckg_hist_joint.png")
 
     # Histogram of the spread plus Gaussian fit
@@ -796,7 +796,7 @@ def sigma_of_count_spread_to_average_from_ft_file(
 
     pars, covs = utils.fit_gaussian(bin_centers_spread, counts_spread)
 
-    fig, ax = plt.subplots(figsize=(10, 7))
+    fig, ax = plt.subplots(figsize=(16, 10))
     ax.step(
         bin_centers_spread,
         counts_spread,
@@ -812,8 +812,8 @@ def sigma_of_count_spread_to_average_from_ft_file(
     ax.set_title(
         f"Ratio of spread to average: {pars[2] / np.mean(counts) * 100:.1f} %"
     )
-    ax.set_xlabel("Spread [-]")
-    ax.set_ylabel("Counts [-]")
+    ax.set_xlabel("Spread (-)")
+    ax.set_ylabel("Counts (-)")
     ax.text(
         0.59,
         0.9,

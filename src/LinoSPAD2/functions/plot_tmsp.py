@@ -50,7 +50,8 @@ def collect_data_and_apply_mask(
     app_mask: bool = True,
     absolute_timestamps: bool = False,
     save_to_file: bool = False,
-    correct_pixel_addressing: bool = False,
+    correct_pix_address: bool = False,
+    calculate_rates: bool = False,
 ) -> np.ndarray:
     """Collect data from files and apply mask to the valid pixel count.
 
@@ -79,8 +80,11 @@ def collect_data_and_apply_mask(
     absolute_timestamps : bool, optional
         Indicator for data files with absolute timestamps. Default is
         False.
-    correct_pixel_addressing : bool, optional
+    correct_pix_address : bool, optional
         Check for correcting the pixel addresing. THe default is False.
+    calculate_rates : bool, optional
+        Switch for calculating the photon rate for each pixel. The
+        default is 'False'.
     Returns
     -------
     np.ndarray
@@ -129,7 +133,7 @@ def collect_data_and_apply_mask(
             ind1 = np.where(data[tdc].T[1][ind] > 0)[0]
             timestamps_per_pixel[i] += len(data[tdc].T[1][ind[ind1]])
 
-    if correct_pixel_addressing:
+    if correct_pix_address:
         fix = np.zeros(len(timestamps_per_pixel))
         fix[:128] = timestamps_per_pixel[128:]
         fix[128:] = np.flip(timestamps_per_pixel[:128])
@@ -140,6 +144,16 @@ def collect_data_and_apply_mask(
     if app_mask:
         mask = utils.apply_mask(daughterboard_number, motherboard_number)
         timestamps_per_pixel[mask] = 0
+
+    acq_window_length = np.max(data[:].T[1]) * 1e-12
+    number_of_cycles = len(np.where(data[0].T[0] == -2)[0])
+
+    rates = (
+        timestamps_per_pixel
+        / acq_window_length
+        / number_of_cycles
+        / len(files)
+    )
 
     if save_to_file:
         files.sort(key=os.path.getmtime)
@@ -153,7 +167,9 @@ def collect_data_and_apply_mask(
         np.savetxt(f"{file_name}_senpop_numbers.txt", timestamps_per_pixel)
         os.chdir("..")
 
-    return timestamps_per_pixel
+    return timestamps_per_pixel, (
+        rates if calculate_rates else timestamps_per_pixel
+    )
 
 
 def plot_single_pix_hist(
@@ -163,6 +179,8 @@ def plot_single_pix_hist(
     motherboard_number: str,
     firmware_version: str,
     timestamps: int = 512,
+    cycle_length: float = 4e9,
+    step: int = 1e6,
     show_fig: bool = False,
     include_offset: bool = True,
     apply_calibration: bool = True,
@@ -183,12 +201,17 @@ def plot_single_pix_hist(
     daughterboard_number : str
         LinoSPAD2 daughterboard number.
     motherboard_number : str
-        LinoSPAD2 motherboard (FPGA) number.
+        LinoSPAD2 motherboard (FPGA) number, including the '#'.
     firmware_version : str
         LinoSPAD2 firmware version.
     timestamps : int, optional
         Number of timestamps per pixel per acquisition cycle. The
         default is 512.
+    cycle_length : float, optional
+        Length of the data acquisition cycle. The default is 4e9, or 4 ms.
+    step : int, optional
+        Multiplier of 17.857 for the bin size of the histogram. The
+        default is 1e6.
     show_fig : bool, optional
         Switch for showing the output figure. The default is False.
     include_offset : bool, optional
@@ -201,7 +224,7 @@ def plot_single_pix_hist(
         Switch for fitting averages of histogram counts in windows of
         +/-10. The default is False.
     color : str, optional
-        Color for the histogram. The default is 'teal'.
+        Color of the histogram. The default is 'teal'.
 
     Returns
     -------
@@ -245,16 +268,19 @@ def plot_single_pix_hist(
             apply_calibration,
         )
 
-        bins = np.arange(0, 4e9, 17.867 * 1e6)  # bin size of 17.867 us
+        bins = np.arange(
+            0, cycle_length, 2500 / 140 * step
+        )  # bin size of 17.867 us
 
         if pixels is None:
             pixels = np.arange(145, 165, 1)
 
         for i, _ in enumerate(pixels):
-            plt.figure(figsize=(12, 10))
-            plt.rcParams.update({"font.size": 22})
-            # Define matrix of pixel coordinates, where rows are numbers of TDCs
-            # and columns are the pixels that connected to these TDCs
+            plt.figure(figsize=(16, 10))
+            plt.rcParams.update({"font.size": 27})
+            # Define matrix of pixel coordinates, where rows are numbers
+            # of TDCs and columns are the pixels that connected to
+            # these TDCs
             if firmware_version == "2212s":
                 pix_coor = np.arange(256).reshape(4, 64).T
             elif firmware_version == "2212b":
@@ -282,8 +308,8 @@ def plot_single_pix_hist(
 
                 av_win_fit = lin_fit(av_win_in, par[0], par[1])
 
-            plt.xlabel("Time [ps]")
-            plt.ylabel("Counts [-]")
+            plt.xlabel("Time (ps)")
+            plt.ylabel("Counts (-)")
             # plt.plot(av_win_in, av_win, color="black", linewidth=8)
             if fit_average is True:
                 plt.gcf()
@@ -311,8 +337,8 @@ def plot_sensor_population(
     app_mask: bool = True,
     include_offset: bool = True,
     apply_calibration: bool = True,
-    color: str = "salmon",
-    correct_pixel_addressing: bool = False,
+    color: str = "rebeccapurple",
+    correct_pix_address: bool = False,
     fit_peaks: bool = False,
     threshold_multiplier: int = 10,
     pickle_fig: bool = False,
@@ -359,8 +385,8 @@ def plot_sensor_population(
         while include_offset is set to 'False', only the TDC calibration is
         applied. The default is True.
     color : str, optional
-        Color for the plot. The default is 'salmon'.
-    correct_pixel_addressing : bool, optional
+        Color for the plot. The default is 'rebeccapurple'.
+    correct_pix_address : bool, optional
         Switch for correcting pixel addressing for the faulty firmware
         version for the 23 side of the daughterboard. The default is
         False.
@@ -383,6 +409,34 @@ def plot_sensor_population(
     Returns
     -------
     None.
+
+    Examples
+    -------
+    An example how the function can be used to get the sensor
+    occupation from a single file while looking for peaks - the most
+    quick and straightforward approach to find where the beams were
+    focused and get the peak position for further use in, e.g., delta_t
+    functions. Here, the data were collected using the '23'-side
+    sensor half which required correction of the pixel addressing.
+    Offset calibration for the sensor is not available therefore
+    it should be skipped.
+
+    First, get the absolute path to where the '.dat' files are.
+    >>> path = r'C:/Path/To/Data'
+
+    Now to the function itself.
+    >>> plot_sensor_popuation(
+    >>> path,
+    >>> daughterboard_number="NL11",
+    >>> motherboard_number="#21",
+    >>> firmware_version="2212s",
+    >>> timestamps = 1000,
+    >>> show_fig = True,
+    >>> include_offset = False,
+    >>> correct_pix_address = True,
+    >>> fit_peaks = True,
+    >>> single_file = True,
+    >>> )
     """
     # parameter type check
     if not isinstance(firmware_version, str):
@@ -408,8 +462,9 @@ def plot_sensor_population(
 
     if single_file:
         files = files[0]
-
-    plot_name = files[0][:-4] + "-" + files[-1][:-4]
+        plot_name = files[:-4]
+    else:
+        plot_name = files[0][:-4] + "-" + files[-1][:-4]
 
     # valid_per_pixel = np.zeros(256)
 
@@ -418,36 +473,47 @@ def plot_sensor_population(
         "Working in {} < < <\n".format(path)
     )
 
-    timestamps_per_pixel = collect_data_and_apply_mask(
-        files,
-        daughterboard_number,
-        motherboard_number,
-        firmware_version,
-        timestamps,
-        include_offset,
-        apply_calibration,
-        app_mask,
-        absolute_timestamps,
-        save_to_file=False,
-        correct_pixel_addressing=correct_pixel_addressing,
-    )
-
-    # if correct_pixel_addressing:
-    #     fix = np.zeros(len(timestamps_per_pixel))
-    #     fix[:128] = timestamps_per_pixel[128:]
-    #     fix[128:] = np.flip(timestamps_per_pixel[:128])
-    #     timestamps_per_pixel = fix
-    #     del fix
+    # If fitting the peaks, calculate the photon rates in each peak as
+    # well
+    if fit_peaks:
+        timestamps_per_pixel, rates = collect_data_and_apply_mask(
+            files,
+            daughterboard_number,
+            motherboard_number,
+            firmware_version,
+            timestamps,
+            include_offset,
+            apply_calibration,
+            app_mask,
+            absolute_timestamps,
+            save_to_file=False,
+            correct_pix_address=correct_pix_address,
+            calculate_rates=True,
+        )
+    else:
+        timestamps_per_pixel = collect_data_and_apply_mask(
+            files,
+            daughterboard_number,
+            motherboard_number,
+            firmware_version,
+            timestamps,
+            include_offset,
+            apply_calibration,
+            app_mask,
+            absolute_timestamps,
+            save_to_file=False,
+            correct_pix_address=correct_pix_address,
+        )
 
     # Plotting
     print("\n> > > Plotting < < <\n")
-    plt.rcParams.update({"font.size": 22})
-    fig = plt.figure(figsize=(12, 10))
+    plt.rcParams.update({"font.size": 27})
+    fig = plt.figure(figsize=(16, 10))
     if scale == "log":
         plt.yscale("log")
     plt.plot(timestamps_per_pixel, style, color=color)
-    plt.xlabel("Pixel number [-]")
-    plt.ylabel("Timestamps [-]")
+    plt.xlabel("Pixel number (-)")
+    plt.ylabel("Photons (-)")
 
     # Find and fit peaks if fit_peaks is True
     if fit_peaks:
@@ -456,12 +522,8 @@ def plot_sensor_population(
         peaks, _ = find_peaks(timestamps_per_pixel, height=threshold)
         peaks = np.unique(peaks)
 
-        # valid_per_pixel_tmp = np.zeros(256)
-
         print("Fitting the peaks with gaussian")
         for peak_index in peaks:
-            # ind = peaks - peak_index
-            # valid_per_pixel_tmp[ind] = np.median(timestamps_per_pixel)
             x_fit = np.arange(
                 peak_index - fit_width, peak_index + fit_width + 1
             )
@@ -473,14 +535,12 @@ def plot_sensor_population(
             except Exception as _:
                 continue
 
-            # amplitude, position, width = params
-            # position = np.clip(int(position), 0, 255)
-
             plt.plot(
                 x_fit,
                 utils.gaussian(x_fit, *params),
                 "--",
-                label=f"Peak at {peak_index}, {round(timestamps_per_pixel[peak_index], 1):.1e}",
+                label=f"Peak at {peak_index}, "
+                f"Rate: {rates[peak_index]/1000:.0f} kHz",
             )
 
         plt.legend()
@@ -492,14 +552,23 @@ def plot_sensor_population(
         os.makedirs("results/sensor_population")
         os.chdir("results/sensor_population")
     fig.tight_layout()
-    plt.savefig("{}.png".format(plot_name))
-    print(
-        "> > > The plot is saved as '{file}.png' in {path} < < <".format(
-            file=plot_name, path=os.getcwd()
+    if single_file:
+        plt.savefig("{}_single_file.png".format(plot_name))
+        print(
+            "> > > The plot is saved as '{file}_single_file.png'"
+            "in {path} < < <".format(file=plot_name, path=os.getcwd())
         )
-    )
-    if pickle_fig:
-        pickle.dump(fig, open(f"{plot_name}.pickle", "wb"))
+        if pickle_fig:
+            pickle.dump(fig, open(f"{plot_name}_single_file.pickle", "wb"))
+    else:
+        plt.savefig("{}.png".format(plot_name))
+        print(
+            "> > > The plot is saved as '{file}.png' in {path} < < <".format(
+                file=plot_name, path=os.getcwd()
+            )
+        )
+        if pickle_fig:
+            pickle.dump(fig, open(f"{plot_name}.pickle", "wb"))
 
     os.chdir("../..")
 
@@ -851,13 +920,13 @@ def plot_sensor_population_full_sensor(
 
     print("\n> > > Plotting < < <\n")
 
-    plt.rcParams.update({"font.size": 22})
-    fig = plt.figure(figsize=(12, 10))
+    plt.rcParams.update({"font.size": 27})
+    fig = plt.figure(figsize=(16, 10))
     if scale == "log":
         plt.yscale("log")
     plt.plot(valid_per_pixel, style, color=color)
-    plt.xlabel("Pixel number [-]")
-    plt.ylabel("Timestamps [-]")
+    plt.xlabel("Pixel number (-)")
+    plt.ylabel("Photons (-)")
 
     # Find and fit peaks if fit_peaks is True
     if fit_peaks:

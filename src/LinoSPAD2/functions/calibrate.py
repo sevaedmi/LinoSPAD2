@@ -6,6 +6,10 @@ nonlinearities or a calibration matrix for offset calibration. First
 nonlinearity is introduced by nonequal bins of the 140-bin long TDC line
 while the second - from the different-length electrical path in the PCB.
 
+The calibration matrices (for TDC calibration) and arrays (for offset
+calibration) should be put into ~/LinoSPAD2/src/LinoSPAD2/params/calibration_data
+folder, where it will be pulled from by other functions during analysis.
+
 This file can also be imported as a module and contains the following
 functions:
 
@@ -29,6 +33,7 @@ functions:
 
 """
 
+import datetime
 import glob
 import os
 import sys
@@ -44,7 +49,7 @@ from LinoSPAD2.functions import utils
 
 
 def calibrate_and_save_TDC_data(
-    data_path: str,
+    path: str,
     daughterboard_number: str,
     motherboard_number: str,
     firmware_version: str,
@@ -58,8 +63,8 @@ def calibrate_and_save_TDC_data(
 
     Parameters
     ----------
-    data_path : str
-        Path to the data file.
+    path : str
+        Absolute path to the data file.
     daughterboard_number : str
         LinoSPAD2 daughterboard number.
     motherboard_number : str
@@ -99,8 +104,8 @@ def calibrate_and_save_TDC_data(
             "'firmware_version' should be a string, '2208', '2212b' or '2212s'."
         )
 
-    os.chdir(data_path)
-    filename = glob.glob("*.dat*")[0]
+    os.chdir(path)
+    filename = glob.glob("*.dat")[0]
 
     if firmware_version == "2208":
         # read data by 32 bit words
@@ -202,7 +207,7 @@ def calibrate_and_save_TDC_data(
 
 
 def unpack_data_for_offset_calibration(
-    data_file_path: str,
+    path: str,
     daughterboard_number: str,
     motherboard_number: str,
     firmware_version: str,
@@ -218,7 +223,7 @@ def unpack_data_for_offset_calibration(
 
     Parameters
     ----------
-    data_file_path : str
+    path : str
         Path to the '.dat' data file.
     daughterboard_number : str
         LinoSPAD2 daughterboard number.
@@ -265,7 +270,7 @@ def unpack_data_for_offset_calibration(
         )
 
     # Unpack binary data
-    raw_file_data = np.fromfile(data_file_path, dtype=np.uint32)
+    raw_file_data = np.fromfile(path, dtype=np.uint32)
     # Timestamps are lower 28 bits
     data_timestamps = (raw_file_data & 0xFFFFFFF).astype(np.longlong)
     # Pix address in the given TDC is 2 bits above timestamp
@@ -324,7 +329,7 @@ def unpack_data_for_offset_calibration(
             daughterboard_number,
             motherboard_number,
             firmware_version,
-            inc_offset=False,
+            include_offset=False,
         )
     except FileNotFoundError:
         raise FileNotFoundError(
@@ -351,9 +356,9 @@ def unpack_data_for_offset_calibration(
 
 
 def save_offset_timestamp_differences(
-    data_path: str,
+    path: str,
     pixels: list,
-    overwrite: bool,
+    rewrite: bool,
     daughterboard_number: str,
     motherboard_number: str,
     firmware_version: str,
@@ -369,13 +374,13 @@ def save_offset_timestamp_differences(
 
     Parameters
     ----------
-    data_path : str
+    path : str
         Path to data files.
     pixels : list
         List of pixel numbers for which the timestamp differences should
         be calculated and saved or list of two lists with pixel numbers
         for peak vs. peak calculations.
-    overwrite : bool
+    rewrite : bool
         Switch for overwriting the '.csv' file if it already exists.
     daughterboard_number : str
         LinoSPAD2 daughterboard number.
@@ -394,7 +399,7 @@ def save_offset_timestamp_differences(
     Raises
     ------
     TypeError
-        Only boolean values of 'overwrite' and string values of
+        Only boolean values of 'rewrite' and string values of
         'daughterboard_number', 'motherboard_number', and
         'firmware_version' are accepted. The first error is raised so
         that the plot does not accidentally get rewritten in the case
@@ -413,14 +418,14 @@ def save_offset_timestamp_differences(
         raise TypeError(
             "'firmware_version' should be a string, '2212b' or '2208'."
         )
-    if not isinstance(overwrite, bool):
-        raise TypeError("'overwrite' should be boolean.")
+    if not isinstance(rewrite, bool):
+        raise TypeError("'rewrite' should be boolean.")
     if not isinstance(daughterboard_number, str):
         raise TypeError(
             "'daughterboard_number' should be a string, either 'NL11' or 'A5'."
         )
 
-    os.chdir(data_path)
+    os.chdir(path)
 
     all_files = glob.glob("*.dat*")
 
@@ -430,7 +435,7 @@ def save_offset_timestamp_differences(
     try:
         os.chdir("offset_deltas")
         if os.path.isfile("{name}.csv".format(name=output_file_name)):
-            if overwrite:
+            if rewrite:
                 print(
                     "\n! ! ! CSV file with timestamps differences already "
                     "exists and will be overwritten ! ! !\n"
@@ -443,7 +448,7 @@ def save_offset_timestamp_differences(
                 os.remove("{}.csv".format(output_file_name))
             else:
                 sys.exit(
-                    "\n CSV file already exists, 'overwrite' set to"
+                    "\n CSV file already exists, 'rewrite' set to"
                     " 'False', exiting."
                 )
         os.chdir("..")
@@ -464,7 +469,7 @@ def save_offset_timestamp_differences(
         sys.exit()
 
     # Mask the hot/warm pixels
-    mask = utils.apply_mask(daughterboard_number, motherboard_number)
+    # mask = utils.apply_mask(daughterboard_number, motherboard_number)
 
     # Check if 'pixels' is one or two peaks, swap their positions if
     # needed
@@ -500,16 +505,16 @@ def save_offset_timestamp_differences(
                 if w <= q:
                     continue
                 deltas_all["{},{}".format(q, w)] = []
-                # find end of cycles
+                # Find end of cycles
                 cycler = np.argwhere(data_all[0].T[0] == -2)
                 cycler = np.insert(cycler, 0, 0)
-                # first pixel in the pair
+                # First pixel in the pair
                 tdc1, pix_c1 = np.argwhere(pix_coordinates == q)[0]
                 pix1 = np.where(data_all[tdc1].T[0] == pix_c1)[0]
-                # second pixel in the pair
+                # Second pixel in the pair
                 tdc2, pix_c2 = np.argwhere(pix_coordinates == w)[0]
                 pix2 = np.where(data_all[tdc2].T[0] == pix_c2)[0]
-                # get timestamp for both pixels in the given cycle
+                # Get timestamp for both pixels in the given cycle
                 for cyc in range(len(cycler) - 1):
                     pix1_ = pix1[
                         np.logical_and(
@@ -525,7 +530,7 @@ def save_offset_timestamp_differences(
                     ]
                     if not np.any(pix2_):
                         continue
-                    # calculate delta t
+                    # Calculate delta t
                     tmsp1 = data_all[tdc1].T[1][
                         pix1_[np.where(data_all[tdc1].T[1][pix1_] > 0)[0]]
                     ]
@@ -562,15 +567,13 @@ def save_offset_timestamp_differences(
         os.chdir("..")
 
     if (
-        os.path.isfile(
-            data_path + "/offset_deltas/{}.csv".format(output_file_name)
-        )
+        os.path.isfile(path + "/offset_deltas/{}.csv".format(output_file_name))
         is True
     ):
         print(
             "\n> > > Timestamp differences are saved as {file}.csv in "
             "{path} < < <".format(
-                file=output_file_name, path=data_path + "\offset_deltas"
+                file=output_file_name, path=path + "\offset_deltas"
             )
         )
     else:
@@ -578,7 +581,7 @@ def save_offset_timestamp_differences(
 
 
 def calculate_and_save_offset_calibration(
-    data_path: str,
+    path: str,
     daughterboard_number: str,
     motherboard_number: str,
     firmware_version: str,
@@ -591,7 +594,7 @@ def calculate_and_save_offset_calibration(
 
     Parameters
     ----------
-    data_path : str
+    path : str
         Path to the data files.
     daughterboard_number : str
         LinoSPAD2 daughterboard number.
@@ -608,15 +611,15 @@ def calculate_and_save_offset_calibration(
 
     # Calculate delta ts for pixels 0 and 4-255
     save_offset_timestamp_differences(
-        data_path,
+        path,
         pixels=[[0], [x for x in range(1, 256)]],
-        db_num=daughterboard_number,
-        mb_num=motherboard_number,
-        fw_ver=firmware_version,
         rewrite=True,
+        daughterboard_number=daughterboard_number,
+        motherboard_number=motherboard_number,
+        firmware_version=firmware_version,
         timestamps=timestamps,
     )
-    os.chdir(data_path + r"/offset_deltas/")
+    os.chdir(path + r"/offset_deltas/")
     file_csv = glob.glob("*Offset_*.csv*")[0]
     dt_all = np.array(pd.read_csv(file_csv))
     os.chdir("..")
@@ -650,15 +653,15 @@ def calculate_and_save_offset_calibration(
 
     # Calculate delta ts for pixels 1,2,3
     save_offset_timestamp_differences(
-        data_path,
+        path,
         pixels=[[1, 2, 3], [4]],
-        db_num=daughterboard_number,
-        mb_num=motherboard_number,
-        fw_ver=firmware_version,
         rewrite=True,
+        daughterboard_number=daughterboard_number,
+        motherboard_number=motherboard_number,
+        firmware_version=firmware_version,
         timestamps=timestamps,
     )
-    os.chdir(data_path + r"/offset_deltas/")
+    os.chdir(path + r"/offset_deltas/")
     file_csv = glob.glob("*.csv*")[0]
     dt_all = np.array(pd.read_csv(file_csv))
     os.chdir("..")
@@ -752,11 +755,20 @@ def load_calibration_data(
     os.chdir(calibration_path)
 
     # Compensating for TDC nonlinearities
-    file_TDC = glob.glob(
-        "*TDC_{db}_{mb}_{fw}*".format(
-            db=daughterboard_number, mb=motherboard_number, fw=firmware_version
-        )
-    )[0]
+    try:
+        file_TDC = glob.glob(
+            "*TDC_{db}_{mb}_{fw}*".format(
+                db=daughterboard_number,
+                mb=motherboard_number,
+                fw=firmware_version,
+            )
+        )[0]
+    except IndexError as exc:
+        raise FileNotFoundError(
+            f"TDC calibration for {daughterboard_number}, "
+            f"{motherboard_number}, and {firmware_version} is not found"
+        ) from exc
+
     # Compensating for offset
     if include_offset:
         try:
@@ -768,13 +780,14 @@ def load_calibration_data(
                 )
             )[0]
         except IndexError:
-            raise IndexError(
+            raise FileNotFoundError(
                 "No .npy file with offset calibration data was found"
             )
         offset_arr = np.load(file_offset)
 
     # Skipping the first row of TDC bins' numbers
     data_matrix_TDC = np.genfromtxt(file_TDC, delimiter=",", skip_header=1)
+
     # Cut the first column which is pixel numbers
     data_matrix_TDC = np.delete(data_matrix_TDC, 0, axis=1)
 

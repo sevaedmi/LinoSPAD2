@@ -41,6 +41,7 @@ import glob
 import os
 import sys
 from math import ceil, floor
+from typing import List
 
 import numpy as np
 import pandas as pd
@@ -53,7 +54,7 @@ from LinoSPAD2.functions import unpack as f_up
 from LinoSPAD2.functions import utils
 
 
-def flatten(input_list: []):
+def _flatten(input_list: List[int]):
     """Flatten the input list.
 
     Flatten the input list, which can be a list of numbers, lists,
@@ -82,7 +83,7 @@ def flatten(input_list: []):
 
 def calculate_and_save_timestamp_differences(
     path: str,
-    pixels: list,
+    pixels: List[int] | List[List[int]],
     rewrite: bool,
     daughterboard_number: str,
     motherboard_number: str,
@@ -105,7 +106,7 @@ def calculate_and_save_timestamp_differences(
     ----------
     path : str
         Path to data files.
-    pixels : list
+    pixels : List[int] | List[List[int]]
         List of pixel numbers for which the timestamp differences should
         be calculated and saved or list of two lists with pixel numbers
         for peak vs. peak calculations.
@@ -114,7 +115,7 @@ def calculate_and_save_timestamp_differences(
     daughterboard_number : str
         LinoSPAD2 daughterboard number.
     motherboard_number : str
-        LinoSPAD2 motherboard (FPGA) number.
+        LinoSPAD2 motherboard (FPGA) number, including the '#'.
     firmware_version: str
         LinoSPAD2 firmware version. Versions "2212s" (skip) and "2212b"
         (block) are recognized.
@@ -150,8 +151,33 @@ def calculate_and_save_timestamp_differences(
     Returns
     -------
     None.
+
+    Examples
+    -------
+    For the sensor half on the '23' side of the daughterboard, the
+    pixel addressing should be correct. Let's assume the offset
+    calibration was not done for this sensor and, therefore, the
+    calibration matrix is not available - it should be passed as False.
+    Let's collect timestamp differences for pairs of pixels 15-25,
+    15-26, and 15-27.
+
+    First, get the absolute path to where the '.dat' files are.
+    >>> path = r'C:/Path/To/Data'
+
+    Now to the function itself.
+    >>> calculate_and_save_timestamp_differences(
+    >>> path,
+    >>> pixels = [15, [25,26,27]],
+    >>> rewrite = True,
+    >>> daughterboard_number="NL11",
+    >>> motherboard_number="#21",
+    >>> firmware_version="2212s",
+    >>> timestamps = 1000,
+    >>> include_offset = False,
+    >>> correct_pixel_addressing = True,
+    >>> )
     """
-    # parameter type check
+    # Parameter type check
     if isinstance(pixels, list) is False:
         raise TypeError(
             "'pixels' should be a list of integers or a list of two lists"
@@ -167,16 +193,15 @@ def calculate_and_save_timestamp_differences(
 
     os.chdir(path)
 
-    # files_all = sorted(glob.glob("*.dat*"))
+    # Handle the input list
+    pixels = utils.pixel_list_transform(pixels)
+
     files_all = glob.glob("*.dat*")
     files_all.sort(key=os.path.getmtime)
 
     out_file_name = files_all[0][:-4] + "-" + files_all[-1][:-4]
 
     # Check if the feather file exists and if it should be rewrited
-
-    # feather_file = f"{out_file_name}.feather"
-
     feather_file = os.path.join(
         path, "delta_ts_data", f"{out_file_name}.feather"
     )
@@ -198,12 +223,9 @@ def calculate_and_save_timestamp_differences(
         print("\nFirmware version is not recognized.")
         sys.exit()
 
+    # TODO fix pix add corection with input type (int+list, etc..)
     if correct_pix_address:
-        for i, pixel in enumerate(pixels):
-            if pixel > 127:
-                pixels[i] = 255 - pixels[i]
-            else:
-                pixels[i] = pixels[i] + 128
+        pixels = utils.correct_pixels_address(pixels)
 
     # Mask the hot/warm pixels
     if app_mask is True:
@@ -324,7 +346,7 @@ def calculate_and_save_timestamp_differences_full_sensor(
     daughterboard_number : str
         LinoSPAD2 daughterboard number.
     motherboard_number1 : str
-        First LinoSPAD2 motherboard (FPGA) number.
+        LinoSPAD2 motherboard (FPGA) number, including the '#'.
     motherboard_number2 : str
         Second LinoSPAD2 motherboard (FPGA) number.
     firmware_version: str
@@ -416,9 +438,6 @@ def calculate_and_save_timestamp_differences_full_sensor(
 
     # Check if '.feather' file with timestamps differences already
     # exists
-    # feather_file = f"{out_file_name}.feather"
-
-    # utils.file_rewrite_handling(feather_file, rewrite)
 
     feather_file = os.path.join(
         path, "delta_ts_data", f"{out_file_name}.feather"
@@ -684,9 +703,9 @@ def calculate_and_save_timestamp_differences_full_sensor_alt(
     daughterboard_number : str
         LinoSPAD2 daughterboard number.
     motherboard_number1 : str
-        First LinoSPAD2 motherboard (FPGA) number.
+        First LinoSPAD2 motherboard (FPGA) number, including the '#'.
     motherboard_number2 : str
-        Second LinoSPAD2 motherboard (FPGA) number.
+        Second LinoSPAD2 motherboard (FPGA) number, including the '#'.
     firmware_version: str
         LinoSPAD2 firmware version. Versions "2212s" (skip) and "2212b"
         (block) are recognized.
@@ -1042,12 +1061,12 @@ def collect_and_plot_timestamp_differences(
     path,
     pixels,
     rewrite: bool,
-    ft_file: list = None,
+    ft_file: str = None,
     range_left: int = -10e3,
     range_right: int = 10e3,
     step: int = 1,
     same_y: bool = False,
-    color: str = "salmon",
+    color: str = "rebeccapurple",
     correct_pix_address: bool = False,
 ):
     """Collect and plot timestamp differences from a '.feather' file.
@@ -1067,6 +1086,9 @@ def collect_and_plot_timestamp_differences(
         should be plotted.
     rewrite : bool
         Switch for rewriting the plot if it already exists.
+    ft_file : str, optional
+        Path to the feather file with timestamp differences. If used,
+        the data files in the path are ignored. The default is None.
     range_left : int, optional
         Lower limit for timestamp differences, lower values are not used.
         The default is -10e3.
@@ -1079,11 +1101,10 @@ def collect_and_plot_timestamp_differences(
         Switch for plotting the histograms with the same y-axis.
         The default is False.
     color : str, optional
-        Color for the plot. The default is 'salmon'.
+        Color for the plot. The default is 'rebeccapurple'.
     correct_pix_address : bool, optional
         Correct pixel address for the FPGA board on side 23. The
         default is False.
-
 
     Raises
     ------
@@ -1128,8 +1149,8 @@ def collect_and_plot_timestamp_differences(
         "\n> > > Plotting timestamps differences as a grid of histograms < < <"
     )
 
-    plt.rcParams.update({"font.size": 22})
-    # In the case two lists given - the left and right peaks - flatten
+    plt.rcParams.update({"font.size": 27})
+    # In the case two lists given - the left and right peaks - _flatten
     # into a single list
 
     # Save to use in the title
@@ -1142,7 +1163,7 @@ def collect_and_plot_timestamp_differences(
             else:
                 pixels[i] = pixels[i] + 128
 
-    pixels = flatten(pixels)
+    pixels = _flatten(pixels)
 
     if len(pixels) > 2:
         fig, axs = plt.subplots(
@@ -1154,7 +1175,7 @@ def collect_and_plot_timestamp_differences(
             for x in ax:
                 x.axes.set_axis_off()
     else:
-        fig = plt.figure(figsize=(14, 14))
+        fig = plt.figure(figsize=(16, 10))
 
     # Check if the y limits of all plots should be the same
     if same_y is True:
@@ -1210,16 +1231,16 @@ def collect_and_plot_timestamp_differences(
                 continue
 
             if len(pixels) > 2:
-                axs[q][w - 1].set_xlabel("\u0394t [ps]")
-                axs[q][w - 1].set_ylabel("# of coincidences [-]")
+                axs[q][w - 1].set_xlabel("\u0394t (ps)")
+                axs[q][w - 1].set_ylabel("# of coincidences (-)")
                 n, b, p = axs[q][w - 1].hist(
                     data_to_plot,
                     bins=bins,
                     color=color,
                 )
             else:
-                plt.xlabel("\u0394t [ps]")
-                plt.ylabel("# of coincidences [-]")
+                plt.xlabel("\u0394t (ps)")
+                plt.ylabel("# of coincidences (-)")
                 n, b, p = plt.hist(
                     data_to_plot,
                     bins=bins,
@@ -1257,6 +1278,12 @@ def collect_and_plot_timestamp_differences(
                 )
             else:
                 plt.xlim(range_left - 100, range_right + 100)
+                # Cut the first x tick label to avoid overlapping with
+                # y-axis ticks
+                ax = plt.gca()
+                ticks = ax.get_xticks()
+                tick_labels = ax.get_xticklabels()
+                ax.set_xticks(ticks[2:-1], tick_labels[2:-1])
 
                 plt.title(f"Pixels {pixels_title[q]},{pixels_title[w]}")
 
@@ -1286,7 +1313,7 @@ def collect_and_plot_timestamp_differences_from_ft_file(
     range_right: int = 10e3,
     step: int = 1,
     same_y: bool = False,
-    color: str = "salmon",
+    color: str = "rebeccapurple",
 ):
     """Collect and plot timestamp differences from a '.feather' file.
 
@@ -1316,7 +1343,7 @@ def collect_and_plot_timestamp_differences_from_ft_file(
         Switch for plotting the histograms with the same y-axis.
         The default is False.
     color : str, optional
-        Color for the plot. The default is 'salmon'.
+        Color for the plot. The default is 'rebeccapurple'.
 
     Raises
     ------
@@ -1360,10 +1387,10 @@ def collect_and_plot_timestamp_differences_from_ft_file(
         "\n> > > Plotting timestamps differences as a grid of histograms < < <"
     )
 
-    plt.rcParams.update({"font.size": 22})
-    # In the case two lists given - the left and right peaks - flatten
+    plt.rcParams.update({"font.size": 27})
+    # In the case two lists given - the left and right peaks - _flatten
     # into a single list
-    pixels = flatten(pixels)
+    pixels = _flatten(pixels)
 
     # Prepare the grid for the plots based on the number of pixels
     # given
@@ -1377,7 +1404,7 @@ def collect_and_plot_timestamp_differences_from_ft_file(
             for x in ax:
                 x.axes.set_axis_off()
     else:
-        fig = plt.figure(figsize=(14, 14))
+        fig = plt.figure(figsize=(16, 16))
 
     # Check if the y limits of all plots should be the same
     if same_y is True:
@@ -1424,16 +1451,16 @@ def collect_and_plot_timestamp_differences_from_ft_file(
                 continue
 
             if len(pixels) > 2:
-                axs[q][w - 1].set_xlabel("\u0394t [ps]")
-                axs[q][w - 1].set_ylabel("# of coincidences [-]")
+                axs[q][w - 1].set_xlabel("\u0394t (ps)")
+                axs[q][w - 1].set_ylabel("# of coincidences (-)")
                 n, b, p = axs[q][w - 1].hist(
                     data_to_plot,
                     bins=bins,
                     color=color,
                 )
             else:
-                plt.xlabel("\u0394t [ps]")
-                plt.ylabel("# of coincidences [-]")
+                plt.xlabel("\u0394t (ps)")
+                plt.ylabel("# of coincidences (-)")
                 n, b, p = plt.hist(
                     data_to_plot,
                     bins=bins,
@@ -1500,7 +1527,7 @@ def collect_and_plot_timestamp_differences_full_sensor(
     range_right: int = 10e3,
     step: int = 1,
     same_y: bool = False,
-    color: str = "salmon",
+    color: str = "rebeccapurple",
 ):
     """Collect and plot timestamp differences from a '.feather' file.
 
@@ -1530,7 +1557,7 @@ def collect_and_plot_timestamp_differences_full_sensor(
         Switch for plotting the histograms with the same y-axis.
         The default is False.
     color : str, optional
-        Color for the plot. The default is 'salmon'.
+        Color for the plot. The default is 'rebeccapurple'.
 
     Raises
     ------
@@ -1551,7 +1578,7 @@ def collect_and_plot_timestamp_differences_full_sensor(
     # Flatten the input list of pixels: if there are lists of pixels'
     # numbers inside the list, unpack them so that the output is a list
     # of numbers only
-    pixels = flatten(pixels)
+    pixels = _flatten(pixels)
 
     # Get the data files names for finding the appropriate '.feather'
     # file with timestamps differences, checking both options, depending
@@ -1613,7 +1640,7 @@ def collect_and_plot_timestamp_differences_full_sensor(
         "\n> > > Plotting timestamps differences as a grid of histograms < < <"
     )
 
-    plt.rcParams.update({"font.size": 22})
+    plt.rcParams.update({"font.size": 27})
     # Prepare the grid for the plots based on the number of pixels
     # given
     if len(pixels) > 2:
@@ -1626,7 +1653,7 @@ def collect_and_plot_timestamp_differences_full_sensor(
             for x in ax:
                 x.axes.set_axis_off()
     else:
-        fig = plt.figure(figsize=(14, 14))
+        fig = plt.figure(figsize=(16, 16))
 
     # Check if the y limits of all plots should be the same
     if same_y is True:
@@ -1692,16 +1719,16 @@ def collect_and_plot_timestamp_differences_full_sensor(
                 continue
 
             if len(pixels) > 2:
-                axs[q][w - 1].set_xlabel("\u0394t [ps]")
-                axs[q][w - 1].set_ylabel("# of coincidences [-]")
+                axs[q][w - 1].set_xlabel("\u0394t (ps)")
+                axs[q][w - 1].set_ylabel("# of coincidences (-)")
                 n, b, p = axs[q][w - 1].hist(
                     data_to_plot,
                     bins=bins,
                     color=color,
                 )
             else:
-                plt.xlabel("\u0394t [ps]")
-                plt.ylabel("# of coincidences [-]")
+                plt.xlabel("\u0394t (ps)")
+                plt.ylabel("# of coincidences (-)")
                 n, b, p = plt.hist(
                     data_to_plot,
                     bins=bins,

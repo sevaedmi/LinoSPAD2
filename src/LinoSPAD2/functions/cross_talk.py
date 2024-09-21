@@ -8,7 +8,14 @@ functions:
 
     * calculate_dark_count_rate - calculate the average dark count rate
     for the given sensor half.
-    
+
+    * collect_dcr_by_file - calculate the DCR for each file in the
+    given folder and save the result into a .pkl file
+
+    * plot_dcr_histogram_and_stability - plot the DCR vs file to check
+    setup stability, and plot histogram of DCR averaged over files
+    together with integral over pixels
+
     * zero_to_cross_talk_collect - collect timestamp differences from
     the '.dat' with the cross-talk data (preferably, noise only).
     Timestamp differences are collected for the given hot pixels plus
@@ -26,6 +33,7 @@ functions:
 
 import glob
 import os
+import pickle
 import sys
 
 import numpy as np
@@ -33,10 +41,10 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from pyarrow import feather as ft
 from scipy.optimize import curve_fit
-from scipy.stats import sem
 from tqdm import tqdm
 
 from LinoSPAD2.functions import calc_diff as cd
+from LinoSPAD2.functions import plot_tmsp
 from LinoSPAD2.functions import unpack as f_up
 from LinoSPAD2.functions import utils
 
@@ -53,6 +61,7 @@ def _collect_cross_talk(
     include_offset: bool = True,
     apply_calibration: bool = True,
     absolute_timestamps: bool = False,
+    correct_pix_address: bool = False,
 ):
     """Collect timestamp differences from cross-talk data.
 
@@ -73,7 +82,7 @@ def _collect_cross_talk(
     daughterboard_number : str
         LinoSPAD2 daughterboard number.
     motherboard_number : str
-        LinoSPAD2 motherboard (FPGA) number.
+        LinoSPAD2 motherboard (FPGA) number, including the '#'.
     firmware_version : str
         LinoSPAD2 firmware version.
     timestamps : int
@@ -89,6 +98,9 @@ def _collect_cross_talk(
     absolute_timestamps : bool, optional
         Indicator of data collected with absolute timestamps. The
         default is False.
+    correct_pix_address : bool, optional
+        Correct pixel address for the FPGA board on side 23. Here
+        used to reverse the correction. The default is False.
 
     Raises
     ------
@@ -111,6 +123,15 @@ def _collect_cross_talk(
     if isinstance(daughterboard_number, str) is False:
         raise TypeError("'daughterboard_number' should be string")
     os.chdir(path)
+
+    # If requested, get the correct pixel address - must be used
+    # for the motherboard on side '23'
+    if correct_pix_address:
+        for i, pixel in enumerate(pixels):
+            if pixel > 127:
+                pixels[i] = 255 - pixels[i]
+            else:
+                pixels[i] = pixels[i] + 128
 
     # files_all = sorted(glob.glob("*.dat*"))
     files_all = glob.glob("*.dat*")
@@ -170,6 +191,7 @@ def _collect_cross_talk(
                 apply_calibration,
             )
 
+        # Collect timestamp differences for the given pixels
         deltas_all = cd.calculate_differences_2212(
             data_all, pixels_formatted, pix_coor, delta_window
         )
@@ -207,8 +229,8 @@ def _collect_cross_talk(
     # Check, if the file was created
     if (
         os.path.isfile(
-            path
-            + f"/cross_talk_data/{out_file_name}_pixels_{pixels[0]}-{pixels[-1]}.feather"
+            path + f"/cross_talk_data/{out_file_name}_pixels_"
+            f"{pixels[0]}-{pixels[-1]}.feather"
         )
         is True
     ):
@@ -270,14 +292,14 @@ def _plot_cross_talk_peaks(
 
     os.chdir(os.path.join(path, "cross_talk_data"))
 
-    ft_file = glob.glob(f"{ft_file_name}_*{pixels[0]}-{pixels[-1]}*.feather")[
-        0
-    ]
+    ft_file = glob.glob(
+        f"{ft_file_name}_*{pixels[0]}" f"-{pixels[-1]}*.feather"
+    )[0]
 
     ct_output = {}
     ct_err_output = {}
 
-    for i, pix in enumerate(pixels[1:]):
+    for _, pix in enumerate(pixels[1:]):
         if pix_on_left:
 
             data_pix = (
@@ -307,7 +329,7 @@ def _plot_cross_talk_peaks(
         bin_centers = (bin_edges - step * 17.857 / 2)[1:]
 
         try:
-            params, covs = curve_fit(
+            params, _ = curve_fit(
                 utils.gaussian,
                 bin_centers,
                 counts,
@@ -349,31 +371,29 @@ def _plot_cross_talk_peaks(
                 / (aggressor_pix_tmsps + victim_pix_tmsps)
             )
 
-        plt.rcParams.update({"font.size": 22})
-        plt.figure(figsize=(10, 8))
-        plt.step(bin_centers, counts, color="salmon", label="Data")
+        plt.rcParams.update({"font.size": 27})
+        plt.figure(figsize=(16, 10))
+        plt.step(bin_centers, counts, color="rebeccapurple", label="Data")
         plt.plot(
             bin_centers,
             utils.gaussian(bin_centers, *params),
-            color="teal",
+            color="darkorange",
             label="Fit",
         )
         if senpop is not None:
             plt.title(
-                f"Cross-talk peak, pixels {pixels[0]},{pix}\nCross-talk is {CT:.1e}"
-                + "\u00B1"
-                + f"{CT_err:.1e}"
-                + "%"
+                f"Cross-talk peak, pixels {pixels[0]},{pix}\n"
+                f"Cross-talk is {CT:.1e}" + "\u00B1" + f"{CT_err:.1e}" + "%"
             )
         else:
             plt.title(f"Cross-talk peak, pixels {pixels[0]},{pix}")
 
-        plt.xlabel("\u0394t [ps]")
-        plt.ylabel("# of coincidences [-]")
+        plt.xlabel("\u0394t (ps)")
+        plt.ylabel("# of coincidences (-)")
         plt.legend()
         try:
             os.chdir(os.path.join(path, "results/ct_fit"))
-        except:
+        except FileNotFoundError as _:
             os.makedirs(os.path.join(path, "results/ct_fit"))
             os.chdir(os.path.join(path, "results/ct_fit"))
         plt.savefig(f"CT_fit_pixels_{pixels[0]},{pix}.png")
@@ -425,8 +445,8 @@ def _plot_cross_talk_grid(
         0
     ]
 
-    fig, axes = plt.subplots(4, 5, figsize=(12, 6))
-    plt.rcParams.update({"font.size": 22})
+    fig, axes = plt.subplots(4, 5, figsize=(16, 10))
+    plt.rcParams.update({"font.size": 27})
 
     for i, pix in enumerate(pixels[1:]):
         if pix_on_left:
@@ -457,7 +477,7 @@ def _plot_cross_talk_grid(
         bin_centers = (bin_edges - step * 17.857 / 2)[1:]
 
         try:
-            params, covs = curve_fit(
+            params, _ = curve_fit(
                 utils.gaussian,
                 bin_centers,
                 counts,
@@ -472,59 +492,65 @@ def _plot_cross_talk_grid(
             continue
 
         if i < 5:
-            axes[0, i].plot(bin_centers, counts, ".", color="salmon")
+            axes[0, i].plot(bin_centers, counts, ".", color="rebeccapurple")
             axes[0, i].plot(
                 bin_centers,
                 utils.gaussian(bin_centers, *params),
                 "--",
-                color="teal",
+                color="darkorange",
             )
             axes[0, i].set_xticks([])
             axes[0, i].set_yticks([])
             axes[0, i].set_title(f"{pixels[0]},{pix}")
         elif i >= 5 and i < 10:
-            axes[1, i % 5].plot(bin_centers, counts, ".", color="salmon")
+            axes[1, i % 5].plot(
+                bin_centers, counts, ".", color="rebeccapurple"
+            )
             axes[1, i % 5].plot(
                 bin_centers,
                 utils.gaussian(bin_centers, *params),
                 "--",
-                color="teal",
+                color="darkorange",
             )
             axes[1, i % 5].set_xticks([])
             axes[1, i % 5].set_yticks([])
             axes[1, i % 5].set_title(f"{pixels[0]},{pix}")
         elif i >= 10 and i < 15:
-            axes[2, i % 5].plot(bin_centers, counts, ".", color="salmon")
+            axes[2, i % 5].plot(
+                bin_centers, counts, ".", color="rebeccapurple"
+            )
             axes[2, i % 5].plot(
                 bin_centers,
                 utils.gaussian(bin_centers, *params),
                 "--",
-                color="teal",
+                color="darkorange",
             )
             axes[2, i % 5].set_xticks([])
             axes[2, i % 5].set_yticks([])
             axes[2, i % 5].set_title(f"{pixels[0]},{pix}")
         else:
-            axes[3, i % 5].plot(bin_centers, counts, ".", color="salmon")
+            axes[3, i % 5].plot(
+                bin_centers, counts, ".", color="rebeccapurple"
+            )
             axes[3, i % 5].plot(
                 bin_centers,
                 utils.gaussian(bin_centers, *params),
                 "--",
-                color="teal",
+                color="darkorange",
             )
             axes[3, i % 5].set_xticks([])
             axes[3, i % 5].set_yticks([])
             axes[3, i % 5].set_title(f"{pixels[0]},{pix}")
 
-    axes[1, 2].set_xlabel("\u0394t [ps]", fontsize=26)
-    fig.text(0, 0.25, "# of coincidences [-]", fontsize=26, rotation=90)
+    axes[1, 2].set_xlabel("\u0394t (ps)", fontsize=26)
+    fig.text(0, 0.25, "# of coincidences (-)", fontsize=26, rotation=90)
 
     # Make plots tight
     plt.tight_layout()
 
     try:
         os.chdir(os.path.join(path, "results/ct_fit"))
-    except:
+    except FileNotFoundError:
         os.makedirs(os.path.join(path, "results/ct_fit"))
         os.chdir(os.path.join(path, "results/ct_fit"))
     plt.savefig(f"CT_fit_pixels_{pixels[0]},{pix}_grid.png")
@@ -532,17 +558,17 @@ def _plot_cross_talk_grid(
 
 
 def collect_dcr_by_file(
-    path,
+    path: str,
     daughterboard_number: str,
     motherboard_number: str,
     firmware_version: str,
     timestamps: int = 512,
 ):
-    # TODO update docstring
     """Calculate dark count rate in counts per second per pixel.
 
     Calculate dark count rate for the given daughterboard and
-    motherboard.
+    motherboard in units of counts per second per pixel for each file
+    in the given folder and save the resulting list as a .pkl file.
 
     Parameters
     ----------
@@ -551,7 +577,7 @@ def collect_dcr_by_file(
     daughterboard_number : str
         LinoSPAD2 daughterboard number.
     motherboard_number : str
-        LinoSPAD2 motherboard (FPGA) number.
+        LinoSPAD2 motherboard (FPGA) number, including the '#'.
     firmware_version : str
         LinoSPAD2 firmware version.
     timestamps : int, optional
@@ -587,6 +613,9 @@ def collect_dcr_by_file(
     os.chdir(path)
 
     files = glob.glob("*.dat*")
+    files = sorted(files)
+
+    output_file_name = files[0][:-4] + "-" + files[-1][:-4]
 
     valid_per_pixel = np.zeros(256)
 
@@ -603,6 +632,7 @@ def collect_dcr_by_file(
             print("\nFirmware version is not recognized.")
             sys.exit()
 
+        # Unpack the data; offset calibration is not necessary
         data = f_up.unpack_binary_data(
             files[i],
             daughterboard_number,
@@ -611,6 +641,8 @@ def collect_dcr_by_file(
             timestamps,
             include_offset=False,
         )
+
+        # Collect number of timestamps in each pixel - DCR
         for i in range(256):
             tdc, pix = np.argwhere(pix_coor == i)[0]
             ind = np.where(data[tdc].T[0] == pix)[0]
@@ -622,7 +654,161 @@ def collect_dcr_by_file(
 
         dcr.append(valid_per_pixel / acq_window_length / number_of_cycles)
 
-    return dcr
+    dcr = np.array(dcr)
+
+    # Save the results into a .pkl file
+    try:
+        os.chdir("dcr_data")
+    except FileNotFoundError:
+        os.mkdir("dcr_data")
+        os.chdir("dcr_data")
+
+    file_with_dcr = f"{output_file_name}_dcr_data.pkl"
+
+    with open(file_with_dcr, "wb") as f:
+        pickle.dump(dcr, f)
+
+    # Check, if the file was created
+    absolute_address = os.path.join(path, "dcr_data", file_with_dcr)
+    if os.path.isfile(absolute_address) is True:
+        print(f"\n> > > DCR data are saved in {absolute_address} < < <")
+    else:
+        print("File wasn't generated. Check input parameters.")
+
+    # Average and median DCR, including the hot pixels
+    dcr_average = np.average(dcr)
+    dcr_median = np.median(dcr)
+
+    # Average and median DCR, with the hot pixels masked
+    mask = utils.apply_mask(daughterboard_number, motherboard_number)
+    dcr[:, mask] = 0
+    dcr_average_masked = np.average(dcr)
+    dcr_median_masked = np.median(dcr)
+
+    print(
+        "\n".join(
+            [
+                "DCR including hot pixels:",
+                f"DCR Average: {dcr_average:.0f} cps/pixel",
+                f"DCR Median: {dcr_median:.0f} cps/pixel",
+                "                                                 ",
+                "DCR without hot pixels:",
+                f"DCR Average: {dcr_average_masked:.0f} cps/pixel",
+                f"DCR Median: {dcr_median_masked:.0f} cps/pixel",
+            ]
+        )
+    )
+
+
+def plot_dcr_histogram_and_stability(
+    path: str,
+    hist_number_of_bins: int = 200,
+):
+    """Plot median DCR vs file and histogram of DCR with integral.
+
+    Plot median DCR vs file for checking the setup stability. Also, plot
+    a histogram of DCR together with intergral over pixels in units of
+    %.
+
+    Parameters
+    ----------
+    path : str
+        Path to data files.
+    daughterboard_number : str
+        LinoSPAD2 daughterboard number.
+    motherboard_number : str
+        LinoSPAD2 motherboard (FPGA) number, including the '#'.
+    hist_number_of_bins : int, optional
+        Number of bins for the DCR histogram. The default is 200.
+
+    Raises
+    ------
+    FileNotFoundError
+        Raised if the folder with the DCR data was not found.
+    FileNotFoundError
+        Raised if the .pkl file with the DCR data was not found.
+    """
+
+    os.chdir(path)
+
+    # Collect all files in the given folder
+    files = glob.glob("*.dat")
+    files = sorted(files)
+
+    # Find the file with the DCR data for the found files
+    dcr_file_name = files[0][:-4] + "-" + files[-1][:-4]
+    file_with_dcr = f"{dcr_file_name}_dcr_data.pkl"
+
+    try:
+        os.chdir("dcr_data")
+    except FileNotFoundError:
+        raise FileNotFoundError("The folder with DCR data was not found.")
+
+    try:
+        with open(file_with_dcr, "rb") as f:
+            data = pickle.load(f)
+    except FileNotFoundError:
+        raise FileNotFoundError(f"{file_with_dcr} was not found")
+
+    # Median DCR over the whole sensor
+    dcr_median = np.median(data)
+
+    # Plot the DCR stability graph: median DCR vs file
+    plt.rcParams.update({"font.size": 27})
+    plt.figure(figsize=(16, 10))
+    plt.plot(
+        [x + 1 for x in range(len(data))],
+        np.median(data, axis=1),
+        color="darkslateblue",
+        label=f"Median DCR: {dcr_median:.0f} cps/pixel",
+    )
+    plt.title("DCR stability")
+    plt.xlabel("File (-)")
+    plt.ylabel("Median DCR (cps)")
+    plt.legend(loc="best")
+
+    # Save the plot to "results/dcr"
+    try:
+        os.chdir("../results/dcr")
+    except FileNotFoundError:
+        os.makedirs("../results/dcr")
+        os.chdir("../results/dcr")
+    plt.savefig("DCR_stability_graph.png")
+
+    # DCR histogram with integral
+    # Compute the histogram
+    bins = np.logspace(
+        np.log10(0.1), np.log10(np.max(data[0])), hist_number_of_bins
+    )
+    hist, bin_edges = np.histogram(np.average(data, axis=0), bins=bins)
+    bin_centers = (bin_edges - (bin_edges[1] - bin_edges[0]) / 2)[1:]
+
+    # Plot the histogram
+    fig, ax = plt.subplots(figsize=(16, 10))
+    ax.bar(
+        bin_centers,
+        hist,
+        width=np.diff(bin_edges),
+        color="rebeccapurple",
+    )
+
+    # Calculate and plot the integral
+    cumul = np.cumsum(hist)
+    ax1 = ax.twinx()
+    ax1.plot(bin_centers, cumul / 256 * 100, color="darkorange", linewidth=3)
+    ax.set_xlim(10)
+    ax1.set_xlim(10)
+    ax.set_ylim(0)
+    ax1.set_ylim(0)
+    ax.set_xscale("log")
+    ax.set_xlabel("DCR (cps/pixel)")
+    ax.set_ylabel("Count (-)")
+    ax1.set_ylabel("Integral (%)")
+    ax.set_title(f"Median DCR: {dcr_median:.0f} cps/pixel")
+    plt.show()
+
+    # Save the plot to "results/dcr"
+    fig.savefig("DCR_histogram_w_integral.png")
 
 
 def _calculate_and_plot_cross_talk(
@@ -731,8 +917,8 @@ def _plot_cross_talk_vs_distance(path, ct, ct_err, pix_on_left: bool = False):
             # Extract the difference and append it to the list
             differences.append(key_tuple[1] - key_tuple[0])
 
-        plt.figure(figsize=(10, 8))
-        plt.rcParams.update({"font.size": 22})
+        plt.figure(figsize=(16, 10))
+        plt.rcParams.update({"font.size": 27})
         plt.errorbar(
             differences,
             list(CT.values()),
@@ -797,8 +983,8 @@ def _plot_average_cross_talk_vs_distance(
         final_result = {key: [] for key in range(1, 21)}
         final_result_averages = {key: [] for key in range(1, 21)}
 
-    for i in range(len(ct)):
-        if ct[i] == {} or ct_err[i] == {}:
+    for i, ct in enumerate(ct):
+        if ct == {} or ct_err == {}:
             continue
 
         for key in ct[i].keys():
@@ -813,8 +999,8 @@ def _plot_average_cross_talk_vs_distance(
         )
         final_result_averages[key].append((value, error))
 
-    plt.figure(figsize=(10, 8))
-    plt.rcParams.update({"font.size": 22})
+    plt.figure(figsize=(16, 10))
+    plt.rcParams.update({"font.size": 27})
     plt.title("Average cross-talk probability")
     plt.xlabel("Distance in pixels (-)")
     plt.ylabel("Cross-talk probability (%)")
@@ -867,7 +1053,7 @@ def zero_to_cross_talk_collect(
     daughterboard_number : str
         LinoSPAD2 daughterboard number.
     motherboard_number : str
-        LinoSPAD2 motherboard (FPGA) number.
+        LinoSPAD2 motherboard (FPGA) number, including the '#'.
     firmware_version : str
         LinoSPAD2 firmware version.
     timestamps : int
@@ -905,6 +1091,23 @@ def zero_to_cross_talk_collect(
         [x - i for i in range(0, 21)] for x in hot_pixels if x >= 20
     ]
 
+    # Collecting sensor population
+    os.chdir(path)
+    files = glob("*.dat")
+    plot_tmsp.collect_data_and_apply_mask(
+        files,
+        daughterboard_number,
+        motherboard_number,
+        firmware_version,
+        timestamps,
+        include_offset,
+        apply_calibration,
+        app_mask=False,
+        save_to_file=True,
+        absolute_timestamps=absolute_timestamps,
+        correct_pix_address=correct_pix_address,
+    )
+
     for pixels in hot_pixels_plus_20:
         print(
             "Calculating timestamp differences between aggressor pixel "
@@ -920,6 +1123,9 @@ def zero_to_cross_talk_collect(
             timestamps,
             delta_window,
             include_offset,
+            apply_calibration,
+            absolute_timestamps,
+            correct_pix_address,
         )
 
     for pixels in hot_pixels_minus_20:
@@ -937,6 +1143,9 @@ def zero_to_cross_talk_collect(
             timestamps,
             delta_window,
             include_offset,
+            apply_calibration,
+            absolute_timestamps,
+            correct_pix_address,
         )
 
 
@@ -1041,8 +1250,8 @@ def zero_to_cross_talk_plot(
         )
         on_both_average[np.abs(key)] = (ct_value_average, ct_error_average)
 
-    plt.figure(figsize=(10, 8))
-    plt.rcParams.update({"font.size": 22})
+    plt.figure(figsize=(16, 10))
+    plt.rcParams.update({"font.size": 27})
     plt.title("Average cross-talk probability")
     plt.xlabel("Distance in pixels (-)")
     plt.ylabel("Cross-talk probability (%)")

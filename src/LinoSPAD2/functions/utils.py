@@ -28,6 +28,10 @@ functions:
     
     * error_propagation_division - propagate error for the division
     operation
+    
+    * correct_pixels_address - correct the pixel addressing, the output
+    has the same dimensions as the input. Should be used for motherboard
+    on side "23" of the daughterboard.
 """
 
 import glob
@@ -35,6 +39,7 @@ import os
 import pickle
 import sys
 import time
+from typing import List
 
 import matplotlib
 import numpy as np
@@ -207,10 +212,54 @@ def pixel_list_transform(pixels: list):
     elif isinstance(pixels[0], list) and isinstance(pixels[1], int) is True:
         pixels_left, pixels_right = sorted([pixels[0], [pixels[1]]])
     elif isinstance(pixels[0], int) and isinstance(pixels[1], int) is True:
-        pixels_left = pixels
-        pixels_right = pixels
+        pixels_left = [pixels[0]]
+        pixels_right = [pixels[1]]
 
-    return pixels_left, pixels_right
+    return [pixels_left, pixels_right]
+
+
+def __correct_pix_address(pix: int):
+    """Pixel address correction.
+
+    Should be used internally only with the "correct_pixel_address"
+    function. Transforms the pixel address based on its position.
+
+    Parameters
+    ----------
+    pix : int
+        Pixel address.
+
+    Returns
+    -------
+    int
+        Transformed pixel address.
+    """
+    if pix > 127:
+        pix = 255 - pix
+    else:
+        pix = pix + 128
+    return pix
+
+
+def correct_pixels_address(pixels: List[int] | List[List[int]]):
+    """Correct pixel address for all given pixels.
+
+    Return the list with the same dimensions as the input.
+
+    Parameters
+    ----------
+    pixels : List[int] | List[List[int]]
+        List of pixel addresses.
+
+    Returns
+    -------
+    List[int] | List[List[int]]
+        List of transformed pixel addresses.
+    """
+    if isinstance(pixels, list):
+        return [correct_pixels_address(item) for item in pixels]
+    else:
+        return __correct_pix_address(pixels)
 
 
 def file_rewrite_handling(file: str, rewrite: bool):
