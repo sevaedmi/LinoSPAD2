@@ -531,113 +531,6 @@ def _plot_cross_talk_grid(
     os.chdir(os.path.join(path, "cross_talk_data"))
 
 
-def calculate_dark_count_rate(
-    path,
-    daughterboard_number: str,
-    motherboard_number: str,
-    firmware_version: str,
-    timestamps: int = 512,
-):
-    """Calculate dark count rate in counts per second per pixel.
-
-    Calculate dark count rate for the given daughterboard and
-    motherboard.
-
-    Parameters
-    ----------
-    path : str
-        Path to datafiles.
-    daughterboard_number : str
-        LinoSPAD2 daughterboard number.
-    motherboard_number : str
-        LinoSPAD2 motherboard (FPGA) number.
-    firmware_version : str
-        LinoSPAD2 firmware version.
-    timestamps : int, optional
-        Number of timestamps per acquisition cycle per TDC. The default
-        is 512.
-
-    Returns
-    -------
-    dcr : float
-        The dark count rate number per pixel per second.
-
-    Raises
-    ------
-    TypeError
-        Raised if the firmware version given is not recognized.
-    TypeError
-        Raised if the daughterboard number given is not recognized.
-    TypeError
-        Raised if the motherboard number given is not recognized.
-    """
-    # Parameter type check
-    if not isinstance(firmware_version, str):
-        raise TypeError(
-            "'firmware_version' should be a string, '2212b' or '2212s'"
-        )
-    if not isinstance(daughterboard_number, str):
-        raise TypeError(
-            "'daughterboard_number' should be a string, 'NL11' or 'A5'"
-        )
-    if not isinstance(motherboard_number, str):
-        raise TypeError("'motherboard_number' should be a string")
-
-    os.chdir(path)
-
-    files = glob.glob("*.dat*")
-
-    valid_per_pixel = np.zeros(256)
-
-    for i in tqdm(range(len(files)), desc="Going through files"):
-        # Define matrix of pixel coordinates, where rows are numbers of TDCs
-        # and columns are the pixels that connected to these TDCs
-        if firmware_version == "2212s":
-            pix_coor = np.arange(256).reshape(4, 64).T
-        elif firmware_version == "2212b":
-            pix_coor = np.arange(256).reshape(64, 4)
-        else:
-            print("\nFirmware version is not recognized.")
-            sys.exit()
-
-        data = f_up.unpack_binary_data(
-            files[i],
-            daughterboard_number,
-            motherboard_number,
-            firmware_version,
-            timestamps,
-            include_offset=False,
-        )
-        for i in range(256):
-            tdc, pix = np.argwhere(pix_coor == i)[0]
-            ind = np.where(data[tdc].T[0] == pix)[0]
-            ind1 = np.where(data[tdc].T[1][ind] > 0)[0]
-            valid_per_pixel[i] += len(data[tdc].T[1][ind[ind1]])
-
-    mask = utils.apply_mask(daughterboard_number, motherboard_number)
-    valid_per_pixel[mask] = 0
-
-    acq_window_length = np.max(data[:].T[1])
-
-    dcr_average = (
-        np.average(valid_per_pixel)
-        / len(files)
-        / len(np.where(data[0].T[0] == -2)[0])
-        / acq_window_length
-        / 1e-12
-    )
-
-    dcr_median = (
-        np.median(valid_per_pixel)
-        / len(files)
-        / len(np.where(data[0].T[0] == -2)[0])
-        / acq_window_length
-        / 1e-12
-    )
-
-    return dcr_average, dcr_median
-
-
 def collect_dcr_by_file(
     path,
     daughterboard_number: str,
@@ -851,8 +744,8 @@ def _plot_cross_talk_vs_distance(path, ct, ct_err, pix_on_left: bool = False):
         plt.title(
             f"Cross-talk probability for aggressor pixel {aggressor_pix}"
         )
-        plt.xlabel("Distance in pixels [-]")
-        plt.ylabel("Cross-talk probability [%]")
+        plt.xlabel("Distance in pixels (-)")
+        plt.ylabel("Cross-talk probability (%)")
         if pix_on_left:
             plt.savefig(
                 f"Cross-talk_aggressor_pixel_{aggressor_pix}_onleft.png"
@@ -923,8 +816,8 @@ def _plot_average_cross_talk_vs_distance(
     plt.figure(figsize=(10, 8))
     plt.rcParams.update({"font.size": 22})
     plt.title("Average cross-talk probability")
-    plt.xlabel("Distance in pixels [-]")
-    plt.ylabel("Cross-talk probability [%]")
+    plt.xlabel("Distance in pixels (-)")
+    plt.ylabel("Cross-talk probability (%)")
     plt.errorbar(
         final_result_averages.keys(),
         [x[0][0] for x in final_result_averages.values()],
@@ -1107,8 +1000,8 @@ def zero_to_cross_talk_plot(
     ]
     try:
         os.chdir(os.path.join(path, "senpop_data"))
-        senop_data_txt = glob.glob("*.txt")[0]
-        senpop = np.genfromtxt(senop_data_txt)
+        senpop_data_txt = glob.glob("*.txt")[0]
+        senpop = np.genfromtxt(senpop_data_txt)
     except Exception as _:
         raise FileNotFoundError(
             "Txt file with sensor population data is not found. Collect "
@@ -1151,8 +1044,8 @@ def zero_to_cross_talk_plot(
     plt.figure(figsize=(10, 8))
     plt.rcParams.update({"font.size": 22})
     plt.title("Average cross-talk probability")
-    plt.xlabel("Distance in pixels [-]")
-    plt.ylabel("Cross-talk probability [%]")
+    plt.xlabel("Distance in pixels (-)")
+    plt.ylabel("Cross-talk probability (%)")
     plt.yscale("log")
     plt.errorbar(
         on_both_average.keys(),
@@ -1160,9 +1053,11 @@ def zero_to_cross_talk_plot(
         yerr=[x[1] for x in on_both_average.values()],
         fmt=".",
         color="darkred",
+        label=f"Immediate neighbor: {on_both_average[1][0]:.2f}%",
     )
     plt.tight_layout()
     os.chdir(os.path.join(path, "ct_vs_distance"))
+    plt.legend(loc="best")
     plt.savefig("Average_cross-talk.png")
 
     return on_both_average, ct_right, ct_left

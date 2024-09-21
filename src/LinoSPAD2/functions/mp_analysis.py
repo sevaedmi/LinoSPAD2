@@ -519,6 +519,8 @@ def calculate_and_save_timestamp_differences_mp(
     include_offset: bool = True,
     apply_calibration: bool = True,
     chunksize: int = 20,
+    number_of_cores: int = 4,
+    maxtasksperchild: int = 1000,
 ) -> None:
     """Unpack data and collect timestamps differences using all CPU cores.
 
@@ -558,7 +560,10 @@ def calculate_and_save_timestamp_differences_mp(
         calibration is applied. The default is True.
     chunksize : int, optional
         Number of files processed in each iteration. The default is 20.
-
+    number_of_cores : int, optional
+        Number of cores to use for multiprocessing. The default is 4.
+    maxtasksperchild : int, optional
+        Number of tasks per core. The default is 1000.
     Raises
     ------
     TypeError
@@ -618,7 +623,9 @@ def calculate_and_save_timestamp_differences_mp(
         shared_result_queue = manager.Queue()
         shared_lock = manager.Lock()
 
-        with multiprocessing.Pool(maxtasksperchild=1000) as pool:
+        with multiprocessing.Pool(
+            processes=number_of_cores, maxtasksperchild=maxtasksperchild
+        ) as pool:
             # Start the writer process
             writer_process = multiprocessing.Process(
                 target=_write_results_to_feather,
