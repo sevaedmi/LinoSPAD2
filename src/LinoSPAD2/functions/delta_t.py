@@ -104,7 +104,6 @@ def calculate_and_save_timestamp_differences(
 
     Parameters
     ----------
-    #TODO
     path : str
         Path to data files.
     pixels : List[int] | List[List[int]]
@@ -116,7 +115,7 @@ def calculate_and_save_timestamp_differences(
     daughterboard_number : str
         LinoSPAD2 daughterboard number.
     motherboard_number : str
-        LinoSPAD2 motherboard (FPGA) number.
+        LinoSPAD2 motherboard (FPGA) number, including the '#'.
     firmware_version: str
         LinoSPAD2 firmware version. Versions "2212s" (skip) and "2212b"
         (block) are recognized.
@@ -178,7 +177,7 @@ def calculate_and_save_timestamp_differences(
     >>> correct_pixel_addressing = True,
     >>> )
     """
-    # parameter type check
+    # Parameter type check
     if isinstance(pixels, list) is False:
         raise TypeError(
             "'pixels' should be a list of integers or a list of two lists"
@@ -347,7 +346,7 @@ def calculate_and_save_timestamp_differences_full_sensor(
     daughterboard_number : str
         LinoSPAD2 daughterboard number.
     motherboard_number1 : str
-        First LinoSPAD2 motherboard (FPGA) number.
+        LinoSPAD2 motherboard (FPGA) number, including the '#'.
     motherboard_number2 : str
         Second LinoSPAD2 motherboard (FPGA) number.
     firmware_version: str
@@ -704,9 +703,9 @@ def calculate_and_save_timestamp_differences_full_sensor_alt(
     daughterboard_number : str
         LinoSPAD2 daughterboard number.
     motherboard_number1 : str
-        First LinoSPAD2 motherboard (FPGA) number.
+        First LinoSPAD2 motherboard (FPGA) number, including the '#'.
     motherboard_number2 : str
-        Second LinoSPAD2 motherboard (FPGA) number.
+        Second LinoSPAD2 motherboard (FPGA) number, including the '#'.
     firmware_version: str
         LinoSPAD2 firmware version. Versions "2212s" (skip) and "2212b"
         (block) are recognized.
@@ -1062,7 +1061,7 @@ def collect_and_plot_timestamp_differences(
     path,
     pixels,
     rewrite: bool,
-    ft_file: list = None,
+    ft_file: str = None,
     range_left: int = -10e3,
     range_right: int = 10e3,
     step: int = 1,
@@ -1087,6 +1086,9 @@ def collect_and_plot_timestamp_differences(
         should be plotted.
     rewrite : bool
         Switch for rewriting the plot if it already exists.
+    ft_file : str, optional
+        Path to the feather file with timestamp differences. If used,
+        the data files in the path are ignored. The default is None.
     range_left : int, optional
         Lower limit for timestamp differences, lower values are not used.
         The default is -10e3.
@@ -1103,7 +1105,6 @@ def collect_and_plot_timestamp_differences(
     correct_pix_address : bool, optional
         Correct pixel address for the FPGA board on side 23. The
         default is False.
-
 
     Raises
     ------

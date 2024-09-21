@@ -8,14 +8,14 @@ functions:
 
     * calculate_dark_count_rate - calculate the average dark count rate
     for the given sensor half.
-    
+
     * collect_dcr_by_file - calculate the DCR for each file in the
     given folder and save the result into a .pkl file
-    
+
     * plot_dcr_histogram_and_stability - plot the DCR vs file to check
     setup stability, and plot histogram of DCR averaged over files
     together with integral over pixels
-    
+
     * zero_to_cross_talk_collect - collect timestamp differences from
     the '.dat' with the cross-talk data (preferably, noise only).
     Timestamp differences are collected for the given hot pixels plus
@@ -44,6 +44,7 @@ from scipy.optimize import curve_fit
 from tqdm import tqdm
 
 from LinoSPAD2.functions import calc_diff as cd
+from LinoSPAD2.functions import plot_tmsp
 from LinoSPAD2.functions import unpack as f_up
 from LinoSPAD2.functions import utils
 
@@ -60,6 +61,7 @@ def _collect_cross_talk(
     include_offset: bool = True,
     apply_calibration: bool = True,
     absolute_timestamps: bool = False,
+    correct_pix_address: bool = False,
 ):
     """Collect timestamp differences from cross-talk data.
 
@@ -80,7 +82,7 @@ def _collect_cross_talk(
     daughterboard_number : str
         LinoSPAD2 daughterboard number.
     motherboard_number : str
-        LinoSPAD2 motherboard (FPGA) number.
+        LinoSPAD2 motherboard (FPGA) number, including the '#'.
     firmware_version : str
         LinoSPAD2 firmware version.
     timestamps : int
@@ -96,6 +98,9 @@ def _collect_cross_talk(
     absolute_timestamps : bool, optional
         Indicator of data collected with absolute timestamps. The
         default is False.
+    correct_pix_address : bool, optional
+        Correct pixel address for the FPGA board on side 23. Here
+        used to reverse the correction. The default is False.
 
     Raises
     ------
@@ -118,6 +123,15 @@ def _collect_cross_talk(
     if isinstance(daughterboard_number, str) is False:
         raise TypeError("'daughterboard_number' should be string")
     os.chdir(path)
+
+    # If requested, get the correct pixel address - must be used
+    # for the motherboard on side '23'
+    if correct_pix_address:
+        for i, pixel in enumerate(pixels):
+            if pixel > 127:
+                pixels[i] = 255 - pixels[i]
+            else:
+                pixels[i] = pixels[i] + 128
 
     # files_all = sorted(glob.glob("*.dat*"))
     files_all = glob.glob("*.dat*")
@@ -177,6 +191,7 @@ def _collect_cross_talk(
                 apply_calibration,
             )
 
+        # Collect timestamp differences for the given pixels
         deltas_all = cd.calculate_differences_2212(
             data_all, pixels_formatted, pix_coor, delta_window
         )
@@ -214,8 +229,8 @@ def _collect_cross_talk(
     # Check, if the file was created
     if (
         os.path.isfile(
-            path
-            + f"/cross_talk_data/{out_file_name}_pixels_{pixels[0]}-{pixels[-1]}.feather"
+            path + f"/cross_talk_data/{out_file_name}_pixels_"
+            f"{pixels[0]}-{pixels[-1]}.feather"
         )
         is True
     ):
@@ -277,14 +292,14 @@ def _plot_cross_talk_peaks(
 
     os.chdir(os.path.join(path, "cross_talk_data"))
 
-    ft_file = glob.glob(f"{ft_file_name}_*{pixels[0]}-{pixels[-1]}*.feather")[
-        0
-    ]
+    ft_file = glob.glob(
+        f"{ft_file_name}_*{pixels[0]}" f"-{pixels[-1]}*.feather"
+    )[0]
 
     ct_output = {}
     ct_err_output = {}
 
-    for i, pix in enumerate(pixels[1:]):
+    for _, pix in enumerate(pixels[1:]):
         if pix_on_left:
 
             data_pix = (
@@ -314,7 +329,7 @@ def _plot_cross_talk_peaks(
         bin_centers = (bin_edges - step * 17.857 / 2)[1:]
 
         try:
-            params, covs = curve_fit(
+            params, _ = curve_fit(
                 utils.gaussian,
                 bin_centers,
                 counts,
@@ -367,10 +382,8 @@ def _plot_cross_talk_peaks(
         )
         if senpop is not None:
             plt.title(
-                f"Cross-talk peak, pixels {pixels[0]},{pix}\nCross-talk is {CT:.1e}"
-                + "\u00B1"
-                + f"{CT_err:.1e}"
-                + "%"
+                f"Cross-talk peak, pixels {pixels[0]},{pix}\n"
+                f"Cross-talk is {CT:.1e}" + "\u00B1" + f"{CT_err:.1e}" + "%"
             )
         else:
             plt.title(f"Cross-talk peak, pixels {pixels[0]},{pix}")
@@ -464,7 +477,7 @@ def _plot_cross_talk_grid(
         bin_centers = (bin_edges - step * 17.857 / 2)[1:]
 
         try:
-            params, covs = curve_fit(
+            params, _ = curve_fit(
                 utils.gaussian,
                 bin_centers,
                 counts,
@@ -537,118 +550,11 @@ def _plot_cross_talk_grid(
 
     try:
         os.chdir(os.path.join(path, "results/ct_fit"))
-    except:
+    except FileNotFoundError:
         os.makedirs(os.path.join(path, "results/ct_fit"))
         os.chdir(os.path.join(path, "results/ct_fit"))
     plt.savefig(f"CT_fit_pixels_{pixels[0]},{pix}_grid.png")
     os.chdir(os.path.join(path, "cross_talk_data"))
-
-
-def calculate_dark_count_rate(
-    path,
-    daughterboard_number: str,
-    motherboard_number: str,
-    firmware_version: str,
-    timestamps: int = 512,
-):
-    """Calculate dark count rate in counts per second per pixel.
-
-    Calculate dark count rate for the given daughterboard and
-    motherboard.
-
-    Parameters
-    ----------
-    path : str
-        Path to datafiles.
-    daughterboard_number : str
-        LinoSPAD2 daughterboard number.
-    motherboard_number : str
-        LinoSPAD2 motherboard (FPGA) number.
-    firmware_version : str
-        LinoSPAD2 firmware version.
-    timestamps : int, optional
-        Number of timestamps per acquisition cycle per TDC. The default
-        is 512.
-
-    Returns
-    -------
-    dcr : float
-        The dark count rate number per pixel per second.
-
-    Raises
-    ------
-    TypeError
-        Raised if the firmware version given is not recognized.
-    TypeError
-        Raised if the daughterboard number given is not recognized.
-    TypeError
-        Raised if the motherboard number given is not recognized.
-    """
-    # Parameter type check
-    if not isinstance(firmware_version, str):
-        raise TypeError(
-            "'firmware_version' should be a string, '2212b' or '2212s'"
-        )
-    if not isinstance(daughterboard_number, str):
-        raise TypeError(
-            "'daughterboard_number' should be a string, 'NL11' or 'A5'"
-        )
-    if not isinstance(motherboard_number, str):
-        raise TypeError("'motherboard_number' should be a string")
-
-    os.chdir(path)
-
-    files = glob.glob("*.dat*")
-
-    valid_per_pixel = np.zeros(256)
-
-    for i in tqdm(range(len(files)), desc="Going through files"):
-        # Define matrix of pixel coordinates, where rows are numbers of TDCs
-        # and columns are the pixels that connected to these TDCs
-        if firmware_version == "2212s":
-            pix_coor = np.arange(256).reshape(4, 64).T
-        elif firmware_version == "2212b":
-            pix_coor = np.arange(256).reshape(64, 4)
-        else:
-            print("\nFirmware version is not recognized.")
-            sys.exit()
-
-        data = f_up.unpack_binary_data(
-            files[i],
-            daughterboard_number,
-            motherboard_number,
-            firmware_version,
-            timestamps,
-            include_offset=False,
-        )
-        for i in range(256):
-            tdc, pix = np.argwhere(pix_coor == i)[0]
-            ind = np.where(data[tdc].T[0] == pix)[0]
-            ind1 = np.where(data[tdc].T[1][ind] > 0)[0]
-            valid_per_pixel[i] += len(data[tdc].T[1][ind[ind1]])
-
-    mask = utils.apply_mask(daughterboard_number, motherboard_number)
-    valid_per_pixel[mask] = 0
-
-    acq_window_length = np.max(data[:].T[1])
-
-    dcr_average = (
-        np.average(valid_per_pixel)
-        / len(files)
-        / len(np.where(data[0].T[0] == -2)[0])
-        / acq_window_length
-        / 1e-12
-    )
-
-    dcr_median = (
-        np.median(valid_per_pixel)
-        / len(files)
-        / len(np.where(data[0].T[0] == -2)[0])
-        / acq_window_length
-        / 1e-12
-    )
-
-    return dcr_average, dcr_median
 
 
 def collect_dcr_by_file(
@@ -671,7 +577,7 @@ def collect_dcr_by_file(
     daughterboard_number : str
         LinoSPAD2 daughterboard number.
     motherboard_number : str
-        LinoSPAD2 motherboard (FPGA) number.
+        LinoSPAD2 motherboard (FPGA) number, including the '#'.
     firmware_version : str
         LinoSPAD2 firmware version.
     timestamps : int, optional
@@ -707,6 +613,7 @@ def collect_dcr_by_file(
     os.chdir(path)
 
     files = glob.glob("*.dat*")
+    files = sorted(files)
 
     output_file_name = files[0][:-4] + "-" + files[-1][:-4]
 
@@ -747,10 +654,12 @@ def collect_dcr_by_file(
 
         dcr.append(valid_per_pixel / acq_window_length / number_of_cycles)
 
+    dcr = np.array(dcr)
+
     # Save the results into a .pkl file
     try:
         os.chdir("dcr_data")
-    except FileNotFoundError as _:
+    except FileNotFoundError:
         os.mkdir("dcr_data")
         os.chdir("dcr_data")
 
@@ -763,9 +672,32 @@ def collect_dcr_by_file(
     absolute_address = os.path.join(path, "dcr_data", file_with_dcr)
     if os.path.isfile(absolute_address) is True:
         print(f"\n> > > DCR data are saved in {absolute_address} < < <")
-
     else:
         print("File wasn't generated. Check input parameters.")
+
+    # Average and median DCR, including the hot pixels
+    dcr_average = np.average(dcr)
+    dcr_median = np.median(dcr)
+
+    # Average and median DCR, with the hot pixels masked
+    mask = utils.apply_mask(daughterboard_number, motherboard_number)
+    dcr[:, mask] = 0
+    dcr_average_masked = np.average(dcr)
+    dcr_median_masked = np.median(dcr)
+
+    print(
+        "\n".join(
+            [
+                "DCR including hot pixels:",
+                f"DCR Average: {dcr_average:.0f} cps/pixel",
+                f"DCR Median: {dcr_median:.0f} cps/pixel",
+                "                                                 ",
+                "DCR without hot pixels:",
+                f"DCR Average: {dcr_average_masked:.0f} cps/pixel",
+                f"DCR Median: {dcr_median_masked:.0f} cps/pixel",
+            ]
+        )
+    )
 
 
 def plot_dcr_histogram_and_stability(
@@ -785,7 +717,7 @@ def plot_dcr_histogram_and_stability(
     daughterboard_number : str
         LinoSPAD2 daughterboard number.
     motherboard_number : str
-        LinoSPAD2 motherboard (FPGA) number.
+        LinoSPAD2 motherboard (FPGA) number, including the '#'.
     hist_number_of_bins : int, optional
         Number of bins for the DCR histogram. The default is 200.
 
@@ -801,6 +733,7 @@ def plot_dcr_histogram_and_stability(
 
     # Collect all files in the given folder
     files = glob.glob("*.dat")
+    files = sorted(files)
 
     # Find the file with the DCR data for the found files
     dcr_file_name = files[0][:-4] + "-" + files[-1][:-4]
@@ -808,31 +741,36 @@ def plot_dcr_histogram_and_stability(
 
     try:
         os.chdir("dcr_data")
-    except FileNotFoundError as _:
+    except FileNotFoundError:
         raise FileNotFoundError("The folder with DCR data was not found.")
 
     try:
         with open(file_with_dcr, "rb") as f:
             data = pickle.load(f)
-    except FileNotFoundError as _:
+    except FileNotFoundError:
         raise FileNotFoundError(f"{file_with_dcr} was not found")
+
+    # Median DCR over the whole sensor
+    dcr_median = np.median(data)
 
     # Plot the DCR stability graph: median DCR vs file
     plt.rcParams.update({"font.size": 27})
     plt.figure(figsize=(16, 10))
     plt.plot(
-        [x for x in range(len(data))],
+        [x + 1 for x in range(len(data))],
         np.median(data, axis=1),
         color="darkslateblue",
+        label=f"Median DCR: {dcr_median:.0f} cps/pixel",
     )
-    plt.title("DCR stability graph")
+    plt.title("DCR stability")
     plt.xlabel("File (-)")
     plt.ylabel("Median DCR (cps)")
+    plt.legend(loc="best")
 
     # Save the plot to "results/dcr"
     try:
         os.chdir("../results/dcr")
-    except FileNotFoundError as _:
+    except FileNotFoundError:
         os.makedirs("../results/dcr")
         os.chdir("../results/dcr")
     plt.savefig("DCR_stability_graph.png")
@@ -851,9 +789,9 @@ def plot_dcr_histogram_and_stability(
         bin_centers,
         hist,
         width=np.diff(bin_edges),
-        label="All",
         color="rebeccapurple",
     )
+
     # Calculate and plot the integral
     cumul = np.cumsum(hist)
     ax1 = ax.twinx()
@@ -866,6 +804,7 @@ def plot_dcr_histogram_and_stability(
     ax.set_xlabel("DCR (cps/pixel)")
     ax.set_ylabel("Count (-)")
     ax1.set_ylabel("Integral (%)")
+    ax.set_title(f"Median DCR: {dcr_median:.0f} cps/pixel")
     plt.show()
 
     # Save the plot to "results/dcr"
@@ -1044,8 +983,8 @@ def _plot_average_cross_talk_vs_distance(
         final_result = {key: [] for key in range(1, 21)}
         final_result_averages = {key: [] for key in range(1, 21)}
 
-    for i in range(len(ct)):
-        if ct[i] == {} or ct_err[i] == {}:
+    for i, ct in enumerate(ct):
+        if ct == {} or ct_err == {}:
             continue
 
         for key in ct[i].keys():
@@ -1114,7 +1053,7 @@ def zero_to_cross_talk_collect(
     daughterboard_number : str
         LinoSPAD2 daughterboard number.
     motherboard_number : str
-        LinoSPAD2 motherboard (FPGA) number.
+        LinoSPAD2 motherboard (FPGA) number, including the '#'.
     firmware_version : str
         LinoSPAD2 firmware version.
     timestamps : int
@@ -1152,6 +1091,23 @@ def zero_to_cross_talk_collect(
         [x - i for i in range(0, 21)] for x in hot_pixels if x >= 20
     ]
 
+    # Collecting sensor population
+    os.chdir(path)
+    files = glob("*.dat")
+    plot_tmsp.collect_data_and_apply_mask(
+        files,
+        daughterboard_number,
+        motherboard_number,
+        firmware_version,
+        timestamps,
+        include_offset,
+        apply_calibration,
+        app_mask=False,
+        save_to_file=True,
+        absolute_timestamps=absolute_timestamps,
+        correct_pix_address=correct_pix_address,
+    )
+
     for pixels in hot_pixels_plus_20:
         print(
             "Calculating timestamp differences between aggressor pixel "
@@ -1167,6 +1123,9 @@ def zero_to_cross_talk_collect(
             timestamps,
             delta_window,
             include_offset,
+            apply_calibration,
+            absolute_timestamps,
+            correct_pix_address,
         )
 
     for pixels in hot_pixels_minus_20:
@@ -1184,6 +1143,9 @@ def zero_to_cross_talk_collect(
             timestamps,
             delta_window,
             include_offset,
+            apply_calibration,
+            absolute_timestamps,
+            correct_pix_address,
         )
 
 
@@ -1249,7 +1211,7 @@ def zero_to_cross_talk_plot(
         os.chdir(os.path.join(path, "senpop_data"))
         senop_data_txt = glob.glob("*.txt")[0]
         senpop = np.genfromtxt(senop_data_txt)
-    except Exception as _:
+    except Exception:
         raise FileNotFoundError(
             "Txt file with sensor population data is not found. Collect "
             "sensor population first."

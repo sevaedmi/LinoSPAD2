@@ -107,13 +107,6 @@ def calibrate_and_save_TDC_data(
     os.chdir(path)
     filename = glob.glob("*.dat")[0]
 
-    # TODO: for stability study, need to use different calibration sets
-    # dir_path = os.path.dirname(path)
-    # os.chdir(dir_path)
-    # filename = path.split("\\")[-1]
-    # ctime = os.path.getctime(filename)
-    # ctime = datetime.datetime.fromtimestamp(ctime).strftime("%H-%M")
-
     if firmware_version == "2208":
         # read data by 32 bit words
         raw_data = np.fromfile(filename, dtype=np.uint32)
@@ -762,11 +755,19 @@ def load_calibration_data(
     os.chdir(calibration_path)
 
     # Compensating for TDC nonlinearities
-    file_TDC = glob.glob(
-        "*TDC_{db}_{mb}_{fw}*".format(
-            db=daughterboard_number, mb=motherboard_number, fw=firmware_version
-        )
-    )[0]
+    try:
+        file_TDC = glob.glob(
+            "*TDC_{db}_{mb}_{fw}*".format(
+                db=daughterboard_number,
+                mb=motherboard_number,
+                fw=firmware_version,
+            )
+        )[0]
+    except IndexError as exc:
+        raise FileNotFoundError(
+            f"TDC calibration for {daughterboard_number}, "
+            f"{motherboard_number}, and {firmware_version} is not found"
+        ) from exc
 
     # Compensating for offset
     if include_offset:
@@ -779,7 +780,7 @@ def load_calibration_data(
                 )
             )[0]
         except IndexError:
-            raise IndexError(
+            raise FileNotFoundError(
                 "No .npy file with offset calibration data was found"
             )
         offset_arr = np.load(file_offset)
