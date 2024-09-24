@@ -1209,9 +1209,9 @@ def zero_to_cross_talk_plot(
     ]
     try:
         os.chdir(os.path.join(path, "senpop_data"))
-        senop_data_txt = glob.glob("*.txt")[0]
-        senpop = np.genfromtxt(senop_data_txt)
-    except Exception:
+        senpop_data_txt = glob.glob("*.txt")[0]
+        senpop = np.genfromtxt(senpop_data_txt)
+    except Exception as _:
         raise FileNotFoundError(
             "Txt file with sensor population data is not found. Collect "
             "sensor population first."
@@ -1262,9 +1262,11 @@ def zero_to_cross_talk_plot(
         yerr=[x[1] for x in on_both_average.values()],
         fmt=".",
         color="darkred",
+        label=f"Immediate neighbor: {on_both_average[1][0]:.2f}%",
     )
     plt.tight_layout()
     os.chdir(os.path.join(path, "ct_vs_distance"))
+    plt.legend(loc="best")
     plt.savefig("Average_cross-talk.png")
 
     return on_both_average, ct_right, ct_left
