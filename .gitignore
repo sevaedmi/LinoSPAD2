@@ -144,3 +144,9 @@ requirements_dev.txt
 
 # VS Code
 .lprof/settings.json
+
+# 
+src/LinoSPAD2/params/calibration_data/TDC_B7d_#28_2212b.csv
+src/LinoSPAD2/params/calibration_data/TDC_B7d_#28_2212s.csv
+src/LinoSPAD2/params/calibration_data/older/TDC_B7d_#28_2212b.csv
+src/LinoSPAD2/params/calibration_data/older/TDC_B7d_#28_2212s.csv

@@ -43,6 +43,8 @@ from typing import List
 
 import matplotlib
 import numpy as np
+import pandas as pd
+from pyarrow import feather as ft
 from scipy.optimize import curve_fit
 
 
@@ -359,3 +361,49 @@ def error_propagation_division(x, sigma_x, y, sigma_y, rho_xy=0):
     sigma_f = np.sqrt(term1 + term2 - term3)
 
     return sigma_f
+
+
+def combine_feather_files(path: str):
+    """Combine ".feather" files into one.
+
+    Find all numbered ".feather" files for the data files found in the
+    path and combine them all into one.
+
+    Parameters
+    ----------
+    path : str
+        Path to data files.
+
+    Raises
+    ------
+    FileNotFoundError
+        Raised when the folder "delta_ts_data", where timestamp
+        differences are saved, cannot be found in the path.
+    """
+    os.chdir(path)
+
+    files_all = glob.glob("*.dat*")
+    files_all.sort(key=os.path.getmtime)
+
+    out_file_name = files_all[0][:-4] + "-" + files_all[-1][:-4]
+
+    try:
+        os.chdir("delta_ts_data")
+    except FileNotFoundError:
+        raise FileNotFoundError(
+            "Folder with saved timestamp differences was not found"
+        )
+
+    file_pattern = f"{out_file_name}_*.feather"
+
+    feather_files = glob.glob(file_pattern)
+
+    data_combined = []
+    data_combined = pd.DataFrame(data_combined)
+
+    for ft_file in feather_files:
+        data = ft.read_feather(ft_file)
+
+        data_combined = pd.concat([data_combined, data], ignore_index=True)
+
+        data_combined.to_feather(f"{out_file_name}.feather")

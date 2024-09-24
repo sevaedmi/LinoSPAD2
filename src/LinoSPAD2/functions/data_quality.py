@@ -701,7 +701,9 @@ def sigma_of_count_spread_to_average(
 def sigma_of_count_spread_to_average_from_ft_file(
     path: str,
     ft_file: str,
-    pixels: list,
+    pixel_pair: list,
+    range_left: float = 20e3,
+    range_right: float = 40e3,
     step: int = 10,
     bins_sigma: int = 20,
     extend: int = 0,
@@ -722,8 +724,14 @@ def sigma_of_count_spread_to_average_from_ft_file(
         Path to where the feather file is.
     ft_file : str
         Feather file with timestamp differences.
-    pixels : list
-        Pixels which should be used for analysis.
+    pixel_pair : list
+        Two pixels which should be used for analysis.
+    range_left : int, optional
+        Lower limit for timestamp differences, lower values are not used.
+        The default is 20e3.
+    range_right : int, optional
+        Upper limit for timestamp differences, higher values are not used.
+        The default is 40e3.
     step : int, optional
         Multiplier of the average LinoSPAD2 TDC width of 17.857 ps that
         is used for histograms. The default is 10.
@@ -741,11 +749,11 @@ def sigma_of_count_spread_to_average_from_ft_file(
 
     data = ft.read_feather(ft_file)
 
-    data_cut = data[f"{pixels[0]},{pixels[1]}"]
+    data_cut = data[f"{pixel_pair[0]},{pixel_pair[1]}"]
 
     # Cut the data from the background only; without the offset
     # calibration, the delta t peak rarely goes outside the 10 ns mark
-    data_cut = data_cut[(data_cut > 20e3) & (data_cut < 40e3)]
+    data_cut = data_cut[(data_cut > range_left) & (data_cut < range_right)]
 
     # Bins in units of 17.857 ps of the average LinoSPAD2 TDC bin width
     bins = np.arange(

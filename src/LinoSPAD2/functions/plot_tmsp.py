@@ -167,9 +167,10 @@ def collect_data_and_apply_mask(
         np.savetxt(f"{file_name}_senpop_numbers.txt", timestamps_per_pixel)
         os.chdir("..")
 
-    return timestamps_per_pixel, (
-        rates if calculate_rates else timestamps_per_pixel
-    )
+    if calculate_rates:
+        return timestamps_per_pixel, rates
+    else:
+        return timestamps_per_pixel
 
 
 def plot_single_pix_hist(

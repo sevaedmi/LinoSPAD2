@@ -40,7 +40,7 @@ functions:
 import glob
 import os
 import sys
-from math import ceil, floor
+from math import ceil
 from typing import List
 
 import numpy as np
@@ -201,12 +201,32 @@ def calculate_and_save_timestamp_differences(
 
     out_file_name = files_all[0][:-4] + "-" + files_all[-1][:-4]
 
+    # Feather file counter
+    ft_file_number = 0
+
+    # File name pattern for the given '.dat' files
+    file_pattern = f"{out_file_name}_*.feather"
+
     # Check if the feather file exists and if it should be rewrited
     feather_file = os.path.join(
         path, "delta_ts_data", f"{out_file_name}.feather"
     )
 
-    utils.file_rewrite_handling(feather_file, rewrite)
+    # Go the folder where timestamp differences are saved and
+    # find all '.feather' files with the given pattern
+    # TODO
+    try:
+        os.chdir(os.path.join(path, "delta_ts_data"))
+    except FileNotFoundError:
+        pass
+    feather_files = glob.glob(file_pattern)
+
+    # Remove the old '.feather' files with the pattern
+    for ft_file in feather_files:
+        utils.file_rewrite_handling(ft_file, rewrite)
+
+    # Go back to the folder with '.dat' files
+    os.chdir(path)
 
     # Collect the data for the required pixels
     print(
@@ -264,6 +284,7 @@ def calculate_and_save_timestamp_differences(
                 apply_calibration,
             )
 
+        # Calculate the timestamp differences for the given pixels
         deltas_all = cd.calculate_differences_2212(
             data_all, pixels, pix_coor, delta_window
         )
@@ -280,21 +301,192 @@ def calculate_and_save_timestamp_differences(
             os.chdir("delta_ts_data")
 
         # Check if feather file exists
-        feather_file = f"{out_file_name}.feather"
+        feather_file = f"{out_file_name}_{ft_file_number}.feather"
         if os.path.isfile(feather_file):
-            # Load existing feather file
-            existing_data = ft.read_feather(feather_file)
+            # Check the size of the existing '.feather', if larger
+            # than 100 MB, create new one
+            if os.path.getsize(feather_file) / 1024 / 1024 < 100:
+                # Load existing feather file
+                existing_data = ft.read_feather(feather_file)
 
-            # Append new data to the existing feather file
-            combined_data = pd.concat(
-                [existing_data, data_for_plot_df], axis=0
-            )
-            ft.write_feather(combined_data, feather_file)
+                # Append new data to the existing feather file
+                combined_data = pd.concat(
+                    [existing_data, data_for_plot_df], axis=0
+                )
+                ft.write_feather(combined_data, feather_file)
+            else:
+                ft_file_number += 1
+                feather_file = f"{out_file_name}_{ft_file_number}.feather"
+                ft.write_feather(data_for_plot_df, feather_file)
 
         else:
             # Save as a new feather file
             ft.write_feather(data_for_plot_df, feather_file)
         os.chdir("..")
+
+    # Check, if the file was created
+    if (
+        os.path.isfile(path + f"/delta_ts_data/{out_file_name}.feather")
+        is True
+    ):
+        print(
+            "\n> > > Timestamp differences are saved as"
+            f"{out_file_name}.feather in "
+            f"{os.path.join(path, 'delta_ts_data')} < < <"
+        )
+
+    else:
+        print("File wasn't generated. Check input parameters.")
+
+
+def calculate_and_save_timestamp_differences_fast(
+    path: str,
+    pixels: List[int] | List[List[int]],
+    rewrite: bool,
+    daughterboard_number: str,
+    motherboard_number: str,
+    firmware_version: str,
+    timestamps: int = 512,
+    delta_window: float = 50e3,
+    cycle_length: float = 4e9,
+    app_mask: bool = True,
+    include_offset: bool = True,
+    apply_calibration: bool = True,
+    absolute_timestamps: bool = False,
+    correct_pix_address: bool = False,
+):
+    # Parameter type check
+    if isinstance(pixels, list) is False:
+        raise TypeError(
+            "'pixels' should be a list of integers or a list of two lists"
+        )
+    if isinstance(firmware_version, str) is False:
+        raise TypeError(
+            "'firmware_version' should be string, '2212s', '2212b' or '2208'"
+        )
+    if isinstance(rewrite, bool) is False:
+        raise TypeError("'rewrite' should be boolean")
+    if isinstance(daughterboard_number, str) is False:
+        raise TypeError("'daughterboard_number' should be string")
+
+    os.chdir(path)
+
+    # Handle the input list
+    pixels = utils.pixel_list_transform(pixels)
+    files_all = glob.glob("*.dat")
+
+    out_file_name = files_all[0][:-4] + "-" + files_all[-1][:-4]
+
+    # Feather file counter
+    ft_file_number = 0
+
+    # File name pattern for the given '.dat' files
+    file_pattern = f"{out_file_name}_*.feather"
+
+    # Check if the feather file exists and if it should be rewrited
+    feather_file = os.path.join(
+        path, "delta_ts_data", f"{out_file_name}.feather"
+    )
+
+    # Go the folder where timestamp differences are saved and
+    # find all '.feather' files with the given pattern
+    # TODO
+    try:
+        os.chdir(os.path.join(path, "delta_ts_data"))
+    except FileNotFoundError:
+        pass
+    feather_files = glob.glob(file_pattern)
+
+    # Remove the old '.feather' files with the pattern
+    for ft_file in feather_files:
+        utils.file_rewrite_handling(ft_file, rewrite)
+
+    # Go back to the folder with '.dat' files
+    os.chdir(path)
+
+    # Collect the data for the required pixels
+    print(
+        "\n> > > Collecting data for delta t plot for the requested "
+        "pixels and saving it to .feather in a cycle < < <\n"
+    )
+    # Define matrix of pixel coordinates, where rows are numbers of TDCs
+    # and columns are the pixels that connected to these TDCs
+    if firmware_version == "2212s":
+        pix_coor = np.arange(256).reshape(4, 64).T
+    elif firmware_version == "2212b":
+        pix_coor = np.arange(256).reshape(64, 4)
+    else:
+        print("\nFirmware version is not recognized.")
+        sys.exit()
+
+    # TODO fix pix add corection with input type (int+list, etc..)
+    if correct_pix_address:
+        pixels = utils.correct_pixels_address(pixels)
+
+    for i in tqdm(range(ceil(len(files_all))), desc="Collecting data"):
+        file = files_all[i]
+
+        # Unpack data for the requested pixels into dictionary
+        if not absolute_timestamps:
+            data_all = f_up.unpack_binary_data(
+                file,
+                daughterboard_number,
+                motherboard_number,
+                firmware_version,
+                timestamps,
+                include_offset,
+                apply_calibration,
+            )
+        else:
+            data_all, _ = f_up.unpack_binary_data_with_absolute_timestamps(
+                file,
+                daughterboard_number,
+                motherboard_number,
+                firmware_version,
+                timestamps,
+                include_offset,
+                apply_calibration,
+            )
+
+        delta_ts = cd.calculate_differences_2212_fast(
+            data_all, pixels, pix_coor, delta_window, cycle_length
+        )
+
+        # Save data as a .feather file in a cycle so data is not lost
+        # in the case of failure close to the end
+        # TODO
+        delta_ts = pd.DataFrame.from_dict(delta_ts, orient="index")
+        delta_ts = delta_ts.T
+
+        try:
+            os.chdir("delta_ts_data")
+        except FileNotFoundError:
+            os.mkdir("delta_ts_data")
+            os.chdir("delta_ts_data")
+
+        # Check if feather file exists
+        feather_file = f"{out_file_name}_{ft_file_number}.feather"
+        if os.path.isfile(feather_file):
+            # Check the size of the existing '.feather', if larger
+            # than 100 MB, create new one
+            if os.path.getsize(feather_file) / 1024 / 1024 < 100:
+                # Load existing feather file
+                existing_data = ft.read_feather(feather_file)
+
+                # Append new data to the existing feather file
+                combined_data = pd.concat([existing_data, delta_ts], axis=0)
+                ft.write_feather(combined_data, feather_file)
+            else:
+                ft_file_number += 1
+                feather_file = f"{out_file_name}_{ft_file_number}.feather"
+                ft.write_feather(delta_ts, feather_file)
+
+        else:
+            # Save as a new feather file
+            ft.write_feather(delta_ts, feather_file)
+        os.chdir("..")
+
+    utils.combine_feather_files(path)
 
     # Check, if the file was created
     if (
@@ -1154,7 +1346,7 @@ def collect_and_plot_timestamp_differences(
     # into a single list
 
     # Save to use in the title
-    pixels_title = np.copy(pixels)
+    # pixels_title = np.copy(pixels)
 
     if correct_pix_address:
         for i, pixel in enumerate(pixels):
@@ -1273,8 +1465,9 @@ def collect_and_plot_timestamp_differences(
             if len(pixels) > 2:
                 axs[q][w - 1].set_xlim(range_left - 100, range_right + 100)
                 axs[q][w - 1].set_title(
-                    f"Pixels {pixels_title[q]},{pixels_title[w]}\nPeak in 2 ns "
-                    f"window: {int(peak_max)}"
+                    f"Pixels {pixels[q]},{pixels[w]}"
+                    # f"Pixels {pixels[q]},{pixels[w]}\nPeak in 2 ns "
+                    # f"window: {int(peak_max)}"
                 )
             else:
                 plt.xlim(range_left - 100, range_right + 100)
@@ -1285,7 +1478,7 @@ def collect_and_plot_timestamp_differences(
                 tick_labels = ax.get_xticklabels()
                 ax.set_xticks(ticks[2:-1], tick_labels[2:-1])
 
-                plt.title(f"Pixels {pixels_title[q]},{pixels_title[w]}")
+                plt.title(f"Pixels {pixels[q]},{pixels[w]}")
 
             # Save the figure
             try:
