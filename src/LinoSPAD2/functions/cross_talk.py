@@ -58,7 +58,7 @@ def _collect_cross_talk(
     firmware_version: str,
     timestamps: int = 512,
     delta_window: float = 50e3,
-    include_offset: bool = True,
+    include_offset: bool = False,
     apply_calibration: bool = True,
     absolute_timestamps: bool = False,
     correct_pix_address: bool = False,
@@ -192,7 +192,10 @@ def _collect_cross_talk(
             )
 
         # Collect timestamp differences for the given pixels
-        deltas_all = cd.calculate_differences_2212(
+        # deltas_all = cd.calculate_differences_2212(
+        #     data_all, pixels_formatted, pix_coor, delta_window
+        # )
+        deltas_all = cd.calculate_differences_2212_fast(
             data_all, pixels_formatted, pix_coor, delta_window
         )
 
@@ -1027,7 +1030,7 @@ def zero_to_cross_talk_collect(
     motherboard_number: str,
     firmware_version: str,
     timestamps: int,
-    include_offset: bool,
+    include_offset: bool = False,
     delta_window: float = 50e3,
     apply_calibration: bool = True,
     absolute_timestamps: bool = False,
@@ -1093,7 +1096,7 @@ def zero_to_cross_talk_collect(
 
     # Collecting sensor population
     os.chdir(path)
-    files = glob("*.dat")
+    files = glob.glob("*.dat")
     plot_tmsp.collect_data_and_apply_mask(
         files,
         daughterboard_number,

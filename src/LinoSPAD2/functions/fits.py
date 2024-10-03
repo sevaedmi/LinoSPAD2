@@ -179,11 +179,13 @@ def fit_with_gaussian(
     to_fit_n = utils.gaussian(to_fit_b, par[0], par[1], par[2], par[3])
 
     perr = np.sqrt(np.diag(pcov))
-    contrast = par[0] / par[3] * 100
+    # contrast = par[0] / par[3] * 100
+    contrast = par[0] / par[3]
     vis_er = utils.error_propagation_division(par[0], perr[0], par[3], perr[3])
 
     # Contrast error in %
-    vis_er = vis_er / (contrast / 100) * 100
+    # vis_er = vis_er / (contrast / 100) * 100
+    vis_er = vis_er
 
     fig = plt.figure(figsize=(16, 10))
     plt.locator_params(axis="x", nbins=5)
@@ -203,7 +205,8 @@ def fit_with_gaussian(
         label="fit\n"
         "\u03C3=({p1}\u00B1{pe1}) ps\n"
         "\u03BC=({p2}\u00B1{pe2}) ps\n"
-        "C=({contrast}\u00B1{vis_er}) %\n"
+        # "C=({contrast}\u00B1{vis_er}) %\n"
+        "C={contrast}\u00B1{vis_er}\n"
         "bkg={bkg}\u00B1{bkg_er}".format(
             p1=format(par[2], ".0f"),
             p2=format(par[1], ".0f"),
@@ -211,8 +214,8 @@ def fit_with_gaussian(
             pe2=format(perr[1], ".0f"),
             bkg=format(par[3], ".0f"),
             bkg_er=format(perr[3], ".0f"),
-            contrast=format(contrast, ".1f"),
-            vis_er=format(vis_er, ".1f"),
+            contrast=format(contrast, ".2f"),
+            vis_er=format(vis_er, ".2f"),
         ),
     )
     plt.legend(loc="best")

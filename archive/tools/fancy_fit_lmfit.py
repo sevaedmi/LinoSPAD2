@@ -6,9 +6,9 @@ from matplotlib import pyplot as plt
 from pyarrow import feather as ft
 
 # Get the .feather file with delta t values
-path = r"D:\LinoSPAD2\Data\B7d\Ne703p\delta_ts_data"
+path = r"D:\LinoSPAD2\Data\B7d\1000\delta_ts_data"
 os.chdir(path)
-ft_file = r"0000000474-0000000523.feather"
+ft_file = r"0000007309-0000007408.feather"
 
 # Drop unnecessary values
 data = ft.read_feather(ft_file)
@@ -23,7 +23,10 @@ multiplier = number_of_bins / (2500 / 140)
 bins = np.arange(np.min(data), np.max(data), 2500 / 140 * 4)
 counts, bins = np.histogram(data, bins)
 # counts, bins = np.histogram(data, bins='scott')
+
+# Normalize
 counts = counts / np.median(counts)
+
 bin_edges = (bins[:-1] + bins[1:]) / 2
 
 # Composite fit: Gaussian for the peak + linear for bckg of random

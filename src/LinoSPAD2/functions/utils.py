@@ -383,7 +383,8 @@ def combine_feather_files(path: str):
     os.chdir(path)
 
     files_all = glob.glob("*.dat*")
-    files_all.sort(key=os.path.getmtime)
+    # files_all.sort(key=os.path.getmtime)
+    files_all = sorted(files_all)
 
     out_file_name = files_all[0][:-4] + "-" + files_all[-1][:-4]
 

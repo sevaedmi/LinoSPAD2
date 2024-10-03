@@ -26,7 +26,7 @@ def unpack_binary_data(
     motherboard_number: str,
     firmware_version: str,
     timestamps: int = 512,
-    include_offset: bool = True,
+    include_offset: bool = False,
     apply_calibration: bool = True,
 ) -> np.ndarray:
     """Unpacks binary-encoded data from LinoSPAD2 firmware version 2212.
@@ -202,7 +202,7 @@ def unpack_binary_data_with_absolute_timestamps(
     motherboard_number: str,
     firmware_version: str,
     timestamps: int = 512,
-    include_offset: bool = True,
+    include_offset: bool = False,
     apply_calibration: bool = True,
 ):
     """Unpacks binary-encoded data from LinoSPAD2 firmware version 2212

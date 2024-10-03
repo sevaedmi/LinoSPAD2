@@ -748,7 +748,7 @@ def load_calibration_data(
     daughterboard_number: str,
     motherboard_number: str,
     firmware_version: str,
-    include_offset: bool = True,
+    include_offset: bool = False,
 ):
     """Load the calibration data.
 

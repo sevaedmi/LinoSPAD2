@@ -91,7 +91,7 @@ def calculate_and_save_timestamp_differences(
     timestamps: int = 512,
     delta_window: float = 50e3,
     app_mask: bool = True,
-    include_offset: bool = True,
+    include_offset: bool = False,
     apply_calibration: bool = True,
     absolute_timestamps: bool = False,
     correct_pix_address: bool = False,
@@ -324,6 +324,9 @@ def calculate_and_save_timestamp_differences(
             ft.write_feather(data_for_plot_df, feather_file)
         os.chdir("..")
 
+    # Combine the numbered feather files into a single one
+    utils.combine_feather_files(path)
+
     # Check, if the file was created
     if (
         os.path.isfile(path + f"/delta_ts_data/{out_file_name}.feather")
@@ -350,11 +353,67 @@ def calculate_and_save_timestamp_differences_fast(
     delta_window: float = 50e3,
     cycle_length: float = 4e9,
     app_mask: bool = True,
-    include_offset: bool = True,
+    include_offset: bool = False,
     apply_calibration: bool = True,
     absolute_timestamps: bool = False,
     correct_pix_address: bool = False,
 ):
+    """Calculate and save timestamp differences into '.feather' file.
+
+    Unpacks data into a dictionary, calculates timestamp differences for
+    the requested pixels, and saves them into a '.feather' table. Works with
+    firmware version 2212. Uses a faster algorithm.
+
+    Parameters
+    ----------
+    path : str
+        Path to data files.
+    pixels : List[int] | List[List[int]]
+        List of pixel numbers for which the timestamp differences should
+        be calculated and saved or list of two lists with pixel numbers
+        for peak vs. peak calculations.
+    rewrite : bool
+        Switch for rewriting the '.feather' file if it already exists.
+    daughterboard_number : str
+        LinoSPAD2 daughterboard number.
+    motherboard_number : str
+        LinoSPAD2 motherboard (FPGA) number, including the '#'.
+    firmware_version: str
+        LinoSPAD2 firmware version. Versions "2212s" (skip) and "2212b"
+        (block) are recognized.
+    timestamps : int, optional
+        Number of timestamps per acquisition cycle per pixel. The default
+        is 512.
+    delta_window : float, optional
+        Size of a window to which timestamp differences are compared.
+        Differences in that window are saved. The default is 50e3 (50 ns).
+    cycle_length:
+    app_mask : bool, optional
+        Switch for applying the mask for hot pixels. The default is True.
+    include_offset : bool, optional
+        Switch for applying offset calibration. The default is True.
+    apply_calibration : bool, optional
+        Switch for applying TDC and offset calibration. If set to 'True'
+        while apply_offset_calibration is set to 'False', only the TDC
+        calibration is applied. The default is True.
+    absolute_timestamps: bool, optional
+        Indicator for data with absolute timestamps. The default is
+        False.
+    correct_pix_address : bool, optional
+        Correct pixel address for the FPGA board on side 23. The
+        default is False.
+
+    Raises
+    ------
+    TypeError
+        _description_
+    TypeError
+        _description_
+    TypeError
+        _description_
+    TypeError
+        _description_
+    """
     # Parameter type check
     if isinstance(pixels, list) is False:
         raise TypeError(
@@ -374,6 +433,8 @@ def calculate_and_save_timestamp_differences_fast(
     # Handle the input list
     pixels = utils.pixel_list_transform(pixels)
     files_all = glob.glob("*.dat")
+
+    files_all = sorted(files_all)
 
     out_file_name = files_all[0][:-4] + "-" + files_all[-1][:-4]
 
@@ -486,6 +547,7 @@ def calculate_and_save_timestamp_differences_fast(
             ft.write_feather(delta_ts, feather_file)
         os.chdir("..")
 
+    # Combine the numbered feather files into a single one
     utils.combine_feather_files(path)
 
     # Check, if the file was created
@@ -514,7 +576,7 @@ def calculate_and_save_timestamp_differences_full_sensor(
     timestamps: int = 512,
     delta_window: float = 50e3,
     app_mask: bool = True,
-    include_offset: bool = True,
+    include_offset: bool = False,
     apply_calibration: bool = True,
     absolute_timestamps: bool = False,
 ):  # TODO add option for collecting from more than just two pixels
@@ -868,7 +930,7 @@ def calculate_and_save_timestamp_differences_full_sensor_alt(
     delta_window: float = 50e3,
     threshold: int = 0,
     app_mask: bool = True,
-    include_offset: bool = True,
+    include_offset: bool = False,
     apply_calibration: bool = True,
     absolute_timestamps: bool = False,
 ):  # TODO add option for collecting from more than just two pixels

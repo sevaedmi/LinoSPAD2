@@ -72,7 +72,7 @@ def sensor_population_by_cycle(
     firmware_version: str,
     timestamps: int = 512,
     app_mask: bool = True,
-    include_offset: bool = True,
+    include_offset: bool = False,
     apply_calibration: bool = True,
     absolute_timestamps: bool = False,
     correct_pixel_addressing: bool = False,
@@ -240,7 +240,7 @@ def pixel_population_by_cycle(
     motherboard_number: str,
     firmware_version: str,
     timestamps: int = 512,
-    include_offset: bool = True,
+    include_offset: bool = False,
     apply_calibration: bool = True,
     absolute_timestamps: bool = False,
     color: str = "rebeccapurple",
@@ -386,7 +386,7 @@ def get_time_ratios(
     motherboard_number: str,
     firmware_version: str,
     timestamps: int,
-    include_offset: bool = True,
+    include_offset: bool = False,
     apply_calibration: bool = True,
 ):
     """
@@ -576,6 +576,8 @@ def _extend_spread_range(spread_bins, spread_counts, extension: int):
 def sigma_of_count_spread_to_average(
     path: str,
     pixels: list,
+    range_left: float = 20e3,
+    range_right: float = 40e3,
     step: int = 10,
     bins_sigma: int = 20,
     extend: int = 0,
@@ -596,6 +598,12 @@ def sigma_of_count_spread_to_average(
         Feather file with timestamp differences.
     pixels : list
         Pixels which should be used for analysis.
+    range_left : int, optional
+        Lower limit for timestamp differences, lower values are not used.
+        The default is 20e3.
+    range_right : int, optional
+        Upper limit for timestamp differences, higher values are not used.
+        The default is 40e3.
     step : int, optional
         Multiplier of the average LinoSPAD2 TDC width of 17.857 ps that
         is used for histograms. The default is 10.
@@ -618,7 +626,7 @@ def sigma_of_count_spread_to_average(
 
     # Cut the data from the background only; without the offset
     # calibration, the delta t peak rarely goes outside the 10 ns mark
-    data_cut = data_cut[(data_cut > 20e3) & (data_cut < 40e3)]
+    data_cut = data_cut[(data_cut > range_left) & (data_cut < range_right)]
 
     # Bins in units of 17.857 ps of the average LinoSPAD2 TDC bin width
     bins = np.arange(
