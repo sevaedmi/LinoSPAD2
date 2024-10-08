@@ -254,6 +254,8 @@ def _plot_cross_talk_peaks(
     window: int = 50e3,
     senpop: list = None,
     pix_on_left: bool = False,
+    feather_file_name: str = "",
+    show_plots: bool = False,
 ):
     """Plot cross-talk peaks and calculate peak population.
 
@@ -279,6 +281,13 @@ def _plot_cross_talk_peaks(
         List with numbers of timestamps per pixel.
     pix_on_left : bool, optional
         Indicator of pixels to the left of the aggressor. The default is False.
+    feather_file_name : str, optional
+        Naming pattern of the feather files that can be used when
+        actual data files are not available. The pattern should
+        include the number of the first and the last data files, e.g.,
+        "0000010000-0000012000". The default is "".
+    show_plots : bool, optional
+        Switch for showing the plots at the end. The default is False.
 
     Returns
     -------
@@ -289,9 +298,12 @@ def _plot_cross_talk_peaks(
     """
 
     os.chdir(path)
-    files_all1 = glob.glob("*.dat")
-    files_all1.sort(key=os.path.getmtime)
-    ft_file_name = files_all1[0][:-4] + "-" + files_all1[-1][:-4]
+    if feather_file_name == "":
+        files_all1 = glob.glob("*.dat")
+        files_all1.sort(key=os.path.getmtime)
+        ft_file_name = files_all1[0][:-4] + "-" + files_all1[-1][:-4]
+    else:
+        ft_file_name = feather_file_name
 
     os.chdir(os.path.join(path, "cross_talk_data"))
 
@@ -375,7 +387,7 @@ def _plot_cross_talk_peaks(
             )
 
         plt.rcParams.update({"font.size": 27})
-        plt.figure(figsize=(16, 10))
+        fig = plt.figure(figsize=(16, 10))
         plt.step(bin_centers, counts, color="rebeccapurple", label="Data")
         plt.plot(
             bin_centers,
@@ -402,6 +414,11 @@ def _plot_cross_talk_peaks(
         plt.savefig(f"CT_fit_pixels_{pixels[0]},{pix}.png")
         os.chdir(os.path.join(path, "cross_talk_data"))
 
+        if show_plots:
+            plt.show()
+        else:
+            plt.close(fig)
+
         ct_output[f"{pixels[0], pix}"] = CT
         ct_err_output[f"{pixels[0], pix}"] = CT_err
 
@@ -415,6 +432,8 @@ def _plot_cross_talk_grid(
     window: int = 50e3,
     senpop: list = None,
     pix_on_left: bool = False,
+    feather_file_name: str = "",
+    show_plots: bool = False,
 ):
     """Plot grid of 4x5 of cross-talk peaks.
 
@@ -435,12 +454,22 @@ def _plot_cross_talk_grid(
     pix_on_left : bool, optional
         Indicator that pixels provided are to the left of the aggressor.
         The default is False.
+    feather_file_name : str, optional
+        Naming pattern of the feather files that can be used when
+        actual data files are not available. The pattern should
+        include the number of the first and the last data files, e.g.,
+        "0000010000-0000012000". The default is "".
+    show_plots : bool, optional
+        Switch for showing the plots at the end. The default is False.
     """
 
     os.chdir(path)
-    files_all1 = glob.glob("*.dat")
-    files_all1.sort(key=os.path.getmtime)
-    ft_file_name = files_all1[0][:-4] + "-" + files_all1[-1][:-4]
+    if feather_file_name == "":
+        files_all1 = glob.glob("*.dat")
+        files_all1.sort(key=os.path.getmtime)
+        ft_file_name = files_all1[0][:-4] + "-" + files_all1[-1][:-4]
+    else:
+        ft_file_name = feather_file_name
 
     os.chdir(os.path.join(path, "cross_talk_data"))
 
@@ -558,6 +587,11 @@ def _plot_cross_talk_grid(
         os.chdir(os.path.join(path, "results/ct_fit"))
     plt.savefig(f"CT_fit_pixels_{pixels[0]},{pix}_grid.png")
     os.chdir(os.path.join(path, "cross_talk_data"))
+
+    if show_plots:
+        plt.show()
+    else:
+        plt.close(fig)
 
 
 def collect_dcr_by_file(
@@ -821,6 +855,8 @@ def _calculate_and_plot_cross_talk(
     delta_window,
     senpop,
     pix_on_left: bool = False,
+    feather_file_name: str = "",
+    show_plots: bool = False,
 ):
     """Plot cross-talk peaks and calculate peak population.
 
@@ -846,6 +882,13 @@ def _calculate_and_plot_cross_talk(
         List with numbers of timestamps per pixel.
     pix_on_left : bool, optional
         Indicator of pixels to the left of the aggressor. The default is False.
+    feather_file_name : str, optional
+        Naming pattern of the feather files that can be used when
+        actual data files are not available. The pattern should
+        include the number of the first and the last data files, e.g.,
+        "0000010000-0000012000". The default is "".
+    show_plots : bool, optional
+        Switch for showing the plots at the end. The default is False.
 
     Returns
     -------
@@ -865,6 +908,8 @@ def _calculate_and_plot_cross_talk(
             window=delta_window,
             senpop=senpop,
             pix_on_left=pix_on_left,
+            feather_file_name=feather_file_name,
+            show_plots=show_plots,
         )
         _plot_cross_talk_grid(
             path,
@@ -873,6 +918,8 @@ def _calculate_and_plot_cross_talk(
             window=delta_window,
             senpop=senpop,
             pix_on_left=pix_on_left,
+            feather_file_name=feather_file_name,
+            show_plots=show_plots,
         )
 
         ct.append(CT)
@@ -881,7 +928,9 @@ def _calculate_and_plot_cross_talk(
     return ct, ct_err
 
 
-def _plot_cross_talk_vs_distance(path, ct, ct_err, pix_on_left: bool = False):
+def _plot_cross_talk_vs_distance(
+    path, ct, ct_err, pix_on_left: bool = False, show_plots: bool = False
+):
     """Plot cross-talk vs distance from the aggressor.
 
     Plot cross-talk probability as a function of distance from the
@@ -899,6 +948,8 @@ def _plot_cross_talk_vs_distance(path, ct, ct_err, pix_on_left: bool = False):
         aggressor as keys.
     pix_on_left : bool, optional
         Indicator of pixels to the left of the aggressor. The default is False.
+    show_plots : bool, optional
+        Switch for showing the plots at the end. The default is False.
     """
 
     try:
@@ -920,7 +971,7 @@ def _plot_cross_talk_vs_distance(path, ct, ct_err, pix_on_left: bool = False):
             # Extract the difference and append it to the list
             differences.append(key_tuple[1] - key_tuple[0])
 
-        plt.figure(figsize=(16, 10))
+        fig = plt.figure(figsize=(16, 10))
         plt.rcParams.update({"font.size": 27})
         plt.errorbar(
             differences,
@@ -943,6 +994,11 @@ def _plot_cross_talk_vs_distance(path, ct, ct_err, pix_on_left: bool = False):
             plt.savefig(
                 f"Cross-talk_aggressor_pixel_{aggressor_pix}_onright.png"
             )
+
+        if show_plots:
+            plt.show()
+        else:
+            plt.close(fig)
 
 
 def _plot_average_cross_talk_vs_distance(
@@ -986,14 +1042,17 @@ def _plot_average_cross_talk_vs_distance(
         final_result = {key: [] for key in range(1, 21)}
         final_result_averages = {key: [] for key in range(1, 21)}
 
-    for i, ct in enumerate(ct):
-        if ct == {} or ct_err == {}:
+    for _, (ct_pick, ct_err_pick) in enumerate(zip(ct, ct_err)):
+        if ct_pick == {} or ct_err_pick == {}:
             continue
 
-        for key in ct[i].keys():
+        for key in ct_pick.keys():
             key_tuple = eval(key)
+
             key_difference = key_tuple[1] - key_tuple[0]
-            final_result[key_difference].append((ct[i][key], ct_err[i][key]))
+            final_result[key_difference].append(
+                (ct_pick[key], ct_err_pick[key])
+            )
 
     for key in final_result.keys():
         value = np.average([x[0] for x in final_result[key]])
@@ -1158,6 +1217,7 @@ def zero_to_cross_talk_plot(
     delta_window: float = 50e3,
     step: int = 10,
     show_plots: bool = False,
+    feather_file_name: str = "",
 ):
     """Plot cross-talk peaks and as average vs distance from aggressor.
 
@@ -1184,6 +1244,11 @@ def zero_to_cross_talk_plot(
         for histograms. The default is 10.
     show_plots : bool, optional
         Switch for showing the plots at the end. The default is False.
+    feather_file_name : str, optional
+        Naming pattern of the feather files that can be used when
+        actual data files are not available. The pattern should
+        include the number of the first and the last data files, e.g.,
+        "0000010000-0000012000". The default is "".
 
     Raises
     ------
@@ -1191,11 +1256,6 @@ def zero_to_cross_talk_plot(
         Raised when no txt file with the sensor population data is
         found.
     """
-
-    if show_plots:
-        plt.ion()
-    else:
-        plt.ioff()
 
     print("\n> > > Plotting cross-talk peaks and averages < < <\n")
     try:
@@ -1221,22 +1281,52 @@ def zero_to_cross_talk_plot(
         )
 
     ct_right, ct_err_right = _calculate_and_plot_cross_talk(
-        path, hot_pixels_plus_20, step, delta_window, senpop, pix_on_left=False
+        path,
+        hot_pixels_plus_20,
+        step,
+        delta_window,
+        senpop,
+        pix_on_left=False,
+        feather_file_name=feather_file_name,
+        show_plots=show_plots,
     )
     ct_left, ct_err_left = _calculate_and_plot_cross_talk(
-        path, hot_pixels_minus_20, step, delta_window, senpop, pix_on_left=True
+        path,
+        hot_pixels_minus_20,
+        step,
+        delta_window,
+        senpop,
+        pix_on_left=True,
+        feather_file_name=feather_file_name,
+        show_plots=show_plots,
     )
 
     _plot_cross_talk_vs_distance(
-        path, ct_right, ct_err_right, pix_on_left=False
+        path,
+        ct_right,
+        ct_err_right,
+        pix_on_left=False,
+        show_plots=show_plots,
     )
-    _plot_cross_talk_vs_distance(path, ct_left, ct_err_left, pix_on_left=True)
+    _plot_cross_talk_vs_distance(
+        path,
+        ct_left,
+        ct_err_left,
+        pix_on_left=True,
+        show_plots=show_plots,
+    )
 
     averages_right = _plot_average_cross_talk_vs_distance(
-        path, ct_right, ct_err_right, pix_on_left=False
+        path,
+        ct_right,
+        ct_err_right,
+        pix_on_left=False,
     )
     averages_left = _plot_average_cross_talk_vs_distance(
-        path, ct_left, ct_err_left, pix_on_left=True
+        path,
+        ct_left,
+        ct_err_left,
+        pix_on_left=True,
     )
 
     on_both_average = {key: [] for key in range(1, 21)}
