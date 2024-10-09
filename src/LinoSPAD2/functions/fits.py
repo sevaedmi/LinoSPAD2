@@ -28,8 +28,10 @@ import os
 from typing import List, Tuple
 
 import numpy as np
+import pandas as pd
 from lmfit.models import GaussianModel, LinearModel
 from matplotlib import pyplot as plt
+from pandas import DataFrame
 from pyarrow import ArrowInvalid
 from pyarrow import feather as ft
 from scipy import signal as sg
@@ -48,7 +50,7 @@ def fit_with_gaussian(
     title_on: bool = True,
     correct_pix_address: bool = False,
     return_fit_params: bool = False,
-) -> Tuple[np.ndarray, np.ndarray]:
+) -> DataFrame:
     """Fit with Gaussian function and plot it.
 
     Fits timestamp differences of a pair of pixels with Gaussian
@@ -95,7 +97,9 @@ def fit_with_gaussian(
 
     Returns
     -------
-    None.
+    DataFrame.
+        A dataframe with fit parameters and their standard errors.
+        Returned only if the "return_fit_params" is set to True.
 
     """
     plt.ion()
@@ -195,6 +199,27 @@ def fit_with_gaussian(
     # Contrast error in %
     contrast_error = contrast_error * 100
 
+    # Prepare dataframe for fit parameters, if return of them is
+    # requested
+    if return_fit_params:
+        params_df = pd.DataFrame()
+        params_df["Fit parameter"] = [
+            "center (ps)",
+            "center_error (ps)",
+            "sigma (ps)",
+            "sigma_error (ps)",
+            "contrast (%)",
+            "contrast_error (%)",
+        ]
+        params_df[f"Peak at {par[1]:.0f} ps"] = [
+            par[1],
+            perr[1],
+            par[2],
+            perr[2],
+            contrast,
+            contrast_error,
+        ]
+
     fig = plt.figure(figsize=(16, 10))
     plt.locator_params(axis="x", nbins=5)
     plt.xlabel(r"$\Delta$t (ps)")
@@ -246,7 +271,7 @@ def fit_with_gaussian(
     plt.pause(0.1)
     os.chdir("../..")
 
-    return (par, perr) if return_fit_params else None
+    return params_df if return_fit_params else None
 
 
 def fit_wg_all(
@@ -260,7 +285,7 @@ def fit_wg_all(
     title_on: bool = True,
     correct_pix_address: bool = False,
     return_fit_params: bool = False,
-):
+) -> DataFrame:
     """Find all peaks above threshold and fit each with Gaussian.
 
     Finds all peaks above the given threshold (uses the 'threshold'
@@ -308,7 +333,9 @@ def fit_wg_all(
 
     Returns
     -------
-    None.
+    DataFrame.
+        A dataframe with fit parameters and their standard errors.
+        Returned only if the "return_fit_params" is set to True.
 
     """
 
@@ -407,6 +434,20 @@ def fit_wg_all(
         "Peak 7",
     ]
 
+    # Prepare dataframe for fit parameters, if return of them is
+    # requested
+    if return_fit_params:
+        params_df = pd.DataFrame()
+        for _ in peak_pos:
+            params_df["Fit parameter"] = [
+                "center (ps)",
+                "center_error (ps)",
+                "sigma (ps)",
+                "sigma_error (ps)",
+                "contrast (%)",
+                "contrast_error (%)",
+            ]
+
     for k, peak_ind in enumerate(peak_pos):
         data_to_fit = np.delete(
             data_to_plot, np.argwhere(data_to_plot < bin_c[peak_ind] - 3e3)
@@ -438,6 +479,18 @@ def fit_wg_all(
         )
         contrast_error = contrast_error * 100
 
+        # Add the fit parameters to the dataframe for returning
+        # if requested
+        if return_fit_params:
+            params_df[f"Peak at {par[1]:.0f} ps"] = [
+                par[1],
+                perr[1],
+                par[2],
+                perr[2],
+                contrast,
+                contrast_error,
+            ]
+
         plt.plot(
             bin_centers,
             to_fit_n1,
@@ -446,7 +499,7 @@ def fit_wg_all(
             label=f"{labels[k]}\n"
             "\u03C3=({p1}\u00B1{pe1}) ps\n"
             "\u03BC=({p2}\u00B1{pe2}) ps\n"
-            "C=({contrast}\u00B1{vis_er}) %".format(
+            "C=({contrast}\u00B1{contrast_error}) %".format(
                 labels,
                 p1=format(par[2], ".0f"),
                 p2=format(par[1], ".0f"),
@@ -503,7 +556,7 @@ def fit_wg_all(
     plt.pause(0.1)
     os.chdir("../..")
 
-    return (par, perr) if return_fit_params else None
+    return params_df if return_fit_params else None
 
 
 def fit_with_gaussian_full_sensor(
@@ -759,7 +812,8 @@ def fit_with_gaussian_fancy(
     Returns
     -------
     lmfit.parameter.Parameters
-        Parameters of the fit as returned by the lmfit library.
+        Parameters of the fit as returned by the lmfit library. Returned
+        only if the "return_fit_params" is set to True.
 
     Raises
     ------
@@ -797,6 +851,7 @@ def fit_with_gaussian_fancy(
             )
     else:
         data = ft.read_feather(ft_file)
+        pix_pair = [int(x) for x in data.columns[0].split(",")]
 
     # Select a window around the signal
     data_signal = data[(data >= range_left) & (data <= range_right)].dropna()
@@ -987,6 +1042,18 @@ def fit_with_gaussian_fancy(
 
     # Plot the report of the data fit
     print(result.fit_report())
+
+    # Save the plot
+    try:
+        os.chdir(os.path.join(path, r"results/fits"))
+    except FileNotFoundError as _:
+        os.makedirs(os.path.join(path, r"results/fits"))
+        os.chdir(os.path.join(path, r"results/fits"))
+
+    plot_name = ft_file.split(".")[0]
+    plt.savefig(
+        f"{plot_name}_pixels_{pix_pair[0]},{pix_pair[1]}_fancy_fit.png"
+    )
 
     if return_fit_parameters:
         return result.params
