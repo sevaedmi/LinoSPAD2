@@ -794,7 +794,7 @@ path9 = r"D:\LinoSPAD2\Data\board_NL11\Prague\CT_HBT\Second try\CT_HBT_2-0m_50%_
 paths = [path0, path1, path2, path3, path4, path5, path6, path7, path8, path9]
 # paths = [path0, path1, path2, path3, path4]
 
-from LinoSPAD2.functions import delta_t, plot_tmsp
+from LinoSPAD2.functions import delta_t, sensor_plot
 
 for path in paths:
     # plot_tmsp.plot_sensor_population(
@@ -851,7 +851,7 @@ paths = [path0, path1, path2]
 import itertools
 
 pix_pairs = list(itertools.product([169, 170, 171], [173, 174, 175]))
-pix_pairs = [[x,y] for x, y in pix_pairs]
+pix_pairs = [[x, y] for x, y in pix_pairs]
 
 # for path in paths:
 for pix_pair in pix_pairs:

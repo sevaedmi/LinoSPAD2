@@ -319,7 +319,7 @@ def plot_single_pix_hist(
             plt.title(f"Pixel {pixels[i]}")
             try:
                 os.chdir("results/single pixel histograms")
-            except Exception as _:
+            except FileNotFoundError as _:
                 os.makedirs("results/single pixel histograms")
                 os.chdir("results/single pixel histograms")
             plt.savefig(f"{num}, pixel {pixels[i]}.png")
@@ -471,7 +471,7 @@ def plot_sensor_population(
 
     print(
         "\n> > > Collecting data for sensor population plot,"
-        "Working in {} < < <\n".format(path)
+        f"Working in {path} < < <\n"
     )
 
     # If fitting the peaks, calculate the photon rates in each peak as
@@ -554,19 +554,18 @@ def plot_sensor_population(
         os.chdir("results/sensor_population")
     fig.tight_layout()
     if single_file:
-        plt.savefig("{}_single_file.png".format(plot_name))
+        plt.savefig(f"{plot_name}_single_file.png")
         print(
-            "> > > The plot is saved as '{file}_single_file.png'"
-            "in {path} < < <".format(file=plot_name, path=os.getcwd())
+            "> > > The plot is saved as '{plot_name}_single_file.png'"
+            "in {os.getcwd()} < < <"
         )
         if pickle_fig:
             pickle.dump(fig, open(f"{plot_name}_single_file.pickle", "wb"))
     else:
-        plt.savefig("{}.png".format(plot_name))
+        plt.savefig(f"{plot_name}.png")
         print(
-            "> > > The plot is saved as '{file}.png' in {path} < < <".format(
-                file=plot_name, path=os.getcwd()
-            )
+            f"> > > The plot is saved as '{plot_name}.png' "
+            f"in {os.getcwd()} < < <"
         )
         if pickle_fig:
             pickle.dump(fig, open(f"{plot_name}.pickle", "wb"))
@@ -574,6 +573,7 @@ def plot_sensor_population(
     os.chdir("../..")
 
 
+# TODO don't have data to test the function
 # def plot_sensor_population_spdc(
 #     path,
 #     daughterboard_number: str,
@@ -850,8 +850,8 @@ def plot_sensor_population_full_sensor(
 
     # Get the two folders with data from both FPGAs/sensor halves
     os.chdir(path)
-    path1 = glob.glob("*{}*".format(motherboard_number1))[0]
-    path2 = glob.glob("*{}*".format(motherboard_number2))[0]
+    path1 = glob.glob(f"*{motherboard_number1}*")[0]
+    path2 = glob.glob(f"*{motherboard_number2}*")[0]
 
     # First motherboard / half of the sensor
     os.chdir(path1)
@@ -866,7 +866,7 @@ def plot_sensor_population_full_sensor(
 
     print(
         "\n> > > Collecting data for sensor population plot,"
-        "Working in {} < < <\n".format(path1)
+        f"Working in {path1} < < <\n"
     )
 
     valid_per_pixel1 = collect_data_and_apply_mask(
@@ -894,7 +894,7 @@ def plot_sensor_population_full_sensor(
 
     print(
         "\n> > > Collecting data for sensor population plot,"
-        "Working in {} < < <\n".format(path2)
+        f"Working in {path2} < < <\n"
     )
     valid_per_pixel2 = collect_data_and_apply_mask(
         files2,
@@ -968,9 +968,8 @@ def plot_sensor_population_full_sensor(
     fig.tight_layout()
     plt.savefig("{}.png".format(plot_name))
     print(
-        "> > > The plot is saved as '{file}.png' in {path} < < <".format(
-            file=plot_name, path=os.getcwd()
-        )
+        f"> > > The plot is saved as '{plot_name}.png' "
+        f"in {os.getcwd()} < < <"
     )
     if pickle_fig:
         pickle.dump(fig, open(f"{plot_name}.pickle", "wb"))

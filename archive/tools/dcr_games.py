@@ -4,7 +4,7 @@ import pickle
 import numpy as np
 from matplotlib import pyplot as plt
 
-from LinoSPAD2.functions import cross_talk, plot_tmsp
+from LinoSPAD2.functions import cross_talk, sensor_plot
 
 # path33 = r"D:\LinoSPAD2\Data\board_NL11\Prague\DCR\#33"
 # path21 = r"D:\LinoSPAD2\Data\board_NL11\Prague\DCR\#21"
@@ -40,7 +40,7 @@ with open(file_path, "wb") as file:
 
 path = r"D:\LinoSPAD2\Data\board_NL11\Prague\DCR"
 
-plot_tmsp.plot_sensor_population_full_sensor(
+sensor_plot.plot_sensor_population_full_sensor(
     path,
     daughterboard_number="NL11",
     motherboard_number1="#33",
@@ -157,7 +157,7 @@ plt.ylabel("Median DCR [cps]")
 path = r"/media/sj/King4TB/LS2_Data/CT/#33/CT_#33"
 os.chdir(path)
 files = r"0000015843.dat
-data = plot_tmsp.collect_data_and_apply_mask(
+data = sensor_plot.collect_data_and_apply_mask(
     files,
     daughterboard_number="NL11",
     motherboard_number="#33",

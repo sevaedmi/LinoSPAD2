@@ -2,7 +2,7 @@ import os
 import shutil
 import unittest
 
-from LinoSPAD2.functions.plot_tmsp import (
+from LinoSPAD2.functions.sensor_plot import (
     plot_sensor_population,
     plot_single_pix_hist,
 )

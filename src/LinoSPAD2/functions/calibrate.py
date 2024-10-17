@@ -7,8 +7,9 @@ nonlinearity is introduced by nonequal bins of the 140-bin long TDC line
 while the second - from the different-length electrical path in the PCB.
 
 The calibration matrices (for TDC calibration) and arrays (for offset
-calibration) should be put into ~/LinoSPAD2/src/LinoSPAD2/params/calibration_data
-folder, where it will be pulled from by other functions during analysis.
+calibration) should be put into ~/LinoSPAD2/src/LinoSPAD2/params
+/calibration_data folder, where it will be pulled from by other
+functions during analysis.
 
 This file can also be imported as a module and contains the following
 functions:
@@ -58,13 +59,13 @@ def calibrate_and_save_TDC_data(
     """Calculate and save calibration data for TDC_nonlinearities.
 
     Function for calculating the calibration matrix and saving it into a
-    '.csv' file. The data file used for the calculation should be taken
+    '.csv' file. The data files used for the calculation should be taken
     with the sensor uniformly illuminated by ambient light.
 
     Parameters
     ----------
     path : str
-        Absolute path to the data file.
+        Path to the folder with the '.dat' data files.
     daughterboard_number : str
         LinoSPAD2 daughterboard number.
     motherboard_number : str
@@ -101,12 +102,14 @@ def calibrate_and_save_TDC_data(
         raise TypeError("'motherboard_number' should be a string.")
     if not isinstance(firmware_version, str):
         raise TypeError(
-            "'firmware_version' should be a string, '2208', '2212b' or '2212s'."
+            "'firmware_version' should be a string, '2208', '2212b' or"
+            "'2212s'."
         )
 
     os.chdir(path)
     files = glob.glob("*.dat")
 
+    # Go over all '.dat' files
     for j, file in enumerate(
         tqdm(
             files,
@@ -205,8 +208,7 @@ def calibrate_and_save_TDC_data(
                 f"{firmware_version}_{j}.csv"
             )
 
-    # Combine all '.csv' files and calculate the average
-
+    # Combine all '.csv' files and average
     files_csv = glob.glob("*.csv")
 
     data_csv = np.zeros((256, 140))
@@ -223,7 +225,8 @@ def calibrate_and_save_TDC_data(
     )
 
     # Remove the numbered '.csv' files
-    file_pattern = f"TDC_{daughterboard_number}_{motherboard_number}_{firmware_version}_*.csv"
+    file_pattern = f"TDC_{daughterboard_number}_{motherboard_number}"
+    f"_{firmware_version}_*.csv"
     files_to_delete = glob.glob(file_pattern)
     for file_to_delete in files_to_delete:
         os.remove(file_to_delete)
@@ -398,7 +401,7 @@ def save_offset_timestamp_differences(
     Parameters
     ----------
     path : str
-        Path to data files.
+        Path to the folder with the '.dat' data files.
     pixels : list
         List of pixel numbers for which the timestamp differences should
         be calculated and saved or list of two lists with pixel numbers
@@ -457,18 +460,16 @@ def save_offset_timestamp_differences(
     # Check if csv file exists and if it should be rewritten
     try:
         os.chdir("offset_deltas")
-        if os.path.isfile("{name}.csv".format(name=output_file_name)):
+        if os.path.isfile(f"{output_file_name}.csv"):
             if rewrite:
                 print(
                     "\n! ! ! CSV file with timestamps differences already "
                     "exists and will be overwritten ! ! !\n"
                 )
                 for i in range(5):
-                    print(
-                        "\n! ! ! Deleting the file in {} ! ! !\n".format(5 - i)
-                    )
+                    print(f"\n! ! ! Deleting the file in {5 - i} ! ! !\n")
                     time.sleep(1)
-                os.remove("{}.csv".format(output_file_name))
+                os.remove(f"{output_file_name}.csv")
             else:
                 sys.exit(
                     "\n CSV file already exists, 'rewrite' set to"
@@ -527,7 +528,7 @@ def save_offset_timestamp_differences(
             for w in pixels_right:
                 if w <= q:
                     continue
-                deltas_all["{},{}".format(q, w)] = []
+                deltas_all[f"{q},{w}"] = []
                 # Find end of cycles
                 cycler = np.argwhere(data_all[0].T[0] == -2)
                 cycler = np.insert(cycler, 0, 0)
@@ -563,7 +564,7 @@ def save_offset_timestamp_differences(
                     for t1 in tmsp1:
                         deltas = tmsp2 - t1
                         ind = np.where(np.abs(deltas) < delta_window)[0]
-                        deltas_all["{},{}".format(q, w)].extend(deltas[ind])
+                        deltas_all[f"{q},{w}"].extend(deltas[ind])
 
         # Save data as a .csv file in a cycle so data is not lost
         # in the case of a failure close to the end
@@ -575,29 +576,25 @@ def save_offset_timestamp_differences(
         except FileNotFoundError:
             os.mkdir("offset_deltas")
             os.chdir("offset_deltas")
-        csv_file = glob.glob("*{}.csv*".format(output_file_name))
+        csv_file = glob.glob(f"*{output_file_name}.csv*")
         if csv_file:
             data_for_plot_df.to_csv(
-                "Offset_{}.csv".format(output_file_name),
+                f"Offset_{output_file_name}.csv",
                 mode="a",
                 index=False,
                 header=False,
             )
         else:
             data_for_plot_df.to_csv(
-                "Offset_{}.csv".format(output_file_name), index=False
+                f"Offset_{output_file_name}.csv", index=False
             )
         os.chdir("..")
 
-    if (
-        os.path.isfile(path + "/offset_deltas/{}.csv".format(output_file_name))
-        is True
-    ):
+    if os.path.isfile(path + f"/offset_deltas/{output_file_name}.csv") is True:
         print(
-            "\n> > > Timestamp differences are saved as {file}.csv in "
-            "{path} < < <".format(
-                file=output_file_name, path=path + "\offset_deltas"
-            )
+            "\n> > > Timestamp differences are saved as"
+            f"{output_file_name}.csv in "
+            f"{os.path.join(path, 'offset_deltas')} < < <"
         )
     else:
         print("File wasn't generated. Check input parameters.")
@@ -618,7 +615,7 @@ def calculate_and_save_offset_calibration(
     Parameters
     ----------
     path : str
-        Path to the data files.
+        Path to the folder with the '.dat' data files.
     daughterboard_number : str
         LinoSPAD2 daughterboard number.
     motherboard_number : str
@@ -660,15 +657,15 @@ def calculate_and_save_offset_calibration(
                 np.min(dt_nonan_arr), np.max(dt_nonan_arr), 2500 / 140
             )
 
-            counts, binEdges = np.histogram(dt_nonan_arr, bins=bins)
-            binCenters = 0.5 * (binEdges[1:] + binEdges[:-1])
+            counts, bin_edges = np.histogram(dt_nonan_arr, bins=bins)
+            bin_centers = 0.5 * (bin_edges[1:] + bin_edges[:-1])
 
             n_max = np.argmax(counts)
-            arg_max = (binEdges[n_max] + binEdges[n_max + 1]) / 2
+            arg_max = (bin_edges[n_max] + bin_edges[n_max + 1]) / 2
             sigma = 200
 
             parameters, covariance = curve_fit(
-                gauss, binCenters, counts, p0=[max(counts), arg_max, sigma]
+                gauss, bin_centers, counts, p0=[max(counts), arg_max, sigma]
             )
 
             peak_positions_3_256[i] = parameters[1]
@@ -701,15 +698,15 @@ def calculate_and_save_offset_calibration(
                 np.min(dt_nonan_arr), np.max(dt_nonan_arr), 2500 / 140
             )
 
-            counts, binEdges = np.histogram(dt_nonan_arr, bins=bins)
-            binCenters = 0.5 * (binEdges[1:] + binEdges[:-1])
+            counts, bin_edges = np.histogram(dt_nonan_arr, bins=bins)
+            bin_centers = 0.5 * (bin_edges[1:] + bin_edges[:-1])
 
             n_max = np.argmax(counts)
-            arg_max = (binEdges[n_max] + binEdges[n_max + 1]) / 2
+            arg_max = (bin_edges[n_max] + bin_edges[n_max + 1]) / 2
             sigma = 200
 
             parameters, covariance = curve_fit(
-                gauss, binCenters, counts, p0=[max(counts), arg_max, sigma]
+                gauss, bin_centers, counts, p0=[max(counts), arg_max, sigma]
             )
 
             peak_positions_1_4[i] = parameters[1]
@@ -736,9 +733,8 @@ def calculate_and_save_offset_calibration(
     offsets = np.linalg.solve(a, peak_positions)
 
     np.save(
-        "Offset_{}_{}_{}.npy".format(
-            daughterboard_number, motherboard_number, firmware_version
-        ),
+        f"Offset_{daughterboard_number}_{motherboard_number}"
+        f"_{firmware_version}.npy",
         offsets,
     )
 
@@ -780,11 +776,8 @@ def load_calibration_data(
     # Compensating for TDC nonlinearities
     try:
         file_TDC = glob.glob(
-            "*TDC_{db}_{mb}_{fw}*".format(
-                db=daughterboard_number,
-                mb=motherboard_number,
-                fw=firmware_version,
-            )
+            f"*TDC_{daughterboard_number}_{motherboard_number}"
+            f"_{firmware_version}*"
         )[0]
     except IndexError as exc:
         raise FileNotFoundError(
@@ -796,11 +789,8 @@ def load_calibration_data(
     if include_offset:
         try:
             file_offset = glob.glob(
-                "*Offset_{db}_{mb}_{fw}*".format(
-                    db=daughterboard_number,
-                    mb=motherboard_number,
-                    fw=firmware_version,
-                )
+                f"*Offset_{daughterboard_number}_{motherboard_number}"
+                f"_{firmware_version}*"
             )[0]
         except IndexError:
             raise FileNotFoundError(

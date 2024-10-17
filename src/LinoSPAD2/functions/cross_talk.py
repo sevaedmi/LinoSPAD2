@@ -6,11 +6,9 @@ cross-talk data for the given data sets.
 This file can also be imported as a module and contains the following
 functions:
 
-    * calculate_dark_count_rate - calculate the average dark count rate
-    for the given sensor half.
-
     * collect_dcr_by_file - calculate the DCR for each file in the
-    given folder and save the result into a .pkl file
+    given folder and save the result into a .pkl file. Calculate
+    average and median DCR with and without masking the hot pixels.
 
     * plot_dcr_histogram_and_stability - plot the DCR vs file to check
     setup stability, and plot histogram of DCR averaged over files
@@ -44,7 +42,7 @@ from scipy.optimize import curve_fit
 from tqdm import tqdm
 
 from LinoSPAD2.functions import calc_diff as cd
-from LinoSPAD2.functions import plot_tmsp
+from LinoSPAD2.functions import sensor_plot
 from LinoSPAD2.functions import unpack as f_up
 from LinoSPAD2.functions import utils
 
@@ -990,10 +988,18 @@ def _plot_cross_talk_vs_distance(
             plt.savefig(
                 f"Cross-talk_aggressor_pixel_{aggressor_pix}_onleft.png"
             )
+            with open(
+                f"Cross-talk_aggressor_pixel_{aggressor_pix}_onleft.pkl", "wb"
+            ) as f:
+                pickle.dump(fig, f)
         else:
             plt.savefig(
                 f"Cross-talk_aggressor_pixel_{aggressor_pix}_onright.png"
             )
+            with open(
+                f"Cross-talk_aggressor_pixel_{aggressor_pix}_onright.pkl", "wb"
+            ) as f:
+                pickle.dump(fig, f)
 
         if show_plots:
             plt.show()
@@ -1061,7 +1067,7 @@ def _plot_average_cross_talk_vs_distance(
         )
         final_result_averages[key].append((value, error))
 
-    plt.figure(figsize=(16, 10))
+    fig = plt.figure(figsize=(16, 10))
     plt.rcParams.update({"font.size": 27})
     plt.title("Average cross-talk probability")
     plt.xlabel("Distance in pixels (-)")
@@ -1075,8 +1081,12 @@ def _plot_average_cross_talk_vs_distance(
     )
     if pix_on_left:
         plt.savefig("Average_cross-talk_onleft.png")
+        with open("Average_cross-talk_onleft.pkl", "wb") as f:
+            pickle.dump(fig, f)
     else:
         plt.savefig("Average_cross-talk_onright.png")
+        with open("Average_cross-talk_onright.pkl", "wb") as f:
+            pickle.dump(fig, f)
 
     return final_result_averages
 
@@ -1156,7 +1166,7 @@ def zero_to_cross_talk_collect(
     # Collecting sensor population
     os.chdir(path)
     files = glob.glob("*.dat")
-    plot_tmsp.collect_data_and_apply_mask(
+    sensor_plot.collect_data_and_apply_mask(
         files,
         daughterboard_number,
         motherboard_number,

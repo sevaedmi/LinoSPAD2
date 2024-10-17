@@ -21,6 +21,10 @@ functions:
 
     * pixel_list_transform - Transform a list of pixels into two separate
     lists based on input type.
+    
+    * correct_pixels_address - correct the pixel addressing, the output
+    has the same dimensions as the input. Should be used for motherboard
+    on side "23" of the daughterboard.
 
     * file_rewrite_handling - based on the file name given and the
     boolean paramter 'rewrite', handles the file overwriting based on
@@ -29,9 +33,12 @@ functions:
     * error_propagation_division - propagate error for the division
     operation
     
-    * correct_pixels_address - correct the pixel addressing, the output
-    has the same dimensions as the input. Should be used for motherboard
-    on side "23" of the daughterboard.
+    * combine_feather_files - Combine multiple '.feather' files into one.
+    Can be used in delta_t functions for collecting timestamp differences
+    to alleviate bottlenecks in saving results or for combining files
+    manually for testing. 
+    
+
 """
 
 import glob
@@ -408,3 +415,6 @@ def combine_feather_files(path: str):
         data_combined = pd.concat([data_combined, data], ignore_index=True)
 
         data_combined.to_feather(f"{out_file_name}.feather")
+
+    for ft_file in feather_files:
+        os.remove(ft_file)

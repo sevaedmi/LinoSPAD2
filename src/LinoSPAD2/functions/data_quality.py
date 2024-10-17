@@ -29,7 +29,7 @@ functions:
     subsequent files, calculate the ratios of these times and calculates
     the average with error.
 
-    * save_file_time - save the modification and creation times of data
+    * save_file_times - save the modification and creation times of data
     files into a feather file for future use.
 
     * load_data_from_feather - load the modification and creation time

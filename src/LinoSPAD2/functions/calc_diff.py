@@ -7,12 +7,18 @@ and returned as a list.
 This file can also be imported as a module and contains the following
 functions:
 
+    TODO remove
     * calculate_differences_2212 - calculate timestamp differences for
     the given pair of pixels. Works only with firmware version '2212'.
+    
+    * calculate_differences_2212_fast - calculate timestamp differences for
+    the given pair of pixels. Works only with firmware version '2212'.
+    Uses a faster algorithm than the function above.
 
 """
 
 from typing import List
+from warnings import warn
 
 import numpy as np
 import pandas as pd
@@ -52,6 +58,13 @@ def calculate_differences_2212(
         Dictionary containing timestamp differences for each pair of pixels.
 
     """
+
+    # TODO: remove
+    warn(
+        "This function is deprecated. Use" "'calculate_differences_2212_fast'",
+        DeprecationWarning,
+        stacklevel=2,
+    )
     # Dictionary for the timestamp differences, where keys are the
     # pixel numbers of the requested pairs
     deltas_all = {}

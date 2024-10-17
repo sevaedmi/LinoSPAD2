@@ -6,17 +6,23 @@ LinoSPAD2 binary data output.
 This file can also be imported as a module and contains the following
 functions:
 
+    TODO remove
     * calculate_and_save_timestamp_differences - unpacks the binary data,
     calculates timestamp differences, and saves into a '.feather' file.
     Works with firmware versions '2208' and '2212b'.
-    
+
+    * calculate_and_save_timestamp_differences_fast - unpacks the binary
+    data, calculates timestamp differences, and saves into a '.feather'
+    file. Works with firmware versions '2208' and '2212b'. Uses a faster
+    algorithm than the function above.
+
     * calculate_and_save_timestamp_differences_full_sensor - unpacks the
     binary data, calculates timestamp differences and saves into a
     '.feather' file. Works with firmware versions '2208', '2212s' and
     '2212b'. Analyzes data from both sensor halves/both FPGAs. Useful
     for data where the signal is at 0 across the whole sensor from the
     start of data collecting.
-    
+
     * calculate_and_save_timestamp_differences_full_sensor_alt - unpacks
     the binary data, calculates timestamp differences and saves into a
     '.feather' file. Works with firmware versions '2208', '2212s' and
@@ -25,12 +31,13 @@ functions:
 
     * collect_and_plot_timestamp_differences - collect timestamps from a
     '.feather' file and plot them in a grid.
-    
+
+    TODO remove
     * collect_and_plot_timestamp_differences_from_ft_file - unpack the 
     '.feather' file requested, collect timestamp differences and
     plot it as a grid of plots. Useful when only the '.feather' file
     is available and not the raw '.dat' files.
-    
+
     * collect_and_plot_timestamp_differences_full_sensor - collect
     timestamps from a '.feather' file and plot histograms of them
     in a grid. This function should be used for the full sensor
@@ -42,6 +49,7 @@ import os
 import sys
 from math import ceil
 from typing import List
+from warnings import warn
 
 import numpy as np
 import pandas as pd
@@ -105,12 +113,14 @@ def calculate_and_save_timestamp_differences(
     Parameters
     ----------
     path : str
-        Path to data files.
+        Path to the folder with the '.dat' data files.
     pixels : List[int] | List[List[int]]
         List of pixel numbers for which the timestamp differences should
         be calculated and saved or list of two lists with pixel numbers
         for peak vs. peak calculations.
     rewrite : bool
+        switch for rewriting the plot if it already exists. used as a
+        safeguard to avoid unwanted overwriting of the previous results.
         Switch for rewriting the '.feather' file if it already exists.
     daughterboard_number : str
         LinoSPAD2 daughterboard number.
@@ -137,8 +147,8 @@ def calculate_and_save_timestamp_differences(
         Indicator for data with absolute timestamps. The default is
         False.
     correct_pix_address : bool, optional
-        Correct pixel address for the FPGA board on side 23. The
-        default is False.
+        Correct pixel address for the sensor half on side 23 of the
+        daughterboard. The default is False.
 
     Raises
     ------
@@ -177,6 +187,15 @@ def calculate_and_save_timestamp_differences(
     >>> correct_pixel_addressing = True,
     >>> )
     """
+
+    # TODO: remove
+    warn(
+        "This function is deprecated. Use"
+        "'calculate_and_save_timestamp_differences_fast'",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
     # Parameter type check
     if isinstance(pixels, list) is False:
         raise TypeError(
@@ -193,7 +212,7 @@ def calculate_and_save_timestamp_differences(
 
     os.chdir(path)
 
-    # Handle the input list
+    # Handle the input pixel list
     pixels = utils.pixel_list_transform(pixels)
 
     files_all = glob.glob("*.dat*")
@@ -201,29 +220,18 @@ def calculate_and_save_timestamp_differences(
 
     out_file_name = files_all[0][:-4] + "-" + files_all[-1][:-4]
 
-    # Feather file counter
+    # Feather file counter for saving delta ts into separate files
+    # of up to 100 MB
     ft_file_number = 0
-
-    # File name pattern for the given '.dat' files
-    file_pattern = f"{out_file_name}_*.feather"
 
     # Check if the feather file exists and if it should be rewrited
     feather_file = os.path.join(
         path, "delta_ts_data", f"{out_file_name}.feather"
     )
 
-    # Go the folder where timestamp differences are saved and
-    # find all '.feather' files with the given pattern
-    # TODO
-    try:
-        os.chdir(os.path.join(path, "delta_ts_data"))
-    except FileNotFoundError:
-        pass
-    feather_files = glob.glob(file_pattern)
-
     # Remove the old '.feather' files with the pattern
-    for ft_file in feather_files:
-        utils.file_rewrite_handling(ft_file, rewrite)
+    # for ft_file in feather_files:
+    utils.file_rewrite_handling(feather_file, rewrite)
 
     # Go back to the folder with '.dat' files
     os.chdir(path)
@@ -243,7 +251,7 @@ def calculate_and_save_timestamp_differences(
         print("\nFirmware version is not recognized.")
         sys.exit()
 
-    # TODO fix pix add corection with input type (int+list, etc..)
+    # Correct pixel addressing for motherboard on side '23'
     if correct_pix_address:
         pixels = utils.correct_pixels_address(pixels)
 
@@ -351,7 +359,7 @@ def calculate_and_save_timestamp_differences_fast(
     firmware_version: str,
     timestamps: int = 512,
     delta_window: float = 50e3,
-    cycle_length: float = 4e9,
+    cycle_length: float = None,
     app_mask: bool = True,
     include_offset: bool = False,
     apply_calibration: bool = True,
@@ -367,12 +375,14 @@ def calculate_and_save_timestamp_differences_fast(
     Parameters
     ----------
     path : str
-        Path to data files.
+        Path to the folder with the '.dat' data files.
     pixels : List[int] | List[List[int]]
         List of pixel numbers for which the timestamp differences should
         be calculated and saved or list of two lists with pixel numbers
         for peak vs. peak calculations.
     rewrite : bool
+        switch for rewriting the plot if it already exists. used as a
+        safeguard to avoid unwanted overwriting of the previous results.
         Switch for rewriting the '.feather' file if it already exists.
     daughterboard_number : str
         LinoSPAD2 daughterboard number.
@@ -387,7 +397,8 @@ def calculate_and_save_timestamp_differences_fast(
     delta_window : float, optional
         Size of a window to which timestamp differences are compared.
         Differences in that window are saved. The default is 50e3 (50 ns).
-    cycle_length:
+    cycle_length: float, optional
+        Length of the acquisition cycle. The default is None.
     app_mask : bool, optional
         Switch for applying the mask for hot pixels. The default is True.
     include_offset : bool, optional
@@ -400,19 +411,19 @@ def calculate_and_save_timestamp_differences_fast(
         Indicator for data with absolute timestamps. The default is
         False.
     correct_pix_address : bool, optional
-        Correct pixel address for the FPGA board on side 23. The
-        default is False.
+        Correct pixel address for the sensor half on side 23 of the
+        daughterboard. The default is False.
 
     Raises
     ------
     TypeError
-        _description_
+        Raised if "pixels" is not a list.
     TypeError
-        _description_
+        Raised if "firmware_version" is not a string.
     TypeError
-        _description_
+        Raised if "rewrite" is not a boolean.
     TypeError
-        _description_
+        Raised if "daughterboard_number" is not a string.
     """
     # Parameter type check
     if isinstance(pixels, list) is False:
@@ -438,29 +449,18 @@ def calculate_and_save_timestamp_differences_fast(
 
     out_file_name = files_all[0][:-4] + "-" + files_all[-1][:-4]
 
-    # Feather file counter
+    # Feather file counter for saving delta ts into separate files
+    # of up to 100 MB
     ft_file_number = 0
-
-    # File name pattern for the given '.dat' files
-    file_pattern = f"{out_file_name}_*.feather"
 
     # Check if the feather file exists and if it should be rewrited
     feather_file = os.path.join(
         path, "delta_ts_data", f"{out_file_name}.feather"
     )
 
-    # Go the folder where timestamp differences are saved and
-    # find all '.feather' files with the given pattern
-    # TODO
-    try:
-        os.chdir(os.path.join(path, "delta_ts_data"))
-    except FileNotFoundError:
-        pass
-    feather_files = glob.glob(file_pattern)
-
     # Remove the old '.feather' files with the pattern
-    for ft_file in feather_files:
-        utils.file_rewrite_handling(ft_file, rewrite)
+    # for ft_file in feather_files:
+    utils.file_rewrite_handling(feather_file, rewrite)
 
     # Go back to the folder with '.dat' files
     os.chdir(path)
@@ -480,9 +480,18 @@ def calculate_and_save_timestamp_differences_fast(
         print("\nFirmware version is not recognized.")
         sys.exit()
 
-    # TODO fix pix add corection with input type (int+list, etc..)
+    # Correct pixel addressing for motherboard on side '23'
     if correct_pix_address:
         pixels = utils.correct_pixels_address(pixels)
+
+    # Mask the hot/warm pixels
+    if app_mask is True:
+        mask = utils.apply_mask(daughterboard_number, motherboard_number)
+        if isinstance(pixels[0], int) and isinstance(pixels[1], int):
+            pixels = [pix for pix in pixels if pix not in mask]
+        else:
+            pixels[0] = [pix for pix in pixels[0] if pix not in mask]
+            pixels[1] = [pix for pix in pixels[1] if pix not in mask]
 
     for i in tqdm(range(ceil(len(files_all))), desc="Collecting data"):
         file = files_all[i]
@@ -509,13 +518,16 @@ def calculate_and_save_timestamp_differences_fast(
                 apply_calibration,
             )
 
+        # If cycle_length is not given manually, estimate from the data
+        if cycle_length is None:
+            cycle_length = np.max(data_all)
+
         delta_ts = cd.calculate_differences_2212_fast(
             data_all, pixels, pix_coor, delta_window, cycle_length
         )
 
         # Save data as a .feather file in a cycle so data is not lost
         # in the case of failure close to the end
-        # TODO
         delta_ts = pd.DataFrame.from_dict(delta_ts, orient="index")
         delta_ts = delta_ts.T
 
@@ -596,6 +608,8 @@ def calculate_and_save_timestamp_differences_full_sensor(
     pixels : list
         List of two pixels, one from each sensor half.
     rewrite : bool
+        switch for rewriting the plot if it already exists. used as a
+        safeguard to avoid unwanted overwriting of the previous results.
         Switch for rewriting the '.feather' file if it already exists.
     daughterboard_number : str
         LinoSPAD2 daughterboard number.
@@ -953,6 +967,8 @@ def calculate_and_save_timestamp_differences_full_sensor_alt(
     pixels : list
         List of two pixels, one from each sensor half.
     rewrite : bool
+        switch for rewriting the plot if it already exists. used as a
+        safeguard to avoid unwanted overwriting of the previous results.
         Switch for rewriting the '.feather' file if it already exists.
     daughterboard_number : str
         LinoSPAD2 daughterboard number.
@@ -1318,7 +1334,7 @@ def collect_and_plot_timestamp_differences(
     ft_file: str = None,
     range_left: int = -10e3,
     range_right: int = 10e3,
-    step: int = 1,
+    multiplier: int = 1,
     same_y: bool = False,
     color: str = "rebeccapurple",
     correct_pix_address: bool = False,
@@ -1332,14 +1348,16 @@ def collect_and_plot_timestamp_differences(
 
     Parameters
     ----------
-    #TODO
     path : str
-        Path to data files.
+        Path to the folder with the '.dat' data files.
     pixels : list
         List of pixel numbers for which the timestamp differences
         should be plotted.
     rewrite : bool
-        Switch for rewriting the plot if it already exists.
+        switch for rewriting the plot if it already exists. used as a
+        safeguard to avoid unwanted overwriting of the previous results.
+        Switch for rewriting the plot if it already exists. Used as a
+        safeguard to avoid unwanted overwriting of the previous results.
     ft_file : str, optional
         Path to the feather file with timestamp differences. If used,
         the data files in the path are ignored. The default is None.
@@ -1349,22 +1367,23 @@ def collect_and_plot_timestamp_differences(
     range_right : int, optional
         Upper limit for timestamp differences, higher values are not used.
         The default is 10e3.
-    step : int, optional
-        Histogram binning multiplier. The default is 1.
+    multiplier : int, optional
+        Histogram binning multiplier. Can be used for coarser binning.
+        The default is 1.
     same_y : bool, optional
         Switch for plotting the histograms with the same y-axis.
         The default is False.
     color : str, optional
         Color for the plot. The default is 'rebeccapurple'.
     correct_pix_address : bool, optional
-        Correct pixel address for the FPGA board on side 23. The
-        default is False.
+        Correct pixel address for the sensor half on side 23 of the
+        daughterboard. The default is False.
 
     Raises
     ------
     TypeError
         Only boolean values of 'rewrite' are accepted. The error is
-        raised so that the plot does not accidentally get rewritten.
+        raised so that the plot does not accidentally gets rewritten.
 
     Returns
     -------
@@ -1475,7 +1494,7 @@ def collect_and_plot_timestamp_differences(
                 bins = np.arange(
                     np.min(data_to_plot),
                     np.max(data_to_plot),
-                    2500 / 140 * step,
+                    2500 / 140 * multiplier,
                 )
             except ValueError:
                 print(
@@ -1566,7 +1585,7 @@ def collect_and_plot_timestamp_differences_from_ft_file(
     rewrite: bool,
     range_left: int = -10e3,
     range_right: int = 10e3,
-    step: int = 1,
+    multiplier: int = 1,
     same_y: bool = False,
     color: str = "rebeccapurple",
 ):
@@ -1585,15 +1604,19 @@ def collect_and_plot_timestamp_differences_from_ft_file(
         List of pixel numbers for which the timestamp differences
         should be plotted.
     rewrite : bool
-        Switch for rewriting the plot if it already exists.
+        switch for rewriting the plot if it already exists. used as a
+        safeguard to avoid unwanted overwriting of the previous results.
+        Switch for rewriting the plot if it already exists. Used as a
+        safeguard to avoid unwanted overwriting of the previous results.
     range_left : int, optional
         Lower limit for timestamp differences, lower values are not used.
         The default is -10e3.
     range_right : int, optional
         Upper limit for timestamp differences, higher values are not used.
         The default is 10e3.
-    step : int, optional
-        Histogram binning multiplier. The default is 1.
+    multiplier : int, optional
+        Histogram binning multiplier. Can be used for coarser binning.
+        The default is 1.
     same_y : bool, optional
         Switch for plotting the histograms with the same y-axis.
         The default is False.
@@ -1604,12 +1627,22 @@ def collect_and_plot_timestamp_differences_from_ft_file(
     ------
     TypeError
         Only boolean values of 'rewrite' are accepted. The error is
-        raised so that the plot does not accidentally get rewritten.
+        raised so that the plot does not accidentally gets rewritten.
 
     Returns
     -------
     None.
     """
+
+    # TODO: remove
+    warn(
+        "This function is deprecated. Use"
+        "'collect_and_plot_timestamp_differences' with"
+        "the 'ft_file' parameter instead",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
     # parameter type check
     if isinstance(rewrite, bool) is not True:
         raise TypeError("'rewrite' should be boolean")
@@ -1696,7 +1729,7 @@ def collect_and_plot_timestamp_differences_from_ft_file(
                 bins = np.arange(
                     np.min(data_to_plot),
                     np.max(data_to_plot),
-                    17.857 * step,
+                    2500 / 140 * multiplier,
                 )
             except ValueError:
                 print(
@@ -1780,7 +1813,7 @@ def collect_and_plot_timestamp_differences_full_sensor(
     rewrite: bool,
     range_left: int = -10e3,
     range_right: int = 10e3,
-    step: int = 1,
+    multiplier: int = 1,
     same_y: bool = False,
     color: str = "rebeccapurple",
 ):
@@ -1794,20 +1827,24 @@ def collect_and_plot_timestamp_differences_full_sensor(
     Parameters
     ----------
     path : str
-        Path to data files.
+        Path to the folder with the '.dat' data files.
     pixels : list
         List of pixel numbers for which the timestamp differences
         should be plotted.
     rewrite : bool
-        Switch for rewriting the plot if it already exists.
+        switch for rewriting the plot if it already exists. used as a
+        safeguard to avoid unwanted overwriting of the previous results.
+        Switch for rewriting the plot if it already exists. Used as a
+        safeguard to avoid unwanted overwriting of the previous results.
     range_left : int, optional
         Lower limit for timestamp differences, lower values are not used.
         The default is -10e3.
     range_right : int, optional
         Upper limit for timestamp differences, higher values are not used.
         The default is 10e3.
-    step : int, optional
-        Histogram binning multiplier. The default is 1.
+    multiplier : int, optional
+        Histogram binning multiplier. Can be used for coarser binning.
+        The default is 1.
     same_y : bool, optional
         Switch for plotting the histograms with the same y-axis.
         The default is False.
@@ -1818,7 +1855,7 @@ def collect_and_plot_timestamp_differences_full_sensor(
     ------
     TypeError
         Only boolean values of 'rewrite' are accepted. The error is
-        raised so that the plot does not accidentally get rewritten.
+        raised so that the plot does not accidentally gets rewritten.
 
     Returns
     -------
@@ -1861,9 +1898,7 @@ def collect_and_plot_timestamp_differences_full_sensor(
     # Check if plot exists and if it should be rewritten
     try:
         os.chdir(os.path.join(path, "results/delta_t"))
-        if os.path.isfile(
-            "{name}_delta_t_grid.png".format(name=feather_file_name1)
-        ):
+        if os.path.isfile(f"{feather_file_name1}_delta_t_grid.png"):
             if rewrite is True:
                 print(
                     "\n! ! ! Plot of timestamp differences already"
@@ -1874,9 +1909,7 @@ def collect_and_plot_timestamp_differences_full_sensor(
                     "\nPlot already exists, 'rewrite' set to 'False', exiting."
                 )
 
-        elif os.path.isfile(
-            "{name}_delta_t_grid.png".format(name=feather_file_name2)
-        ):
+        elif os.path.isfile(f"{feather_file_name2}_delta_t_grid.png"):
             if rewrite is True:
                 print(
                     "\n! ! ! Plot of timestamp differences already"
@@ -1922,12 +1955,8 @@ def collect_and_plot_timestamp_differences_full_sensor(
                 axs[q][w - 1].axes.set_axis_on()
 
             # Check if the file with timestamps differences is there
-            feather_file_path1 = "delta_ts_data/{}.feather".format(
-                feather_file_name1
-            )
-            feather_file_path2 = "delta_ts_data/{}.feather".format(
-                feather_file_name2
-            )
+            feather_file_path1 = f"delta_ts_data/{feather_file_name1}.feather"
+            feather_file_path2 = f"delta_ts_data/{feather_file_name2}.feather"
             feather_file, feather_file_name = (
                 (feather_file_path1, feather_file_name1)
                 if os.path.isfile(os.path.join(path, feather_file_path1))
@@ -1964,12 +1993,12 @@ def collect_and_plot_timestamp_differences_full_sensor(
                 bins = np.arange(
                     np.min(data_to_plot),
                     np.max(data_to_plot),
-                    17.857 * step,
+                    2500 / 140 * multiplier,
                 )
             except ValueError:
                 print(
-                    f"\nCouldn't calculate bins for {q}-{w} pair: probably not "
-                    "enough delta ts."
+                    f"\nCouldn't calculate bins for {q}-{w} pair: probably "
+                    "not enough delta ts."
                 )
                 continue
 

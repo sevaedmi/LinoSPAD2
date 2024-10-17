@@ -4,7 +4,7 @@ from glob import glob
 from matplotlib import pyplot as plt
 from PIL import Image
 
-from LinoSPAD2.functions import plot_tmsp
+from LinoSPAD2.functions import sensor_plot
 
 path = r"D:\LinoSPAD2\Data\board_NL11\Prague\MZI\05.08.24"
 os.chdir(path)
@@ -18,7 +18,7 @@ plt.ylabel("# of photons [-]")
 plt.title("MZI, pixels 135 and 174")
 
 for i, files in enumerate(files_all):
-    timestamps = plot_tmsp.collect_data_and_apply_mask(
+    timestamps = sensor_plot.collect_data_and_apply_mask(
         files,
         daughterboard_number="NL11",
         motherboard_number="#33",

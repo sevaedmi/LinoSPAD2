@@ -183,6 +183,7 @@ def compact_share_feather(
                 apply_calibration,
             )
 
+        # TODO use faster version
         deltas_all = cd.calculate_differences_2212(
             data_all, pixels, pix_coor, delta_window
         )
