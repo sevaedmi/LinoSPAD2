@@ -38,7 +38,7 @@ def unpack_binary_data(
     daughterboard_number : str
         LinoSPAD2 daughterboard number.
     motherboard_number : str
-        LinoSPAD2 motherboard (FPGA) number.
+        LinoSPAD2 motherboard (FPGA) number, including the "#".
     firmware_version : str
         LinoSPAD2 firmware version. Either '2212s' (skip) or '2212b' (block).
     timestamps : int, optional
@@ -215,7 +215,7 @@ def unpack_binary_data_with_absolute_timestamps(
     daughterboard_number : str
         LinoSPAD2 daughterboard number.
     motherboard_number : str
-        LinoSPAD2 motherboard (FPGA) number.
+        LinoSPAD2 motherboard (FPGA) number, including the "#".
     firmware_version : str
         LinoSPAD2 firmware version. Either '2212s' (skip) or '2212b'
         (block) are accepted.

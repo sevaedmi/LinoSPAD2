@@ -90,7 +90,7 @@ def sensor_population_by_cycle(
     daughterboard_number : str
         LinoSPAD2 daughterboard number.
     motherboard_number : str
-        LinoSPAD2 motherboard (FPGA) number.
+        LinoSPAD2 motherboard (FPGA) number, including the "#".
     firmware_version : str
         LinoSPAD2 firmware version. Versions '2212s' (skip) and '2212b'
         (block) are recognized.
@@ -259,7 +259,7 @@ def pixel_population_by_cycle(
     daughterboard_number : str
         LinoSPAD2 daughterboard number.
     motherboard_number : str
-        LinoSPAD2 motherboard (FPGA) number.
+        LinoSPAD2 motherboard (FPGA) number, including the "#".
     firmware_version : str
         LinoSPAD2 firmware version. Versions "2212s" (skip) and "2212b"
         (block) are recognized.
@@ -400,7 +400,7 @@ def get_time_ratios(
     daughterboard_number : str
         LinoSPAD2 daughterboard number.
     motherboard_number : str
-        LinoSPAD2 motherboard (FPGA) number.
+        LinoSPAD2 motherboard (FPGA) number, including the "#".
     firmware_version : str
         LinoSPAD2 firmware version. Either '2212s' (skip) or '2212b' (block).
     timestamps : int, optional

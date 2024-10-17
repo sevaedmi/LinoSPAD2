@@ -59,10 +59,10 @@ class DataParamsConfig:
     daughterboard_number : str
         LinoSPAD2 daughterboard number.
     motherboard_number : str
-        LinoSPAD2 motherboard (FPGA) number.
+        LinoSPAD2 motherboard (FPGA) number, including the "#".
     motherboard_number1 : str
-        First LinoSPAD2 motherboard (FPGA) number. Used for full sensor
-        data analysis.
+        First LinoSPAD2 motherboard (FPGA) number, including the "#".
+        Used for full sensor data analysis.
     motherboard_number2 : str
         Second LinoSPAD2 motherboard (FPGA) number. Used for full sensor
         data analysis.
@@ -541,7 +541,7 @@ def calculate_and_save_timestamp_differences_mp(
     daughterboard_number : str
         LinoSPAD2 daughterboard number.
     motherboard_number : str
-        LinoSPAD2 motherboard (FPGA) number.
+        LinoSPAD2 motherboard (FPGA) number, including the "#".
     firmware_version: str
         LinoSPAD2 firmware version. Versions "2212s" (skip) and "2212b"
         (block) are recognized.
@@ -960,7 +960,7 @@ def compact_share_mp(
     daughterboard_number : str
         LinoSPAD2 daughterboard number.
     motherboard_number : str
-        LinoSPAD2 motherboard (FPGA) number.
+        LinoSPAD2 motherboard (FPGA) number, including the "#".
     firmware_version: str
         LinoSPAD2 firmware version. Accepted values are "2212s" (skip)
         and "2212b" (block).

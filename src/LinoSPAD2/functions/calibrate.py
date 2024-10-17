@@ -254,7 +254,7 @@ def unpack_data_for_offset_calibration(
     daughterboard_number : str
         LinoSPAD2 daughterboard number.
     motherboard_number : str
-        LinoSPAD2 motherboard (FPGA) number.
+        LinoSPAD2 motherboard (FPGA) number, including the "#".
     firmware_version : str
         LinoSPAD2 firmware version. Either '2212s' or '2212b' are accepted.
     timestamps : int, optional
@@ -411,7 +411,7 @@ def save_offset_timestamp_differences(
     daughterboard_number : str
         LinoSPAD2 daughterboard number.
     motherboard_number : str
-        LinoSPAD2 motherboard (FPGA) number.
+        LinoSPAD2 motherboard (FPGA) number, including the "#".
     firmware_version : str
         LinoSPAD2 firmware version. Versions "2212s" (skip) and "2212b"
         (block) are recognized.
@@ -619,7 +619,7 @@ def calculate_and_save_offset_calibration(
     daughterboard_number : str
         LinoSPAD2 daughterboard number.
     motherboard_number : str
-        LinoSPAD2 motherboard (FPGA) number.
+        LinoSPAD2 motherboard (FPGA) number, including the "#".
     firmware_version : str
         LinoSPAD2 firmware version.
     timestamps : int, optional
@@ -755,7 +755,7 @@ def load_calibration_data(
     daughterboard_number: str
         The LinoSPAD2 daughterboard number.
     motherboard_number : str
-        LinoSPAD2 motherboard (FPGA) number.
+        LinoSPAD2 motherboard (FPGA) number, including the "#".
     firmware_version: str
         LinoSPAD2 firmware version.
     include_offset : bool, optional

@@ -66,7 +66,7 @@ def collect_data_and_apply_mask(
     daughterboard_number : str
         The LinoSPAD2 daughterboard number.
     motherboard_number : str
-        The LinoSPAD2 motherboard number.
+        The LinoSPAD2 motherboard number, including the "#".
     firmware_version : str
         LinoSPAD2 firmware version.
     timestamps : int
@@ -362,7 +362,7 @@ def plot_sensor_population(
         The LinoSPAD2 daughterboard number. Required for choosing the
         correct calibration data.
     motherboard_number : str
-        The LinoSPAD2 motherboard number.
+        The LinoSPAD2 motherboard number, including the "#".
     firmware_version : str
         LinoSPAD2 firmware version. Versions '2212b' (block) or '2212s'
         (skip) are recognized.

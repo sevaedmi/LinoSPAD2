@@ -65,7 +65,7 @@ def apply_mask(
     daughterboard_number : str
         The LinoSPAD2 daughterboard number.
     motherboard_number : str
-        The LinoSPAD2 motherboard number.
+        LinoSPAD2 motherboard (FPGA) number, including the "#".
 
     Returns
     -------
