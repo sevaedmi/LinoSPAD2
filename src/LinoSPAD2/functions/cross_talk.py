@@ -33,6 +33,7 @@ import glob
 import os
 import pickle
 import sys
+from typing import List
 
 import numpy as np
 import pandas as pd
@@ -1093,7 +1094,7 @@ def _plot_average_cross_talk_vs_distance(
 
 def zero_to_cross_talk_collect(
     path,
-    hot_pixels,
+    pixels: List,
     rewrite: bool,
     daughterboard_number: str,
     motherboard_number: str,
@@ -1116,7 +1117,7 @@ def zero_to_cross_talk_collect(
     ----------
     path : str
         Path to the data files.
-    hot_pixels : list
+    pixels : list
         List of hot pixels.
     rewrite : bool
         Switch for rewriting the feather file with timestamp differences.
@@ -1150,17 +1151,17 @@ def zero_to_cross_talk_collect(
     # Reverse correction if the motherboard connected to side "23" of the
     # daughterboard
     if correct_pix_address:
-        for i, pixel in enumerate(hot_pixels):
+        for i, pixel in enumerate(pixels):
             if pixel > 127:
-                hot_pixels[i] = 255 - pixel
+                pixels[i] = 255 - pixel
             else:
-                hot_pixels[i] = pixel + 128
+                pixels[i] = pixel + 128
 
-    hot_pixels_plus_20 = [
-        [x + i for i in range(0, 21)] for x in hot_pixels if x <= 235
+    pixels_plus_20 = [
+        [x + i for i in range(0, 21)] for x in pixels if x <= 235
     ]
-    hot_pixels_minus_20 = [
-        [x - i for i in range(0, 21)] for x in hot_pixels if x >= 20
+    pixels_minus_20 = [
+        [x - i for i in range(0, 21)] for x in pixels if x >= 20
     ]
 
     # Collecting sensor population
@@ -1180,7 +1181,7 @@ def zero_to_cross_talk_collect(
         correct_pix_address=correct_pix_address,
     )
 
-    for pixels in hot_pixels_plus_20:
+    for pixels in pixels_plus_20:
         print(
             "Calculating timestamp differences between aggressor pixel "
             f"{pixels[0]} and pixels to the right"
@@ -1200,7 +1201,7 @@ def zero_to_cross_talk_collect(
             correct_pix_address,
         )
 
-    for pixels in hot_pixels_minus_20:
+    for pixels in pixels_minus_20:
         print(
             "Calculating timestamp differences between aggressor pixel "
             f"{pixels[0]} and pixels to the left"
@@ -1223,7 +1224,7 @@ def zero_to_cross_talk_collect(
 
 def zero_to_cross_talk_plot(
     path,
-    hot_pixels,
+    pixels: List,
     delta_window: float = 50e3,
     step: int = 10,
     show_plots: bool = False,
@@ -1244,7 +1245,7 @@ def zero_to_cross_talk_plot(
     ----------
     path : str
         Path to the data files.
-    hot_pixels : list
+    pixels : list
         List of hot pixels for the given half of the LinoSPAD2 sensor.
     delta_window : float, optional
         Window size for histograms of timestamp differences. The default
@@ -1274,11 +1275,11 @@ def zero_to_cross_talk_plot(
         os.makedirs(os.path.join(path, "ct_vs_distance"))
         os.chdir(os.path.join(path, "ct_vs_distance"))
 
-    hot_pixels_plus_20 = [
-        [x + i for i in range(0, 21)] for x in hot_pixels if x <= 235
+    pixels_plus_20 = [
+        [x + i for i in range(0, 21)] for x in pixels if x <= 235
     ]
-    hot_pixels_minus_20 = [
-        [x - i for i in range(0, 21)] for x in hot_pixels if x >= 20
+    pixels_minus_20 = [
+        [x - i for i in range(0, 21)] for x in pixels if x >= 20
     ]
     try:
         os.chdir(os.path.join(path, "senpop_data"))
@@ -1292,7 +1293,7 @@ def zero_to_cross_talk_plot(
 
     ct_right, ct_err_right = _calculate_and_plot_cross_talk(
         path,
-        hot_pixels_plus_20,
+        pixels_plus_20,
         step,
         delta_window,
         senpop,
@@ -1302,7 +1303,7 @@ def zero_to_cross_talk_plot(
     )
     ct_left, ct_err_left = _calculate_and_plot_cross_talk(
         path,
-        hot_pixels_minus_20,
+        pixels_minus_20,
         step,
         delta_window,
         senpop,
@@ -1353,7 +1354,7 @@ def zero_to_cross_talk_plot(
         )
         on_both_average[np.abs(key)] = (ct_value_average, ct_error_average)
 
-    plt.figure(figsize=(16, 10))
+    fig = plt.figure(figsize=(16, 10))
     plt.rcParams.update({"font.size": 27})
     plt.title("Average cross-talk probability")
     plt.xlabel("Distance in pixels (-)")
@@ -1371,5 +1372,7 @@ def zero_to_cross_talk_plot(
     os.chdir(os.path.join(path, "ct_vs_distance"))
     plt.legend(loc="best")
     plt.savefig("Average_cross-talk.png")
+    with open("Average_cross-talk.pkl", "wb") as f:
+        pickle.dump(fig, f)
 
     return on_both_average, ct_right, ct_left
