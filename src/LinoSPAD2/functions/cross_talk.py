@@ -49,13 +49,13 @@ from LinoSPAD2.functions import utils
 
 
 def _collect_cross_talk(
-    path,
-    pixels,
+    path: str,
+    pixels: List[int],
     rewrite: bool,
     daughterboard_number: str,
     motherboard_number: str,
     firmware_version: str,
-    timestamps: int = 512,
+    timestamps: int = 1000,
     delta_window: float = 50e3,
     include_offset: bool = False,
     apply_calibration: bool = True,
@@ -70,30 +70,32 @@ def _collect_cross_talk(
     Parameters
     ----------
     path : str
-        Path to the data files.
-    pixels : list
+        Path to the folder with '.dat' data files.
+    pixels : List[int]
         List of pixels to collect timestamp differences for, where the
         first pixel is the aggressor.
     rewrite : bool
-        Switch for rewriting the feather file with timestamp differences.
-        Used for conscious start of an hours-long data processing and
-        avoiding rewriting/deleting already existing files.
+        Switch for rewriting the '.feather' file with timestamp
+        differences. Used for conscious start of an hours-long data
+        processing and avoiding rewriting/deleting already existing
+        files.
     daughterboard_number : str
         LinoSPAD2 daughterboard number.
     motherboard_number : str
         LinoSPAD2 motherboard (FPGA) number, including the '#'.
     firmware_version : str
         LinoSPAD2 firmware version.
-    timestamps : int
+    timestamps : int, optional
         Number of timestamps per TDC per cycle used during data
-        collection.
+        collection. The default is 1000.
     include_offset : bool
         Switch for including the offset calibration.
     delta_window : float, optional
         Window size for collecting timestamp differences. The default
         is 50e3.
     apply_calibration : bool, optional
-        Switch for applying callibration. The default is True.
+        If True, apply calibration to the collected data. The default
+        is True.
     absolute_timestamps : bool, optional
         Indicator of data collected with absolute timestamps. The
         default is False.
@@ -104,10 +106,13 @@ def _collect_cross_talk(
     Raises
     ------
     TypeError
-        Raised in one of the following cases: pixels is not a list,
-        firmware version is not recognized, rewrite is not boolean,
-        or daughterboard_number is not string.
+        Raised if any of the following conditions are met:
+        - `pixels` is not a list of integers,
+        - `firmware_version` is not recognized,
+        - `rewrite` is not boolean,
+        - `daughterboard_number` is not a string.
     """
+
     # parameter type check
     if isinstance(pixels, list) is False:
         raise TypeError(
@@ -247,10 +252,10 @@ def _collect_cross_talk(
 
 
 def _plot_cross_talk_peaks(
-    path,
-    pixels,
-    step,
-    window: int = 50e3,
+    path: str,
+    pixels: List,
+    multiplier: int,
+    window: float = 50e3,
     senpop: list = None,
     pix_on_left: bool = False,
     feather_file_name: str = "",
@@ -267,15 +272,15 @@ def _plot_cross_talk_peaks(
     Parameters
     ----------
     path : str
-        Path to data files.
+        Path to the folder with the '.dat' data files.
     pixels : list
         List of pixel number to plot cross-talk peaks for. The first
         one is the aggressor pixel.
-    step : int
+    multiplier : int
         Multiplier of the LinoSPAD2 average timing bin of 17.857 ps for
         histograms of the timestamp differences.
-    delta_window : float
-        Window length for the histogram range.
+    window : float
+        Window length for the histogram range. The default is 50e3.
     senpop : list
         List with numbers of timestamps per pixel.
     pix_on_left : bool, optional
@@ -335,12 +340,14 @@ def _plot_cross_talk_peaks(
         counts, bin_edges = np.histogram(
             data_cut,
             bins=(
-                np.arange(np.min(data_cut), np.max(data_cut), step * 17.857)
+                np.arange(
+                    np.min(data_cut), np.max(data_cut), multiplier * 17.857
+                )
             ),
         )
         if len(counts) < 1:
             continue
-        bin_centers = (bin_edges - step * 17.857 / 2)[1:]
+        bin_centers = (bin_edges - multiplier * 17.857 / 2)[1:]
 
         try:
             params, _ = curve_fit(
@@ -429,7 +436,6 @@ def _plot_cross_talk_grid(
     pixels,
     step,
     window: int = 50e3,
-    senpop: list = None,
     pix_on_left: bool = False,
     feather_file_name: str = "",
     show_plots: bool = False,
@@ -448,8 +454,6 @@ def _plot_cross_talk_grid(
         the histograms.
     window : int, optional
         Window size for the histogram range. The default is 50e3.
-    senpop : list, optional
-        List of number of timestamps in each pixel. The default is None.
     pix_on_left : bool, optional
         Indicator that pixels provided are to the left of the aggressor.
         The default is False.
@@ -598,7 +602,7 @@ def collect_dcr_by_file(
     daughterboard_number: str,
     motherboard_number: str,
     firmware_version: str,
-    timestamps: int = 512,
+    timestamps: int = 1000,
 ):
     """Calculate dark count rate in counts per second per pixel.
 
@@ -609,7 +613,7 @@ def collect_dcr_by_file(
     Parameters
     ----------
     path : str
-        Path to datafiles.
+        Path to the folder with the '.dat' data files.
     daughterboard_number : str
         LinoSPAD2 daughterboard number.
     motherboard_number : str
@@ -618,12 +622,7 @@ def collect_dcr_by_file(
         LinoSPAD2 firmware version.
     timestamps : int, optional
         Number of timestamps per acquisition cycle per TDC. The default
-        is 512.
-
-    Returns
-    -------
-    dcr : float
-        The dark count rate number in counts per second.
+        is 1000.
 
     Raises
     ------
@@ -634,6 +633,7 @@ def collect_dcr_by_file(
     TypeError
         Raised if the motherboard number given is not recognized.
     """
+
     # Parameter type check
     if not isinstance(firmware_version, str):
         raise TypeError(
@@ -749,11 +749,7 @@ def plot_dcr_histogram_and_stability(
     Parameters
     ----------
     path : str
-        Path to data files.
-    daughterboard_number : str
-        LinoSPAD2 daughterboard number.
-    motherboard_number : str
-        LinoSPAD2 motherboard (FPGA) number, including the '#'.
+        Path to the folder with '.dat' data files.
     hist_number_of_bins : int, optional
         Number of bins for the DCR histogram. The default is 200.
 
@@ -848,10 +844,10 @@ def plot_dcr_histogram_and_stability(
 
 
 def _calculate_and_plot_cross_talk(
-    path,
-    pixels,
-    step,
-    delta_window,
+    path: str,
+    pixels: List,
+    multiplier: int,
+    delta_window: float,
     senpop,
     pix_on_left: bool = False,
     feather_file_name: str = "",
@@ -868,15 +864,15 @@ def _calculate_and_plot_cross_talk(
     Parameters
     ----------
     path : str
-        Path to data files.
-    pixels : list
+        Path to the folder with the '.dat' data files.
+    pixels : List[int]
         List of lists with pixels numbers. Each list starts with the
         aggressor pixel plus 20 pixels either on the left or right.
-    step : int
+    multiplier : int
         Multiplier of the LinoSPAD2 average timing bin of 17.857 ps for
         histograms of the timestamp differences.
     delta_window : float
-        Window length for the histogram range.
+        Length of the window for the histogram range.
     senpop : list
         List with numbers of timestamps per pixel.
     pix_on_left : bool, optional
@@ -896,6 +892,7 @@ def _calculate_and_plot_cross_talk(
         pixel, where the first dictionary contains cross-talk
         probabilities and the second - the corresponding errors.
     """
+
     ct = []
     ct_err = []
 
@@ -903,7 +900,7 @@ def _calculate_and_plot_cross_talk(
         CT, CT_err = _plot_cross_talk_peaks(
             path,
             pixels=pix,
-            step=step,
+            multiplier=multiplier,
             window=delta_window,
             senpop=senpop,
             pix_on_left=pix_on_left,
@@ -913,7 +910,7 @@ def _calculate_and_plot_cross_talk(
         _plot_cross_talk_grid(
             path,
             pixels=pix,
-            step=step,
+            multiplier=multiplier,
             window=delta_window,
             senpop=senpop,
             pix_on_left=pix_on_left,
@@ -938,12 +935,12 @@ def _plot_cross_talk_vs_distance(
     Parameters
     ----------
     path : str
-        Path to data files.
+        Path to the folder with the '.dat' data files.
     ct : dict
-        Dictionary of cross-talk numbers with distance from the
+        Dictionary of cross-talk probabilities with distance from the
         aggressor as keys.
     ct_err : dict
-        Dictionary of cross-talk errors with distance from the
+        Dictionary of cross-talk error values with distance from the
         aggressor as keys.
     pix_on_left : bool, optional
         Indicator of pixels to the left of the aggressor. The default is False.
@@ -1021,11 +1018,11 @@ def _plot_average_cross_talk_vs_distance(
     Parameters
     ----------
     path : str
-        Path to data files.
+        Path to the folder with the '.dat' data files.
     ct : dict
-        Dictionary of cross-talk numbers for each distance from 1 to 20.
+        Dictionary of cross-talk probabilities for each distance from 1 to 20.
     ct_err : dict
-        Dictionary of cross-talk errors for each distance from 1 to 20.
+        Dictionary of cross-talk error values for each distance from 1 to 20.
     pix_on_left : bool, optional
         Indicator of pixels to the left of the aggressor. The default is False.
 
@@ -1093,8 +1090,8 @@ def _plot_average_cross_talk_vs_distance(
 
 
 def zero_to_cross_talk_collect(
-    path,
-    pixels: List,
+    path: str,
+    pixels: List[int],
     rewrite: bool,
     daughterboard_number: str,
     motherboard_number: str,
@@ -1116,9 +1113,10 @@ def zero_to_cross_talk_collect(
     Parameters
     ----------
     path : str
-        Path to the data files.
+        Path to the folder with the '.dat' data files.
     pixels : list
-        List of hot pixels.
+        List of pixels to use as aggressors. These can be hot pixels
+        or pixels where the signal is focused.
     rewrite : bool
         Switch for rewriting the feather file with timestamp differences.
         Used for conscious start of an hours-long data processing and
@@ -1133,7 +1131,8 @@ def zero_to_cross_talk_collect(
         Number of timestamps per TDC per cycle used during data
         collection.
     include_offset : bool
-        Switch for including the offset calibration.
+        Switch for including the offset calibration. The default is
+        False.
     delta_window : float, optional
         Window size for collecting timestamp differences. The default
         is 50e3.
@@ -1146,6 +1145,7 @@ def zero_to_cross_talk_collect(
         Correct pixel address for the FPGA board on side 23. Here
         used to reverse the correction. The default is False.
     """
+
     print("\n> > > Collecting cross-talk data < < <\n")
 
     # Reverse correction if the motherboard connected to side "23" of the
@@ -1223,8 +1223,8 @@ def zero_to_cross_talk_collect(
 
 
 def zero_to_cross_talk_plot(
-    path,
-    pixels: List,
+    path: str,
+    pixels: List[int],
     delta_window: float = 50e3,
     step: int = 10,
     show_plots: bool = False,
@@ -1244,9 +1244,10 @@ def zero_to_cross_talk_plot(
     Parameters
     ----------
     path : str
-        Path to the data files.
-    pixels : list
-        List of hot pixels for the given half of the LinoSPAD2 sensor.
+        Path to the folder with the '.dat' data files.
+    pixels : List[int]
+        List of pixels to use as aggressors. These can be hot pixels
+        or pixels where the signal is focused.
     delta_window : float, optional
         Window size for histograms of timestamp differences. The default
         is 50e3.

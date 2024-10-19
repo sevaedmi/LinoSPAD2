@@ -34,7 +34,6 @@ functions:
 
 """
 
-import datetime
 import glob
 import os
 import sys
@@ -46,17 +45,15 @@ import pandas as pd
 from scipy.optimize import curve_fit
 from tqdm import tqdm
 
-from LinoSPAD2.functions import utils
-
 
 def calibrate_and_save_TDC_data(
     path: str,
     daughterboard_number: str,
     motherboard_number: str,
     firmware_version: str,
-    timestamps: int = 512,
+    timestamps: int = 1000,
 ):
-    """Calculate and save calibration data for TDC_nonlinearities.
+    """Calculate and save calibration data for TDC nonlinearities.
 
     Function for calculating the calibration matrix and saving it into a
     '.csv' file. The data files used for the calculation should be taken
@@ -69,13 +66,13 @@ def calibrate_and_save_TDC_data(
     daughterboard_number : str
         LinoSPAD2 daughterboard number.
     motherboard_number : str
-        LinoSPAD2 motherboard number.
+        LinoSPAD2 motherboard number, including the "#".
     firmware_version : str
         LinoSPAD2 firmware version. Versions "2208", "2212s" (skip), and
         "2212b" (block) are recognized.
     timestamps : int, optional
         Number of timestamps per acquisition cycle per pixel. The
-        default is 512.
+        default is 1000.
 
     Returns
     -------
@@ -89,12 +86,12 @@ def calibrate_and_save_TDC_data(
 
     Notes
     -----
-    This function calculates the calibration matrix for TDC data and saves
-    it into a '.csv' file. The calibration is performed using data obtained
-    with the sensor uniformly illuminated by ambient light. The resulting
-    calibration matrix is saved with a filename formatted as
-    "TDC_{db}_{mb}_{fw_ver}.csv".
+    The resulting calibration matrix is saved as a '.csv' file, with the
+    filename formatted as "TDC_{db}_{mb}_{fw_ver}.csv", where {db},
+    {mb}, and {fw_ver} represent the daughterboard number, motherboard
+    number, and firmware version, respectively.
     """
+
     # Parameter type check
     if not isinstance(daughterboard_number, str):
         raise TypeError("'daughterboard_number' should be a string.")
@@ -237,7 +234,7 @@ def unpack_data_for_offset_calibration(
     daughterboard_number: str,
     motherboard_number: str,
     firmware_version: str,
-    timestamps: int = 512,
+    timestamps: int = 1000,
 ):
     """Unpack data for offset calibration from LinoSPAD2 firmware version 2212.
 
@@ -259,7 +256,7 @@ def unpack_data_for_offset_calibration(
         LinoSPAD2 firmware version. Either '2212s' or '2212b' are accepted.
     timestamps : int, optional
         Number of timestamps per TDC per acquisition cycle. The default
-        is 512.
+        is 1000.
 
     Raises
     ------
@@ -388,7 +385,7 @@ def save_offset_timestamp_differences(
     daughterboard_number: str,
     motherboard_number: str,
     firmware_version: str,
-    timestamps: int = 512,
+    timestamps: int = 1000,
     delta_window: float = 50e3,
 ):
     """Calculate and save timestamp differences into '.csv' file.
@@ -417,7 +414,7 @@ def save_offset_timestamp_differences(
         (block) are recognized.
     timestamps : int, optional
         Number of timestamps per acquisition cycle per pixel. The default
-        is 512.
+        is 1000.
     delta_window : float, optional
         Size of a window to which timestamp differences are compared.
         Differences in that window are saved. The default is 50e3 (50 ns).
@@ -605,7 +602,7 @@ def calculate_and_save_offset_calibration(
     daughterboard_number: str,
     motherboard_number: str,
     firmware_version: str,
-    timestamps: int = 512,
+    timestamps: int = 1000,
 ):
     """Calculate offset calibration and save as .npy.
 
@@ -623,7 +620,7 @@ def calculate_and_save_offset_calibration(
     firmware_version : str
         LinoSPAD2 firmware version.
     timestamps : int, optional
-        Number of timestamps per cycle per TDC, by default 512.
+        Number of timestamps per cycle per TDC. The default 1000.
     """
 
     def gauss(x, A, x0, sigma):
@@ -764,12 +761,13 @@ def load_calibration_data(
 
     Returns
     -------
-    data_matrix : ndarray
-        Matrix of 256x140 with the calibrated data.
-    offset_arr : array, optional
-        Array of 256 offset compensations for all pixels. Returned only
-        if include_offset is True.
+    data_matrix : numpy.ndarray
+        256x140 matrix containing the calibrated data.
+    offset_arr : numpy.ndarray, optional
+        Array of 256 offset values, one for each pixel. Returned only if
+        include_offset is True.
     """
+
     path_to_backup = os.getcwd()
     os.chdir(calibration_path)
 

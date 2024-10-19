@@ -7,8 +7,8 @@ functions:
     with a Gaussian function and plot a histogram of timestamp
     differences and the fit in a single figure.
 
-    * fit_wg_all - find all peaks above the given threshold and fit
-    them individually with a Gaussian function.
+    * fit_with_gaussian_all - find all peaks above the given threshold 
+    and fit them individually with a Gaussian function.
 
     * fit_with_gaussian_full_sensor - fit timestamp differences of a
     pair of pixels (one from each half of the sensor) with a Gaussian
@@ -20,6 +20,10 @@ functions:
     the standard deviation, mean value, and contrast, together with
     residuals and signal-to-noise ratio (SNR) defined as a ratio of peak
     height to standard deviation of background.
+    
+    * unpickle_fit - unpickle the '.pkl' file, show the plot, and
+    return the plot data for each line found (histogram, fit 1, fit 2, 
+    etc.).
 
 """
 
@@ -62,11 +66,14 @@ def fit_with_gaussian(
     Parameters
     ----------
     path : str
-        Path to the folder with '.dat' datafiles.
+        Path to the folder with '.dat' data files.
     pixels : List[int] | List[List[int]]
         List of pixel numbers for which the timestamp differences should
         be calculated and saved or list of two lists with pixel numbers
         for peak vs. peak calculations.
+    ft_file : str, optional
+        Name of the '.feather' file to use for plotting. Can be used
+        when the raw '.dat' data is not available. The default is None.
     window : float, optional
         Time range in which timestamp differences are fitted. The
         default is 5e3.
@@ -119,6 +126,8 @@ def fit_with_gaussian(
     # Handle the input pixel list
     pixels_left, pixels_right = utils.pixel_list_transform(pixels)
 
+    # If name of the '.feather' file is not provided, get it based on
+    # the '.dat' files in the folder
     if ft_file is not None:
         file_name = ft_file.split(".")[0]
         feather_file_name = ft_file
@@ -307,6 +316,7 @@ def fit_with_gaussian(
 def fit_with_gaussian_all(
     path: str,
     pixels: List[int] | List[List[int]],
+    ft_file: str = None,
     threshold_multiplier: float = 1.2,
     window: float = 5e3,
     multiplier: int = 1,
@@ -326,11 +336,14 @@ def fit_with_gaussian_all(
     Parameters
     ----------
     path : str
-        Path to the folder with '.dat' datafiles.
+        Path to the folder with '.dat' data files.
     pixels : List[int] | List[List[int]]
         List of pixel numbers for which the timestamp differences should
         be calculated and saved or list of two lists with pixel numbers
         for peak vs. peak calculations.
+    ft_file : str, optional
+        Name of the '.feather' file to use for plotting. Can be used
+        when the raw '.dat' data is not available. The default is None.
     threshold_multiplier : float, optional
         Multiplier for the median of the histogram counts. Used for
         setting a threshold for the peak discovery in the histogram.
@@ -384,8 +397,17 @@ def fit_with_gaussian_all(
     # Handle the input pixel list
     pixels_left, pixels_right = utils.pixel_list_transform(pixels)
 
-    files = glob.glob("*.dat*")
+    files = sorted(glob.glob("*.dat*"))
     file_name = files[0][:-4] + "-" + files[-1][:-4]
+
+    # If name of the '.feather' file is not provided, get it based on
+    # the '.dat' files in the folder
+    if ft_file is not None:
+        file_name = ft_file.split(".")[0]
+        feather_file_name = ft_file
+    else:
+        files = sorted(glob.glob("*.dat*"))
+        file_name = files[0][:-4] + "-" + files[-1][:-4]
 
     try:
         os.chdir("delta_ts_data")
@@ -640,7 +662,7 @@ def fit_with_gaussian_full_sensor(
     Parameters
     ----------
     path : str
-        Path to datafiles.
+        Path to the folder with '.dat' data files.
     pix_pair : list
         Two pixel numbers for which fit is done.
     window : float, optional
@@ -907,8 +929,8 @@ def fit_with_gaussian_fancy(
     # Handle the input pixel list
     pixels_left, pixels_right = utils.pixel_list_transform(pixels)
 
-    # If feather file is not given, find out the name of the feather
-    # file based on the data files
+    # If name of the '.feather' file is not provided, get it based on
+    # the '.dat' files in the folder
     if ft_file is None:
         files = sorted(glob.glob("*.dat*"))
         file_name = files[0][:-4] + "-" + files[-1][:-4]

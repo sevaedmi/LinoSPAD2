@@ -22,6 +22,7 @@ from warnings import warn
 
 import numpy as np
 import pandas as pd
+from numpy import ndarray
 
 from LinoSPAD2.functions import utils
 
@@ -114,7 +115,7 @@ def calculate_differences_2212(
 
 
 def calculate_differences_2212_fast(
-    data: List[float],
+    data: ndarray,
     pixels: List[int] | List[List[int]],
     pix_coor,
     delta_window: float = 50e3,
@@ -127,8 +128,8 @@ def calculate_differences_2212_fast(
 
     Parameters
     ----------
-    data : list of array-like
-        List of data arrays, each corresponding to a different TDC.
+    data : ndarray
+        Matrix of timestamps, where rows correspond to the TDCs.
     pixels : List[int] | List[List[int]]
         List of pixel numbers for which the timestamp differences should
         be calculated or list of two lists with pixel numbers for peak

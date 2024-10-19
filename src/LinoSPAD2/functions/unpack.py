@@ -204,7 +204,7 @@ def unpack_binary_data_with_absolute_timestamps(
     timestamps: int = 512,
     include_offset: bool = False,
     apply_calibration: bool = True,
-):
+) -> np.ndarray:
     """Unpacks binary-encoded data from LinoSPAD2 firmware version 2212
     with absolute timestamps.
 

@@ -62,7 +62,7 @@ from LinoSPAD2.functions import unpack as f_up
 from LinoSPAD2.functions import utils
 
 
-def _flatten(input_list: List[int]):
+def _flatten(input_list: List):
     """Flatten the input list.
 
     Flatten the input list, which can be a list of numbers, lists,
@@ -71,9 +71,9 @@ def _flatten(input_list: List[int]):
 
     Parameters
     ----------
-    lst : lsit
-        Input list of numbers, lists of numbers, of a combination of the
-        two.
+    input_list : List
+        Input list that can contain numbers, lists of numbers, or a
+        combination of both.
 
     Returns
     -------
@@ -113,7 +113,7 @@ def calculate_and_save_timestamp_differences(
     Parameters
     ----------
     path : str
-        Path to the folder with the '.dat' data files.
+        Path to the folder with '.dat' data files.
     pixels : List[int] | List[List[int]]
         List of pixel numbers for which the timestamp differences should
         be calculated and saved or list of two lists with pixel numbers
@@ -375,7 +375,7 @@ def calculate_and_save_timestamp_differences_fast(
     Parameters
     ----------
     path : str
-        Path to the folder with the '.dat' data files.
+        Path to the folder with '.dat' data files.
     pixels : List[int] | List[List[int]]
         List of pixel numbers for which the timestamp differences should
         be calculated and saved or list of two lists with pixel numbers
@@ -1349,7 +1349,7 @@ def collect_and_plot_timestamp_differences(
     Parameters
     ----------
     path : str
-        Path to the folder with the '.dat' data files.
+        Path to the folder with '.dat' data files.
     pixels : list
         List of pixel numbers for which the timestamp differences
         should be plotted.
@@ -1827,7 +1827,7 @@ def collect_and_plot_timestamp_differences_full_sensor(
     Parameters
     ----------
     path : str
-        Path to the folder with the '.dat' data files.
+        Path to the folder with '.dat' data files.
     pixels : list
         List of pixel numbers for which the timestamp differences
         should be plotted.
