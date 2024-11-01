@@ -17,7 +17,7 @@ import os
 
 import numpy as np
 
-from LinoSPAD2.functions.calibrate import load_calibration_data
+from src.LinoSPAD2.functions.calibrate import load_calibration_data
 
 
 def unpack_binary_data(

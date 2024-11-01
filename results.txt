@@ -1,0 +1,16 @@
+Tested on 10 input .dat files:
+    Initial parallel state: 13.2564537525177 s
+    Initial parallel state, but with specified number of cpu`s: 12.635688781738281 s
+    Initial parallel state, but with specified number of processes as num_cpu*2: 13.651849746704102 s
+    Initial parallel state, but with maxtaskperchild = None: 12.583305835723877 s
+    Initial parallel state, but with maxtaskperchild = 1000: 12.663771390914917 s
+    Initial parallel state, but with chunksize = 1: 4.844597578048706 s
+    Separate parallel state, each process writes to its own file (based on the input file name): 4.033803462982178 s
+
+Tested on 1000 input .dat files:
+    Separate parallel state, each process writes to its own file (based on the input file name)
+        cpu_count=10
+        chunksize=100
+        maxtaskperchild=None
+        time: cca 230 s VS cca 1000 s for the sequential version (VS cca 230 s for the initial parallel state...)
+

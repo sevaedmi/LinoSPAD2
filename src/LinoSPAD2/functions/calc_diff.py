@@ -24,7 +24,7 @@ import numpy as np
 import pandas as pd
 from numpy import ndarray
 
-from LinoSPAD2.functions import utils
+from src.LinoSPAD2.functions import utils
 
 
 def calculate_differences_2212(

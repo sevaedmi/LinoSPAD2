@@ -57,9 +57,9 @@ from matplotlib import pyplot as plt
 from pyarrow import feather as ft
 from tqdm import tqdm
 
-from LinoSPAD2.functions import calc_diff as cd
-from LinoSPAD2.functions import unpack as f_up
-from LinoSPAD2.functions import utils
+from src.LinoSPAD2.functions import calc_diff as cd
+from src.LinoSPAD2.functions import unpack as f_up
+from src.LinoSPAD2.functions import utils
 
 
 def _flatten(input_list: List):
