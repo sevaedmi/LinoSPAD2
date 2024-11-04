@@ -1,6 +1,7 @@
 import functools
 import glob
 import multiprocessing
+import concurrent.futures
 import os
 import sys
 from dataclasses import dataclass
@@ -31,28 +32,7 @@ class DataParamsConfig:
     apply_calibration: bool = True
     absolute_timestamps: bool = False
 
-
-def _calculate_timestamps_differences(file: str, data_params: DataParamsConfig, path: str, write_to_files: bool):
-    # Process the pixel coordinates based on firmware version
-    if data_params.firmware_version == "2212s":
-        pix_coor = np.arange(256).reshape(4, 64).T
-    elif data_params.firmware_version == "2212b":
-        pix_coor = np.arange(256).reshape(64, 4)
-    else:
-        print("\nFirmware version is not recognized.")
-        sys.exit()
-
-    # Apply mask if necessary
-    if data_params.app_mask:
-        mask = utils.apply_mask(
-            data_params.daughterboard_number, data_params.motherboard_number
-        )
-        if isinstance(data_params.pixels[0], int) and isinstance(data_params.pixels[1], int):
-            pixels = [pix for pix in data_params.pixels if pix not in mask]
-        else:
-            pixels = [pix for pix in data_params.pixels[0] if pix not in mask]
-            pixels.extend(pix for pix in data_params.pixels[1] if pix not in mask)
-
+def _calculate_timestamps_differences(file, data_params, path, write_to_files, pix_coor, pixels):
     # Unpack the binary data from the file
     data_all = f_up.unpack_binary_data(
         file,
@@ -79,7 +59,6 @@ def _calculate_timestamps_differences(file: str, data_params: DataParamsConfig, 
         data_for_plot_df.reset_index(drop=True, inplace=True)
         ft.write_feather(data_for_plot_df, output_file)
 
-
 def calculate_and_save_timestamp_differences_mp(
         path: str,
         pixels: list,
@@ -92,17 +71,27 @@ def calculate_and_save_timestamp_differences_mp(
         app_mask: bool = True,
         include_offset: bool = True,
         apply_calibration: bool = True,
-        chunksize: int = 1,
-        number_of_cores: int = 1,
+        chunksize: int = 6,
+        number_of_cores: int = 7,
         maxtasksperchild: int = None,
         write_to_files: bool = True,
 ):
+
     # Parameter type checks
     if not isinstance(pixels, list): raise TypeError("'pixels' should be a list of integers or a list of two lists")
     if not isinstance(firmware_version, str): raise TypeError(
         "'firmware_version' should be string, '2212s', '2212b' or '2208'")
     if not isinstance(rewrite, bool): raise TypeError("'rewrite' should be boolean")
     if not isinstance(daughterboard_number, str): raise TypeError("'daughterboard_number' should be string")
+
+    # Set up pixel coordinates outside the loop based on firmware version
+    if firmware_version == "2212s":
+        pix_coor = np.arange(256).reshape(4, 64).T
+    elif firmware_version == "2212b":
+        pix_coor = np.arange(256).reshape(64, 4)
+    else:
+        print("\nFirmware version is not recognized.")
+        sys.exit()
 
     # Generate a dataclass object
     data_params = DataParamsConfig(
@@ -118,6 +107,15 @@ def calculate_and_save_timestamp_differences_mp(
         absolute_timestamps=True,
     )
 
+    # Apply mask if necessary
+    if data_params.app_mask:
+        mask = utils.apply_mask(data_params.daughterboard_number, data_params.motherboard_number)
+        if isinstance(data_params.pixels[0], int) and isinstance(data_params.pixels[1], int):
+            pixels = [pix for pix in data_params.pixels if pix not in mask]
+        else:
+            pixels = [pix for pix in data_params.pixels[0] if pix not in mask]
+            pixels.extend(pix for pix in data_params.pixels[1] if pix not in mask)
+
     os.chdir(path)
 
     # Find all LinoSPAD2 data files
@@ -128,14 +126,25 @@ def calculate_and_save_timestamp_differences_mp(
 
     start_time = time.time()
 
-    # Create a pool of processes, each one will write to its own file if write_to_files is True
-    with multiprocessing.Pool(processes=number_of_cores, maxtasksperchild=maxtasksperchild) as pool:
-        # Create a partial function with fixed arguments for process_file
-        partial_process_file = functools.partial(_calculate_timestamps_differences, path=output_directory,
-                                                 data_params=data_params, write_to_files=write_to_files)
+    ## Create a pool of processes, each one will write to its own file if write_to_files is True
+    #with multiprocessing.Pool(processes=number_of_cores, maxtasksperchild=maxtasksperchild) as pool:
+    #    # Create a partial function with fixed arguments for process_file
+    #    partial_process_file = functools.partial(_calculate_timestamps_differences, path=output_directory,
+    #                                             data_params=data_params, write_to_files=write_to_files,
+    #                                             pix_coor=pix_coor, pixels=pixels)
+    #
+    #    # Start the multicore analysis of the files
+    #    pool.map(partial_process_file, files, chunksize=chunksize)
 
-        # Start the multicore analysis of the files
-        pool.map(partial_process_file, files, chunksize=chunksize)
+    # create pool of threads, each one will write to its own file
+    with concurrent.futures.ThreadPoolExecutor(max_workers=number_of_cores) as executor:
+        # create a partial function with fixed arguments for process_file
+        partial_process_file = functools.partial(_calculate_timestamps_differences, path=output_directory,
+                                                 data_params=data_params, write_to_files=write_to_files,
+                                                 pix_coor=pix_coor, pixels=pixels)
+
+        # start the multicore analysis of the files
+        executor.map(partial_process_file, files, chunksize=chunksize)
 
     end_time = time.time()
 
@@ -144,3 +153,4 @@ def calculate_and_save_timestamp_differences_mp(
     else:
         output_string = f"Parallel processing of {len(files)} files (without writing any results) finished in: {round(end_time - start_time, 2)} s"
     print(output_string)
+

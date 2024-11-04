@@ -29,47 +29,6 @@ def unpack_binary_data(
     include_offset: bool = False,
     apply_calibration: bool = True,
 ) -> np.ndarray:
-    """Unpacks binary-encoded data from LinoSPAD2 firmware version 2212.
-
-    Parameters
-    ----------
-    file : str
-        Path to the binary data file.
-    daughterboard_number : str
-        LinoSPAD2 daughterboard number.
-    motherboard_number : str
-        LinoSPAD2 motherboard (FPGA) number, including the "#".
-    firmware_version : str
-        LinoSPAD2 firmware version. Either '2212s' (skip) or '2212b' (block).
-    timestamps : int, optional
-        Number of timestamps per cycle per TDC per acquisition cycle.
-        The default is 512.
-    include_offset : bool, optional
-        Switch for applying offset calibration. The default is True.
-    apply_calibration : bool, optional
-        Switch for applying TDC and offset calibration. If set to 'True'
-        while include_offset is set to 'False', only the TDC
-        calibration is applied. The default is True.
-
-    Returns
-    -------
-    data_all : array-like
-        3D array of pixel coordinates in the TDC and the timestamps.
-
-    Raises
-    ------
-    TypeError
-        If 'daughterboard_number', 'motherboard_number', or 'firmware_version'
-        parameters are not of string type.
-    FileNotFoundError
-        If no calibration data file is found.
-
-    Notes
-    -----
-    The returned data is a 3D array where rows represent TDC numbers,
-    columns represent the data, and each cell contains a pixel number in
-    the TDC (from 0 to 3) and the timestamp recorded by that pixel.
-    """
     # Parameter type check
     if not isinstance(daughterboard_number, str):
         raise TypeError("'daughterboard_number' should be a string.")

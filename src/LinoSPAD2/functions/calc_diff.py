@@ -121,35 +121,6 @@ def calculate_differences_2212_fast(
     delta_window: float = 50e3,
     cycle_length: float = 4e9,
 ):
-    """Calculate timestamp differences for firmware version 2212.
-
-    Calculate timestamp differences for the given pixels and LinoSPAD2
-    firmware version 2212.
-
-    Parameters
-    ----------
-    data : ndarray
-        Matrix of timestamps, where rows correspond to the TDCs.
-    pixels : List[int] | List[List[int]]
-        List of pixel numbers for which the timestamp differences should
-        be calculated or list of two lists with pixel numbers for peak
-        vs. peak calculations.
-    pix_coor : array-like
-        Array for transforming the pixel address in terms of TDC (0 to 3)
-        to pixel number in terms of half of the sensor (0 to 255).
-    delta_window : float, optional
-        Width of the time window for counting timestamp differences.
-        The default is 50e3 (50 ns).
-    cycle_length : float, optional
-        Length of each acquisition cycle. The default is 4e9 (4 ms).
-
-    Returns
-    -------
-    deltas_all : dict
-        Dictionary containing timestamp differences for each pair of pixels.
-
-    """
-
     # Dictionary for the timestamp differences, where keys are the
     # pixel numbers of the requested pairs
     deltas_all = {}
