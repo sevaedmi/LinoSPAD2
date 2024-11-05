@@ -21,13 +21,13 @@ from src.LinoSPAD2.functions.calibrate import load_calibration_data
 
 
 def unpack_binary_data(
-    file: str,
-    daughterboard_number: str,
-    motherboard_number: str,
-    firmware_version: str,
-    timestamps: int = 512,
-    include_offset: bool = False,
-    apply_calibration: bool = True,
+        file: str,
+        daughterboard_number: str,
+        motherboard_number: str,
+        firmware_version: str,
+        timestamps: int = 512,
+        include_offset: bool = False,
+        apply_calibration: bool = True,
 ) -> np.ndarray:
     # Parameter type check
     if not isinstance(daughterboard_number, str):
@@ -143,26 +143,26 @@ def unpack_binary_data(
             # calculated
             if include_offset:
                 data_all[tdc].T[1][ind] = (
-                    (data_cut - data_cut % 140) * 2500 / 140
-                    + calibration_matrix[i, (data_cut % 140)]
-                    + offset_array[i]
+                        (data_cut - data_cut % 140) * 2500 / 140
+                        + calibration_matrix[i, (data_cut % 140)]
+                        + offset_array[i]
                 )
             else:
                 data_all[tdc].T[1][ind] = (
-                    data_cut - data_cut % 140
-                ) * 2500 / 140 + calibration_matrix[i, (data_cut % 140)]
+                                                  data_cut - data_cut % 140
+                                          ) * 2500 / 140 + calibration_matrix[i, (data_cut % 140)]
 
     return data_all
 
 
 def unpack_binary_data_with_absolute_timestamps(
-    file_path: str,
-    daughterboard_number: str,
-    motherboard_number: str,
-    firmware_version: str,
-    timestamps: int = 512,
-    include_offset: bool = False,
-    apply_calibration: bool = True,
+        file_path: str,
+        daughterboard_number: str,
+        motherboard_number: str,
+        firmware_version: str,
+        timestamps: int = 512,
+        include_offset: bool = False,
+        apply_calibration: bool = True,
 ) -> np.ndarray:
     """Unpacks binary-encoded data from LinoSPAD2 firmware version 2212
     with absolute timestamps.
@@ -243,9 +243,9 @@ def unpack_binary_data_with_absolute_timestamps(
             [
                 x
                 for x in range(
-                    cyc * (65 * timestamps + 2),
-                    cyc * (65 * timestamps + 2) + 2,
-                )
+                cyc * (65 * timestamps + 2),
+                cyc * (65 * timestamps + 2) + 2,
+            )
             ]
         )
 
@@ -361,13 +361,13 @@ def unpack_binary_data_with_absolute_timestamps(
             # calculated
             if include_offset:
                 data_all[tdc].T[1][ind] = (
-                    (data_cut - data_cut % 140) * 2500 / 140
-                    + calibration_matrix[i, (data_cut % 140)]
-                    + offset_array[i]
+                        (data_cut - data_cut % 140) * 2500 / 140
+                        + calibration_matrix[i, (data_cut % 140)]
+                        + offset_array[i]
                 )
             else:
                 data_all[tdc].T[1][ind] = (
-                    data_cut - data_cut % 140
-                ) * 2500 / 140 + calibration_matrix[i, (data_cut % 140)]
+                                                  data_cut - data_cut % 140
+                                          ) * 2500 / 140 + calibration_matrix[i, (data_cut % 140)]
 
     return data_all, absolute_timestamps
