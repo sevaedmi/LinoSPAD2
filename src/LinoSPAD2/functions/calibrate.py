@@ -743,65 +743,17 @@ def load_calibration_data(
     firmware_version: str,
     include_offset: bool = False,
 ):
-    """Load the calibration data.
-
-    Parameters
-    ----------
-    calibration_path : str
-        Path to the '.csv' file with the calibration matrix.
-    daughterboard_number: str
-        The LinoSPAD2 daughterboard number.
-    motherboard_number : str
-        LinoSPAD2 motherboard (FPGA) number, including the "#".
-    firmware_version: str
-        LinoSPAD2 firmware version.
-    include_offset : bool, optional
-        Switch for including the offset calibration. The default is
-        True.
-
-    Returns
-    -------
-    data_matrix : numpy.ndarray
-        256x140 matrix containing the calibrated data.
-    offset_arr : numpy.ndarray, optional
-        Array of 256 offset values, one for each pixel. Returned only if
-        include_offset is True.
-    """
-
     path_to_backup = os.getcwd()
     os.chdir(calibration_path)
 
-    # Compensating for TDC nonlinearities
-    try:
-        file_TDC = glob.glob(
-            f"*TDC_{daughterboard_number}_{motherboard_number}"
-            f"_{firmware_version}*"
-        )[0]
-    except IndexError as exc:
-        raise FileNotFoundError(
-            f"TDC calibration for {daughterboard_number}, "
-            f"{motherboard_number}, and {firmware_version} is not found"
-        ) from exc
-
-    # Compensating for offset
+    file_TDC = glob.glob(f"*TDC_{daughterboard_number}_{motherboard_number}"f"_{firmware_version}*")[0]
+    offset_arr = None
     if include_offset:
-        try:
-            file_offset = glob.glob(
-                f"*Offset_{daughterboard_number}_{motherboard_number}"
-                f"_{firmware_version}*"
-            )[0]
-        except IndexError:
-            raise FileNotFoundError(
-                "No .npy file with offset calibration data was found"
-            )
+        file_offset = glob.glob(f"*Offset_{daughterboard_number}_{motherboard_number}"f"_{firmware_version}*")[0]
         offset_arr = np.load(file_offset)
 
-    # Skipping the first row of TDC bins' numbers
     data_matrix_TDC = np.genfromtxt(file_TDC, delimiter=",", skip_header=1)
-
-    # Cut the first column which is pixel numbers
     data_matrix_TDC = np.delete(data_matrix_TDC, 0, axis=1)
 
     os.chdir(path_to_backup)
-
-    return (data_matrix_TDC, offset_arr) if include_offset else data_matrix_TDC
+    return data_matrix_TDC, offset_arr

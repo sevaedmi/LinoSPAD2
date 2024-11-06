@@ -4,6 +4,10 @@ import pandas as pd
 from src.LinoSPAD2.functions import delta_t, mp_analysis
 from pathlib import Path
 
+import cProfile
+import pstats
+import io
+
 
 def sequential():
     # Get the current script directory
@@ -40,7 +44,7 @@ def parallel(writing_to_files: bool):
         firmware_version="2212b",
         timestamps=300,
         include_offset=False,
-        number_of_cores=5,
+        number_of_cores=10,
         write_to_files=writing_to_files,
     )
 
@@ -89,7 +93,7 @@ def delete_results():
 
 
 if __name__ == "__main__":
-    ##delete_results()
+    #delete_results()
     #sequential()
     #merge_files()
     #delete_results()
@@ -99,6 +103,16 @@ if __name__ == "__main__":
     # delete_results()
 
     delete_results()
+
+    pr = cProfile.Profile()
+    pr.enable()
     parallel(True)
-    merge_files()
+    #merge_files()
+
+    pr.disable()
+    s = io.StringIO()
+    sortby = 'cumulative'
+    ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
+    ps.print_stats(10)
+    print(s.getvalue())
     delete_results()

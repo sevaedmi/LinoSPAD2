@@ -19,6 +19,7 @@ from src.LinoSPAD2.functions import calc_diff as cd
 from src.LinoSPAD2.functions import unpack as f_up
 from src.LinoSPAD2.functions import utils
 from src.LinoSPAD2.functions.utils import pixel_list_transform
+from src.LinoSPAD2.functions.calibrate import load_calibration_data
 
 
 @dataclass
@@ -34,17 +35,16 @@ class DataParamsConfig:
     delta_window: float = 50e3
     app_mask: bool = True
     include_offset: bool = True
-    apply_calibration: bool = False
+    apply_calibration: bool = True
     absolute_timestamps: bool = False
 
 
-def _calculate_timestamps_differences(file, data_params, path, write_to_files, pix_coor, pixels):
+def _calculate_timestamps_differences(file, data_params, path, write_to_files, pix_coor, pixels, calibration_matrix, offset_array):
     # Unpack the binary data from the file
     data_all = f_up.unpack_binary_data(
         file,
-        data_params.daughterboard_number,
-        data_params.motherboard_number,
-        data_params.firmware_version,
+        calibration_matrix,
+        offset_array,
         data_params.timestamps,
         data_params.include_offset,
         data_params.apply_calibration,
@@ -54,11 +54,12 @@ def _calculate_timestamps_differences(file, data_params, path, write_to_files, p
     deltas_all = cd.calculate_differences_2212_fast(data_all, pixels, pix_coor)
     # Convert the result to a DataFrame
     data_for_plot_df = pd.DataFrame.from_dict(deltas_all, orient="index").T
-    if write_to_files:
-        output_file = os.path.join(path, file.replace('.dat', '.feather'))
-        # Write the results directly to a unique Feather file
-        data_for_plot_df.reset_index(drop=True, inplace=True)
-        ft.write_feather(data_for_plot_df, output_file)
+
+    #if write_to_files:
+    #    output_file = os.path.join(path, file.replace('.dat', '.feather'))
+    #    # Write the results directly to a unique Feather file
+    #    data_for_plot_df.reset_index(drop=True, inplace=True)
+    #    ft.write_feather(data_for_plot_df, output_file)
 
 
 def calculate_and_save_timestamp_differences_mp(
@@ -72,20 +73,12 @@ def calculate_and_save_timestamp_differences_mp(
         delta_window: float = 50e3,
         app_mask: bool = True,
         include_offset: bool = True,
-        apply_calibration: bool = False,
-        chunksize: int = 50,
-        number_of_cores: int = 4,
+        apply_calibration: bool = True,
+        chunksize: int = 100,
+        number_of_cores: int = 10,
         maxtasksperchild: int = None,
         write_to_files: bool = True,
 ):
-    # Parameter type checks
-    if not isinstance(pixels, list): raise TypeError("'pixels' should be a list of integers or a list of two lists")
-    if not isinstance(firmware_version, str): raise TypeError(
-        "'firmware_version' should be string, '2212s', '2212b' or '2208'")
-    if not isinstance(rewrite, bool): raise TypeError("'rewrite' should be boolean")
-    if not isinstance(daughterboard_number, str): raise TypeError("'daughterboard_number' should be string")
-
-    # Set up pixel coordinates outside the loop based on firmware version
     if firmware_version == "2212s":
         pix_coor = np.arange(256).reshape(4, 64).T
     elif firmware_version == "2212b":
@@ -107,6 +100,17 @@ def calculate_and_save_timestamp_differences_mp(
         apply_calibration=apply_calibration,
         absolute_timestamps=True,
     )
+
+    # load calibration data if necessary
+    if data_params.apply_calibration:
+        path_calibration_data = os.path.join(os.path.dirname(os.path.realpath(__file__)),"..","params","calibration_data",)
+        calibration_matrix, offset_array = load_calibration_data(
+            path_calibration_data,
+            daughterboard_number,
+            motherboard_number,
+            firmware_version,
+            include_offset,
+        )
 
     # Apply mask if necessary
     if data_params.app_mask:
@@ -131,7 +135,7 @@ def calculate_and_save_timestamp_differences_mp(
         # Create a partial function with fixed arguments for process_file
         partial_process_file = functools.partial(_calculate_timestamps_differences, path=output_directory,
                                                  data_params=data_params, write_to_files=write_to_files,
-                                                 pix_coor=pix_coor, pixels=pixels)
+                                                 pix_coor=pix_coor, pixels=pixels, calibration_matrix=calibration_matrix, offset_array=offset_array)
 
         # Start the multicore analysis of the files
         pool.map(partial_process_file, files, chunksize=chunksize)
