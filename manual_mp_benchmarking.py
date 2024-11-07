@@ -1,7 +1,11 @@
+import glob
 import os
 import time
+from os import cpu_count
+
+import numpy as np
 import pandas as pd
-from src.LinoSPAD2.functions import delta_t, mp_analysis
+from src.LinoSPAD2.functions import delta_t, mp_analysis, manual_mp_analysis
 from pathlib import Path
 
 import cProfile
@@ -29,23 +33,31 @@ def sequential():
     print(f"{finish - start} s")
 
 
-def parallel(writing_to_files, num_of_cores, chunksize):
+def parallel(writing_to_files, num_of_cores):
     # Get the current script directory
     current_directory = Path(__file__).parent
     # Define the path to the 'raw_data' directory
     path = str(current_directory / 'raw_data')
 
-    mp_analysis.calculate_and_save_timestamp_differences_mp(
-        path,
+    # Find all .dat files in the specified path
+    files = glob.glob(os.path.join(path, "*.dat*"))
+    num_of_files = len(files)
+    # Divide the files into sublists for each process, number of sublists = number of cores
+    files = np.array_split(files, num_of_cores)
+
+    output_directory = os.path.join(path, "delta_ts_data")
+
+    manual_mp_analysis.calculate_and_save_timestamp_differences_mp(
+        num_of_files,
+        files,
+        output_directory,
         pixels=[144, 171],
-        rewrite=True,
         daughterboard_number="NL11",
         motherboard_number="#33",
         firmware_version="2212b",
         timestamps=300,
         include_offset=False,
         number_of_cores=num_of_cores,
-        chunksize=chunksize,
         write_to_files=writing_to_files,
     )
 
@@ -103,7 +115,7 @@ if __name__ == "__main__":
 
     pr = cProfile.Profile()
     pr.enable()
-    parallel(True, 4, 5)
+    parallel(True, 4)
     merge_files()
 
     pr.disable()
@@ -114,5 +126,5 @@ if __name__ == "__main__":
     print(s.getvalue())
     delete_results()
 
-    # 800 files in 670 s, 7 core, chunksize 50
+    # Manually done with 7 cores = 630 s
     # 800 files in 960 s, sequential

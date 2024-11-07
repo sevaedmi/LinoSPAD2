@@ -28,10 +28,10 @@ from src.LinoSPAD2.functions import utils
 
 
 def calculate_differences_2212(
-    data: List[float],
-    pixels: List[int] | List[List[int]],
-    pix_coor,
-    delta_window: float = 50e3,
+        data: List[float],
+        pixels: List[int] | List[List[int]],
+        pix_coor,
+        delta_window: float = 50e3,
 ):
     """Calculate timestamp differences for firmware version 2212.
 
@@ -115,11 +115,11 @@ def calculate_differences_2212(
 
 
 def calculate_differences_2212_fast(
-    data: ndarray,
-    pixels: List[int] | List[List[int]],
-    pix_coor,
-    delta_window: float = 50e3,
-    cycle_length: float = 4e9,
+        data: ndarray,
+        pixels: List[int] | List[List[int]],
+        pix_coor,
+        delta_window: float = 50e3,
+        cycle_length: float = 4e9,
 ):
     # Dictionary for the timestamp differences, where keys are the
     # pixel numbers of the requested pairs
@@ -185,12 +185,8 @@ def calculate_differences_2212_fast(
 
             # Dataframe for each pixel with pixel indicator and
             # timestamps
-            df1 = pd.DataFrame(
-                pix1_data.T, columns=["Pixel_index", "Timestamp"]
-            )
-            df2 = pd.DataFrame(
-                pix2_data.T, columns=["Pixel_index", "Timestamp"]
-            )
+            df1 = pd.DataFrame(pix1_data.T, columns=["Pixel_index", "Timestamp"])
+            df2 = pd.DataFrame(pix2_data.T, columns=["Pixel_index", "Timestamp"])
 
             # Combine the two dataframes
             df_combined = pd.concat((df1, df2), ignore_index=True)
@@ -207,20 +203,14 @@ def calculate_differences_2212_fast(
             df_combined["Timestamp_diff"] = df_combined["Timestamp"].diff()
 
             # Get the correct timestamp difference sign
-            df_combined["Timestamp_diff"] = (
-                df_combined["Timestamp_diff"] * df_combined["Pixel_index_diff"]
-            )
+            df_combined["Timestamp_diff"] = (df_combined["Timestamp_diff"] * df_combined["Pixel_index_diff"])
 
             # Collect timestamp differences where timestamps are from
             # different pixels
-            filtered_df = df_combined[
-                abs(df_combined["Pixel_index_diff"]) == 1
-            ]
+            filtered_df = df_combined[abs(df_combined["Pixel_index_diff"]) == 1]
 
             # Save only timestamps differences in the requested window
-            delta_ts = filtered_df[
-                abs(filtered_df["Timestamp_diff"]) < delta_window
-            ]["Timestamp_diff"].values
+            delta_ts = filtered_df[abs(filtered_df["Timestamp_diff"]) < delta_window]["Timestamp_diff"].values
 
             deltas_all[f"{q},{w}"].extend(delta_ts)
 
