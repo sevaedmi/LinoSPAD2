@@ -37,7 +37,7 @@ def parallel(writing_to_files, num_of_cores):
     # Get the current script directory
     current_directory = Path(__file__).parent
     # Define the path to the 'raw_data' directory
-    path = str(current_directory / 'raw_data')
+    path = str(current_directory / 'tmp_raw_data')
 
     # Find all .dat files in the specified path
     files = glob.glob(os.path.join(path, "*.dat*"))
@@ -106,25 +106,15 @@ def delete_results():
 
 
 if __name__ == "__main__":
-    #delete_results()
-    #sequential()
+    delete_results()
+    sequential()
     #merge_files()
     #delete_results()
 
-    delete_results()
-
-    pr = cProfile.Profile()
-    pr.enable()
-    parallel(True, 4)
-    merge_files()
-
-    pr.disable()
-    s = io.StringIO()
-    sortby = 'cumtime'
-    ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
-    ps.print_stats(10)
-    print(s.getvalue())
-    delete_results()
+    #delete_results()
+    #parallel(True, 10)
+    #merge_files()
+    #delete_results()
 
     # Manually done with 7 cores = 630 s
     # 800 files in 960 s, sequential

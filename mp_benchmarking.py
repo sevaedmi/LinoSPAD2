@@ -13,7 +13,7 @@ def sequential():
     # Get the current script directory
     current_directory = Path(__file__).parent
     # Define the path to the 'raw_data' directory
-    path = str(current_directory / 'raw_data')
+    path = str(current_directory / 'tmp_raw_data')
     start = time.time()
     delta_t.calculate_and_save_timestamp_differences_fast(
         path,
@@ -54,7 +54,7 @@ def merge_files():
     # Get the current script directory
     current_directory = Path(__file__).parent
     # Define the path to the 'raw_data' directory
-    path = str(current_directory / 'raw_data' / 'delta_ts_data')
+    path = str(current_directory / 'tmp_raw_data' / 'delta_ts_data')
 
     # Find all .feather files in the directory
     feather_files = [path + '/' + f for f in os.listdir(path) if f.endswith('.feather')]
@@ -81,7 +81,7 @@ def delete_results():
     # Get the current script directory
     current_directory = Path(__file__).parent
     # Define the path to the 'raw_data' directory
-    path = str(current_directory / 'raw_data' / 'delta_ts_data')
+    path = str(current_directory / 'tmp_raw_data' / 'delta_ts_data')
 
     # Find all .feather files in the directory
     feather_files = [path + '/' + f for f in os.listdir(path) if f.endswith('.feather')]
@@ -94,25 +94,25 @@ def delete_results():
 
 
 if __name__ == "__main__":
-    #delete_results()
-    #sequential()
-    #merge_files()
-    #delete_results()
-
     delete_results()
-
-    pr = cProfile.Profile()
-    pr.enable()
-    parallel(True, 4, 5)
+    sequential()
     merge_files()
-
-    pr.disable()
-    s = io.StringIO()
-    sortby = 'cumtime'
-    ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
-    ps.print_stats(10)
-    print(s.getvalue())
     delete_results()
+
+    #delete_results()
+
+    #pr = cProfile.Profile()
+    #pr.enable()
+    #parallel(True, 4, 5)
+    #merge_files()
+
+    #pr.disable()
+    #s = io.StringIO()
+    #sortby = 'cumtime'
+    #ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
+    #ps.print_stats(10)
+    #print(s.getvalue())
+    #delete_results()
 
     # 800 files in 670 s, 7 core, chunksize 50
     # 800 files in 960 s, sequential

@@ -50,14 +50,21 @@ def _calculate_timestamps_differences(files, data_params, path, write_to_files, 
         data_for_plot_df = pd.DataFrame.from_dict(deltas_all, orient="index").T
 
         if write_to_files:
-            file_name = file.split('/')[-1]
-            output_file = "/home/dmitrij/FJFI/LinoSPAD2/raw_data/delta_ts_data/" + str(file_name.replace('.dat', '.feather'))
+            file_name = os.path.basename(file)
+            output_file = os.path.join(path, str(file_name.replace('.dat', '.feather')))
             data_for_plot_df.reset_index(drop=True, inplace=True)
             ft.write_feather(data_for_plot_df, output_file)
 
 
 def calculate_and_save_timestamp_differences_mp(
-        num_of_files, files,output_directory,pixels,daughterboard_number,motherboard_number,firmware_version,timestamps,
+        num_of_files,
+        files,
+        output_directory,
+        pixels,
+        daughterboard_number,
+        motherboard_number,
+        firmware_version,
+        timestamps,
         delta_window: float = 50e3,
         app_mask: bool = True,
         include_offset: bool = True,
