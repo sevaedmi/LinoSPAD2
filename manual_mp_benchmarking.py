@@ -106,15 +106,15 @@ def delete_results():
 
 
 if __name__ == "__main__":
+    #delete_results()
+    #sequential()
+    #merge_files()
+    #delete_results()
+
     delete_results()
-    sequential()
+    parallel(False, 7)
     #merge_files()
-    #delete_results()
+    delete_results()
 
-    #delete_results()
-    #parallel(True, 10)
-    #merge_files()
-    #delete_results()
-
-    # Manually done with 7 cores = 630 s
+    # Manually done with 7 cores 800 files = 630 s
     # 800 files in 960 s, sequential

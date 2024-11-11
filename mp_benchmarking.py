@@ -33,7 +33,7 @@ def parallel(writing_to_files, num_of_cores, chunksize):
     # Get the current script directory
     current_directory = Path(__file__).parent
     # Define the path to the 'raw_data' directory
-    path = str(current_directory / 'raw_data')
+    path = str(current_directory / 'tmp_raw_data')
 
     mp_analysis.calculate_and_save_timestamp_differences_mp(
         path,
@@ -103,7 +103,7 @@ if __name__ == "__main__":
 
     #pr = cProfile.Profile()
     #pr.enable()
-    #parallel(True, 4, 5)
+    parallel(False, 7, 30)
     #merge_files()
 
     #pr.disable()
@@ -116,3 +116,6 @@ if __name__ == "__main__":
 
     # 800 files in 670 s, 7 core, chunksize 50
     # 800 files in 960 s, sequential
+
+    # 200 files 7 cores, chunksize 30 = 160 s
+    # 200 files sequential = 232 s

@@ -1,16 +1,10 @@
-import glob
 import os
 import time
 import sys
-from os import cpu_count
-
-import numpy as np
-import pandas as pd
-from src.LinoSPAD2.functions import delta_t, mp_analysis, manual_mp_analysis
+from src.LinoSPAD2.functions import delta_t
 from pathlib import Path
 
 serial_number_of_script = sys.argv[1]  # "chunk" counter for the script
-
 
 current_directory = str(Path(__file__).parent)
 path = str(current_directory + '/raw_data/script_' + str(serial_number_of_script))
