@@ -66,7 +66,7 @@ def merge_files():
     # Get the current script directory
     current_directory = Path(__file__).parent
     # Define the path to the 'raw_data' directory
-    path = str(current_directory / 'raw_data' / 'delta_ts_data')
+    path = str(current_directory / 'tmp_raw_data' / 'delta_ts_data')
 
     # Find all .feather files in the directory
     feather_files = [path + '/' + f for f in os.listdir(path) if f.endswith('.feather')]
@@ -93,7 +93,7 @@ def delete_results():
     # Get the current script directory
     current_directory = Path(__file__).parent
     # Define the path to the 'raw_data' directory
-    path = str(current_directory / 'raw_data' / 'delta_ts_data')
+    path = str(current_directory / 'tmp_raw_data' / 'delta_ts_data')
 
     # Find all .feather files in the directory
     feather_files = [path + '/' + f for f in os.listdir(path) if f.endswith('.feather')]
@@ -111,9 +111,20 @@ if __name__ == "__main__":
     #merge_files()
     #delete_results()
 
+    # profile
+    pr = cProfile.Profile()
+    pr.enable()
     delete_results()
-    parallel(False, 7)
-    #merge_files()
+    parallel(True, 6)
+
+    pr.disable()
+    s = io.StringIO()
+    sortby = 'cumulative'
+    ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
+    ps.print_stats(10)
+    print(s.getvalue())
+
+    merge_files()
     delete_results()
 
     # Manually done with 7 cores 800 files = 630 s
