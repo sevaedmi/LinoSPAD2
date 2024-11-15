@@ -115,7 +115,7 @@ if __name__ == "__main__":
     pr = cProfile.Profile()
     pr.enable()
     delete_results()
-    parallel(True, 12)
+    parallel(True, 7)
 
     pr.disable()
     s = io.StringIO()
