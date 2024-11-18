@@ -17,7 +17,7 @@ def sequential():
     # Get the current script directory
     current_directory = Path(__file__).parent
     # Define the path to the 'raw_data' directory
-    path = str(current_directory / 'raw_data')
+    path = str(current_directory / 'tmp_raw_data')
     start = time.time()
     delta_t.calculate_and_save_timestamp_differences_fast(
         path,
@@ -111,18 +111,8 @@ if __name__ == "__main__":
     #merge_files()
     #delete_results()
 
-    # profile
-    pr = cProfile.Profile()
-    pr.enable()
     delete_results()
-    parallel(True, 7)
-
-    pr.disable()
-    s = io.StringIO()
-    sortby = 'cumulative'
-    ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
-    ps.print_stats(10)
-    print(s.getvalue())
+    parallel(True, 10)
 
     merge_files()
     delete_results()
