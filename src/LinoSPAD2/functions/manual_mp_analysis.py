@@ -38,8 +38,11 @@ class DataParamsConfig:
 
 def _calculate_timestamps_differences(files, data_params, path, write_to_files, pix_coor, pixels, calibration_matrix,
                                       offset_array):
-    for file in files:
-        data_all = f_up.unpack_binary_data(
+    read_dat_files = [np.memmap(file, dtype=np.uint32) for file in files]
+    times = []
+
+    for file in read_dat_files:
+        data_all, time_taken = f_up.unpack_binary_data(
             file,
             calibration_matrix,
             offset_array,
@@ -47,6 +50,8 @@ def _calculate_timestamps_differences(files, data_params, path, write_to_files, 
             data_params.include_offset,
             data_params.apply_calibration,
         )
+
+        times.append(time_taken)
 
         deltas_all = cd.calculate_differences_2212_fast(data_all, pixels, pix_coor)
         data_for_plot_df = pd.DataFrame.from_dict(deltas_all, orient="index").T
@@ -56,6 +61,9 @@ def _calculate_timestamps_differences(files, data_params, path, write_to_files, 
             output_file = os.path.join(path, str(file_name.replace('.dat', '.feather')))
             data_for_plot_df.reset_index(drop=True, inplace=True)
             ft.write_feather(data_for_plot_df, output_file)
+
+    # print min and max time taken to process a file
+    print(min(times), max(times))
 
 
 def calculate_and_save_timestamp_differences_mp(
@@ -74,8 +82,10 @@ def calculate_and_save_timestamp_differences_mp(
         number_of_cores: int = 10,
         write_to_files: bool = True,
 ):
-    if firmware_version == "2212s":pix_coor = np.arange(256).reshape(4, 64).T
-    elif firmware_version == "2212b":pix_coor = np.arange(256).reshape(64, 4)
+    if firmware_version == "2212s":
+        pix_coor = np.arange(256).reshape(4, 64).T
+    elif firmware_version == "2212b":
+        pix_coor = np.arange(256).reshape(64, 4)
     else:
         print("\nFirmware version is not recognized.")
         sys.exit()
@@ -98,7 +108,8 @@ def calculate_and_save_timestamp_differences_mp(
 
     # load calibration data if necessary
     if data_params.apply_calibration:
-        path_calibration_data = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "params", "calibration_data", )
+        path_calibration_data = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "params",
+                                             "calibration_data", )
         calibration_matrix, offset_array = load_calibration_data(
             path_calibration_data,
             daughterboard_number,
@@ -124,7 +135,8 @@ def calculate_and_save_timestamp_differences_mp(
     for i in range(number_of_cores):
         p = multiprocessing.Process(
             target=_calculate_timestamps_differences,
-            args=(files[i], data_params, output_directory, write_to_files, pix_coor, pixels, calibration_matrix, offset_array))
+            args=(files[i], data_params, output_directory, write_to_files, pix_coor, pixels, calibration_matrix,
+                  offset_array))
         p.start()
         processes.append(p)
 

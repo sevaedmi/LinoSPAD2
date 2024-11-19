@@ -16,15 +16,17 @@ functions:
 import os
 
 import numpy as np
+import time
 
 from src.LinoSPAD2.functions.calibrate import load_calibration_data
 
 
 def unpack_binary_data(file, calibration_matrix, offset_array, timestamps: int = 512, include_offset: bool = False, apply_calibration: bool = True):
-    raw_data = np.memmap(file, dtype=np.uint32)
-    data_timestamps = (raw_data & 0xFFFFFFF).astype(np.int64)
-    data_pixels = ((raw_data >> 28) & 0x3).astype(np.int8)
-    data_timestamps[raw_data < 0x80000000] = -1
+    #raw_data = np.memmap(file, dtype=np.uint32)
+    start_time = time.time()
+    data_timestamps = (file & 0xFFFFFFF).astype(np.int64)
+    data_pixels = ((file >> 28) & 0x3).astype(np.int8)
+    data_timestamps[file < 0x80000000] = -1
     cycles = len(data_timestamps) // (timestamps * 65)
     data_pixels = (data_pixels.reshape(cycles, 65, timestamps).transpose((1, 0, 2)).reshape(65, -1))
     data_timestamps = (data_timestamps.reshape(cycles, 65, timestamps).transpose((1, 0, 2)).reshape(65, -1))
@@ -50,7 +52,7 @@ def unpack_binary_data(file, calibration_matrix, offset_array, timestamps: int =
                 data_all[tdc].T[1][ind] = ((data_cut - data_cut % 140) * 2500 / 140+ calibration_matrix[i, (data_cut % 140)]+ offset_array[i])
             else:
                 data_all[tdc].T[1][ind] = (data_cut - data_cut % 140) * 2500 / 140 + calibration_matrix[i, (data_cut % 140)]
-    return data_all
+    return data_all, end_time - start_time
 
 
 def unpack_binary_data_with_absolute_timestamps(
