@@ -3,6 +3,7 @@ import glob
 import multiprocessing
 import os
 import sys
+from cgi import print_form
 from dataclasses import dataclass
 import time
 from platform import system
@@ -35,7 +36,8 @@ class DataParamsConfig:
     absolute_timestamps: bool = False
 
 
-def _calculate_timestamps_differences(files, data_params, path, write_to_files, pix_coor, pixels, calibration_matrix, offset_array):
+def _calculate_timestamps_differences(files, data_params, path, write_to_files, pix_coor, pixels, calibration_matrix,
+                                      offset_array):
     for file in files:
         data_all = f_up.unpack_binary_data(
             file,
@@ -92,6 +94,8 @@ def calculate_and_save_timestamp_differences_mp(
         absolute_timestamps=True,
     )
 
+    calibration_matrix, offset_array = None, None
+
     # load calibration data if necessary
     if data_params.apply_calibration:
         path_calibration_data = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "params", "calibration_data", )
@@ -121,8 +125,8 @@ def calculate_and_save_timestamp_differences_mp(
         p = multiprocessing.Process(
             target=_calculate_timestamps_differences,
             args=(files[i], data_params, output_directory, write_to_files, pix_coor, pixels, calibration_matrix, offset_array))
-        processes.append(p)
         p.start()
+        processes.append(p)
 
     # wait for all processes to finish
     for process in processes:

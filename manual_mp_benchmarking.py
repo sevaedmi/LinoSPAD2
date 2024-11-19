@@ -112,10 +112,10 @@ if __name__ == "__main__":
     #delete_results()
 
     delete_results()
-    parallel(True, 10)
+    parallel(False, 10)
 
-    merge_files()
-    delete_results()
+    #merge_files()
+    #delete_results()
 
     # Manually done with 7 cores 800 files = 630 s
     # 800 files in 960 s, sequential
