@@ -22,19 +22,20 @@ from src.LinoSPAD2.functions.calibrate import load_calibration_data
 
 
 def unpack_binary_data(file, calibration_matrix, offset_array, timestamps: int = 512, include_offset: bool = False, apply_calibration: bool = True):
-    #raw_data = np.memmap(file, dtype=np.uint32)
-    start_time = time.time()
-    data_timestamps = (file & 0xFFFFFFF).astype(np.int64)
-    data_pixels = ((file >> 28) & 0x3).astype(np.int8)
-    data_timestamps[file < 0x80000000] = -1
-    cycles = len(data_timestamps) // (timestamps * 65)
-    data_pixels = (data_pixels.reshape(cycles, 65, timestamps).transpose((1, 0, 2)).reshape(65, -1))
+    #raw_data = np.memmap(file, dtype=np.uint32) # Unpack binary data
+    data_timestamps = (file & 0xFFFFFFF).astype(np.int64) # Timestamps are stored in the lower 28 bits
+    data_pixels = ((file >> 28) & 0x3).astype(np.int8) # Pixel address in the given TDC is 2 bits above timestamp
+    data_timestamps[file < 0x80000000] = -1 # Check the top bit, assign '-1' to invalid timestamps
+    cycles = len(data_timestamps) // (timestamps * 65) # Number of acquisition cycles in each data file
+    data_pixels = (data_pixels.reshape(cycles, 65, timestamps).transpose((1, 0, 2)).reshape(65, -1))  # Transform into a matrix of size 65 by cycles*timestamps
     data_timestamps = (data_timestamps.reshape(cycles, 65, timestamps).transpose((1, 0, 2)).reshape(65, -1))
     data_pixels = data_pixels[:-1]
-    data_timestamps = data_timestamps[:-1]
-    insert_indices = np.linspace(timestamps, cycles * timestamps, cycles).astype(np.int64)
+    data_timestamps = data_timestamps[:-1]  # Cut the 65th TDC that does not hold any actual data from pixels
+    insert_indices = np.linspace(timestamps, cycles * timestamps, cycles).astype(np.int64)  # Insert '-2' at the end of each cycle
     data_pixels = np.insert(data_pixels,insert_indices,-2,1,)
     data_timestamps = np.insert(data_timestamps,insert_indices,-2,1,)
+    # Combine both matrices into a single one, where each cell holds pixel
+    # coordinates in the TDC and the timestamp
     data_all = np.stack((data_pixels, data_timestamps), axis=2).astype(np.int64)
 
     if apply_calibration is False:
@@ -42,17 +43,19 @@ def unpack_binary_data(file, calibration_matrix, offset_array, timestamps: int =
     else:
         pix_coordinates = np.arange(256).reshape(64, 4)
         for i in range(256):
-            tdc, pix = np.argwhere(pix_coordinates == i)[0]
+            # Transform pixel number to TDC number and pixel coordinates in
+            # that TDC (from 0 to 3)
+            tdc, pix = np.argwhere(pix_coordinates == i)[0]  # Find data from that pixel
             ind = np.where(data_all[tdc].T[0] == pix)[0]
-            ind = ind[data_all[tdc].T[1][ind] >= 0]
+            ind = ind[data_all[tdc].T[1][ind] >= 0] # Cut non-valid timestamps ('-1's)
             if not np.any(ind):
                 continue
             data_cut = data_all[tdc].T[1][ind]
-            if include_offset:
+            if include_offset: # Apply calibration; offset is added due to how delta ts are calculated
                 data_all[tdc].T[1][ind] = ((data_cut - data_cut % 140) * 2500 / 140+ calibration_matrix[i, (data_cut % 140)]+ offset_array[i])
             else:
                 data_all[tdc].T[1][ind] = (data_cut - data_cut % 140) * 2500 / 140 + calibration_matrix[i, (data_cut % 140)]
-    return data_all, end_time - start_time
+    return data_all
 
 
 def unpack_binary_data_with_absolute_timestamps(

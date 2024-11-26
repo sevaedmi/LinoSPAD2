@@ -33,7 +33,7 @@ def sequential():
     print(f"{finish - start} s")
 
 
-def parallel(writing_to_files, num_of_cores):
+def parallel(num_of_cores):
     # Get the current script directory
     current_directory = Path(__file__).parent
     # Define the path to the 'raw_data' directory
@@ -58,7 +58,6 @@ def parallel(writing_to_files, num_of_cores):
         timestamps=300,
         include_offset=False,
         number_of_cores=num_of_cores,
-        write_to_files=writing_to_files,
     )
 
 
@@ -78,8 +77,9 @@ def merge_files():
     dfs = [pd.read_feather(file) for file in feather_files]
     merged_df = pd.concat(dfs, ignore_index=True)
 
-    # Save the merged dataframe back to a single feather file
-    output_file_path = path + '/merged.feather'
+    # Save the merged dataframe back to a single feather file with current date and time
+    cur_date_and_time = time.strftime("%Y-%m-%d_%H-%M-%S")
+    output_file_path = path + '/' + cur_date_and_time + '_merged.feather'
     merged_df.to_feather(output_file_path)
 
     # End the timer
@@ -112,10 +112,6 @@ if __name__ == "__main__":
     #delete_results()
 
     delete_results()
-    parallel(False, 10)
+    parallel(num_of_cores=10)
+    merge_files()
 
-    #merge_files()
-    #delete_results()
-
-    # Manually done with 7 cores 800 files = 630 s
-    # 800 files in 960 s, sequential
