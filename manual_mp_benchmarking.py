@@ -17,7 +17,7 @@ def sequential():
     # Get the current script directory
     current_directory = Path(__file__).parent
     # Define the path to the 'raw_data' directory
-    path = str(current_directory / 'tmp_raw_data')
+    path = str(current_directory / 'isolated_data')
     start = time.time()
     delta_t.calculate_and_save_timestamp_differences_fast(
         path,
@@ -65,7 +65,7 @@ def merge_files():
     # Get the current script directory
     current_directory = Path(__file__).parent
     # Define the path to the 'raw_data' directory
-    path = str(current_directory / 'tmp_raw_data' / 'delta_ts_data')
+    path = str(current_directory / 'isolated_data' / 'delta_ts_data')
 
     # Find all .feather files in the directory
     feather_files = [path + '/' + f for f in os.listdir(path) if f.endswith('.feather')]
@@ -107,11 +107,11 @@ def delete_results():
 
 if __name__ == "__main__":
     #delete_results()
-    #sequential()
-    #merge_files()
+    sequential()
+    merge_files()
     #delete_results()
 
-    delete_results()
-    parallel(num_of_cores=10)
-    merge_files()
+    #delete_results()
+    #parallel(num_of_cores=10)
+    #merge_files()
 
